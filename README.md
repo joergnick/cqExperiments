@@ -1,4 +1,2 @@
-# nonlinearCQ
-Project implements a black box CQ solver for nonlinear problems, targeted at scattering problems by making use of the BEM - Library Bempp. The toolbox is capable of solving a general class of evolution equations, assuming vanishing initial conditions (for both the value and its derivatives). 
-
-In particular this gives discretization schemes for fractional evolution equations.
+# cqExperiments
+Project implements a black box CQ solver, suitable for both linear and nonlinear problems. Main application are scattering problems by making use of the BEM - Library Bempp. The toolbox is capable of solving a general class of evolution equations, possibly nonlocal in time and space under the assumption of vanishing initial conditions. 
