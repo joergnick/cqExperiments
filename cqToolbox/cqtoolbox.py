@@ -21,14 +21,16 @@ class CQModel:
         raise NotImplementedError("No time-harmonic forward operator given.")
     def harmonicBackward(self,s,b,precomp = None):
         raise NotImplementedError("No time-harmonic backward operator given.")
-    def calcJacobian(self,x):
+    def calcJacobian(self,x,t,rhs):
         raise NotImplementedError("No gradient given.")
     def applyJacobian(self,Jacobian,b):
-        raise NotImplementedError("Gradient has no applyGradient method.") 
+        try: 
+            return Jacobian*b
+        except:
+            raise NotImplementedError("Gradient has no custom applyGradient method, however * is not supported.") 
     def righthandside(self,t,history=None):
         return 0
         #raise NotImplementedError("No right-hand side given.")
-
         ## Optional method supplied by user:
     def precomputing(self,s):
         raise NotImplementedError("No precomputing given.")
@@ -43,14 +45,14 @@ class CQModel:
             self.freqUse[s] = 1
         return self.harmonicForward(s,b,precomp=self.freqObj[s])
 
-    def discreteJacobian(self,m,dof,x0,t):
+    def discreteJacobian(self,m,dof,x0,t,tau,c_RK):
         taugrad = 10**(-8)
         idMat = np.identity(dof)
         jacobList = m*[None]
         for stageInd in range(m):
             jacoba = np.zeros((dof,dof))
             for i in range(dof):
-                diff = (self.nonlinearity(x0[:,stageInd]+taugrad*idMat[:,i],t+tau*c_RK[stageInd])-self.nonlinearity(x0[:,stageInd]-taugrad*idMat[:,i],t+tau*c_RK[stageInd]))
+                diff = (self.nonlinearity(x0[:,stageInd]+taugrad*idMat[:,i],t+tau*c_RK[stageInd],0)-self.nonlinearity(x0[:,stageInd]-taugrad*idMat[:,i],t+tau*c_RK[stageInd],0))
                 #if dof == 1:
                 jacoba[:,i] = diff/(2*taugrad)
                 #grada[stageInd*dof:(stageInd+1)*dof,stageInd*dof+i] = diff/(2*taugrad)
@@ -69,7 +71,7 @@ class CQModel:
         try:
             jacobList = [self.calcJacobian(x0[:,k],t,rhsInhom[:,k]) for k in range(m)]
         except NotImplementedError:
-            jacobList = self.discreteJacobian(m,dof,x0,t)
+            jacobList = self.discreteJacobian(m,dof,x0,t,tau,c_RK)
         stageRHS = x0+1j*np.zeros((dof,m))
         ## Calculating right-hand side
         stageRHS = np.matmul(stageRHS,Tinv.T)
@@ -105,7 +107,7 @@ class CQModel:
         NewtonLambda = lambda x: NewtonFunc(x)
         from scipy.sparse.linalg import LinearOperator
         NewtonOperator = LinearOperator((m*dof,m*dof),NewtonLambda)
-        dxlong,info = gmres(NewtonOperator,rhsLong,restart = 2*dof,maxiter = 2*dof,x0=x0pureLong,tol=1e-5)
+        dxlong,info = gmres(NewtonOperator,rhsLong,restart = 2*m*dof,maxiter = 2*dof,x0=x0pureLong,tol=1e-5)
         #dxlong,info = gmres(NewtonOperator,rhsLong,restart = 2*dof,maxiter = 2*dof,x0=x0pureLong,tol=1e-5)
         if info != 0:
             print("GMRES Info not zero, Info: ", info)
@@ -173,10 +175,6 @@ class CQModel:
             rhsInhom = np.zeros((dof,m*N+1))
         for j in range(0,N):
             print(j*1.0/N)
-            memoryUsage = 0
-            for obj in self.freqObj.values():
-                memoryUsage += sys.getsizeof(obj)
-            print("Memory size of Operator tail: ",memoryUsage)
             ## Calculating solution at timepoint tj
             tj       = tau*j
             for i in range(m):
