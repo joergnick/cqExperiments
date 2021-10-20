@@ -2,10 +2,9 @@ import unittest
 import numpy as np
 import sys
 sys.path.append('../cqToolbox')
-#from .. import nonlinear1ddamping
 from cqtoolbox import CQModel
 
-
+## Problems with analytic solutions 
 class LinearScatModel(CQModel):
     def precomputing(self,s):
         return s**2
@@ -30,12 +29,10 @@ class NonlinearScatModel(CQModel):
     def ex_sol(self,ts):
         return ts**3
 
-
+## Test cases, two for each of the predefined models
+## above.
 class TestCQMethods(unittest.TestCase):
-#    def setUp(self):
-#        self.model = LinearScatModel()
-#        self.modelN = NonlinearScatModel() 
-    def test_LinearRadauIIA_2(self):
+    def test_linear_RadauIIA_2(self):
         modelL       = LinearScatModel()
         m = 2
         N = 8
@@ -45,7 +42,7 @@ class TestCQMethods(unittest.TestCase):
         err          = max(np.abs(sol[0,::m]-exSol))
         self.assertLess(np.abs(err),10**(-2))
 
-    def test_LinearRadauIIA_3(self):
+    def test_linear_RadauIIA_3(self):
         modelL       = LinearScatModel()
         m = 3
         N = 9
@@ -55,7 +52,7 @@ class TestCQMethods(unittest.TestCase):
         err          = max(np.abs(sol[0,::m]-exSol))
         self.assertLess(np.abs(err),10**(-3))
 
-    def testNonlinearRadauIIA_2(self):
+    def test_nonlinear_RadauIIA_2(self):
         modelN       = NonlinearScatModel()
         m = 2
         N = 11
@@ -65,7 +62,7 @@ class TestCQMethods(unittest.TestCase):
         err          = max(np.abs(sol[0,::m]-exSol))
         self.assertLess(np.abs(err),10**(-3))
 
-    def testNonlinearRadauIIA_3(self):
+    def test_nonlinear_RadauIIA_3(self):
         modelN       = NonlinearScatModel()
         m = 3
         N = 7
@@ -74,6 +71,13 @@ class TestCQMethods(unittest.TestCase):
         exSol        = modelN.ex_sol(np.linspace(0,T,N+1))
         err          = max(np.abs(sol[0,::m]-exSol))
         self.assertLess(np.abs(err),10**(-7))
+    
+    def test_extrapolation_p1(self):
+        modelN       = NonlinearScatModel()
+        self.assertTrue((modelN.extrapol_coefficients(1)==[-1,2]).all())
+    def test_extrapolation_p2(self):
+        modelN       = NonlinearScatModel()
+        self.assertTrue((modelN.extrapol_coefficients(2)==[1,-3,3]).all())
 
 
 

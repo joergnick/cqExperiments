@@ -89,12 +89,10 @@ class Conv_Operator():
             normsRHS[j]=np.max(np.abs(rhs_fft[:,j]))
             if normsRHS[j]>cutoff:
                 counter=counter+1
-        #import matplotlib.pyplot as plt
-        #plt.semilogy(normsRHS)
-        #plt.show()
-        #print("CUTOFF :", cutoff)
+
         HalfL= int(np.ceil(float(L)/2.0))
-        #print("Amount of Systems needed: "+ str(counter))
+        if show_progress:
+            print("Amount of Systems needed: "+ str(counter))
         #Timing the elliptic systems
         import time
         start=0
@@ -141,24 +139,19 @@ class Conv_Operator():
                     for sumInd in range(m):
                         phi_hat[:,m*j+stageInd]=phi_hat[:,m*j+stageInd]+T[stageInd,sumInd]*lhsStages[:,sumInd]
             end=time.time()
-#       for j in range(Half+1,L+1):
-#           phi_hat[:,j]=np.conj(phi_hat[:,L+1-j])      
-        
-        ## Step 3
+        ## Mirroring the second part of the frequencies by complex conjugation
         for freqInd in range(HalfL,L):  
             for stageInd in range(m):
                 phi_hat[:,freqInd*m+stageInd]=np.conj(phi_hat[:,m*(L-freqInd)+stageInd])
+
+        ## Step 3, Postprocessing
         for stageInd in range(m):
             phi_hat[:,stageInd:m*L:m]=self.rescale_ifft(phi_hat[:,stageInd:m*L:m],N,T)
-        #phi_sol[:,1:2*N+2:2]=self.rescale_ifft(phi_hat[:,1:2*N+2:2])
         phi_sol=phi_hat[:,:m*N]
-    #   if len(phi_sol[:,0])==1:
-    #       phi_sol=phi_sol[0,:]
         return phi_sol
 
     def apply_convol(self,rhs,T,show_progress=False,method="BDF2",cutoff=10**(-8)):
         ## Step 1
-        #print("In apply_convol")
         if not len(rhs[0]):
             raise ValueError("Right hand side provided is empty.")
         try:
@@ -179,7 +172,6 @@ class Conv_Operator():
         rhs=rho**(np.linspace(0,n_columns-1,N+1))*rhs
         rhs_fft=np.fft.fft(np.concatenate((rhs,np.zeros((n_rows,L+1-n_columns))),axis=1))
 #######################     
-        #rhs_fft=self.scale_fft(rhs,N,T)
         #Initialising important parameters for the later stage  
         Zeta_vect=self.get_zeta_vect(N,T)
         dof=len(rhs[:,0])
@@ -215,8 +207,6 @@ class Conv_Operator():
 
         phi_sol=self.rescale_ifft(phi_hat,N,T)
         phi_sol=phi_sol[:,:N+1]
-    #   if len(phi_sol[:,0])==1:
-    #       phi_sol=phi_sol[0,:]
         return phi_sol
 
 
