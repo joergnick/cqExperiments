@@ -16,6 +16,18 @@ class LinearScatModel(CQModel):
         return 0*x
     def ex_sol(self,ts):
         return ts**8
+class LinearScatModelSimple(CQModel):
+    def precomputing(self,s):
+        return s**1
+    def harmonicForward(self,s,b,precomp = None):
+        return precomp*b
+    def righthandside(self,t,history = None):
+        return 3*t**2
+    def nonlinearity(self,x,t,phi):
+        return 0*x
+    def ex_sol(self,ts):
+        return ts**3
+
 
 class NonlinearScatModel(CQModel):
     def precomputing(self,s):
@@ -32,6 +44,17 @@ class NonlinearScatModel(CQModel):
 ## Test cases, two for each of the predefined models
 ## above.
 class TestCQMethods(unittest.TestCase):
+    def test_linear_RadauIIA_1Simple(self):
+        modelL       = LinearScatModelSimple()
+        m = 1
+        N = 30
+        T = 1
+        sol,counters = modelL.simulate(T,N,method = "RadauIIA-"+str(m))
+        exSol        = modelL.ex_sol(np.linspace(0,T,N+1))
+        err          = max(np.abs(sol[0,::m]-exSol))
+        self.assertLess(np.abs(err),10**(-1))
+
+
     def test_linear_RadauIIA_2(self):
         modelL       = LinearScatModel()
         m = 2

@@ -181,9 +181,9 @@ class CQModel:
                 else:
                     extr[:,i] = np.zeros(dof)
    #         ###  Use simplified Weighted Newon's method ######
+
             sol[:,j*m+1:(j+1)*m+1],info = self.newtonsolver(tj,tau,c_RK,deltaEigs,rhs[:,j*m+1:(j+1)*m+1],W0,Tdiag,extr,rhsInhom[:,j*m+1:(j+1)*m+1])
             #print("First Newton step finished. Info: ",info, "Norm of solution: ", np.linalg.norm(sol[:,j*m+1:(j+1)*m+1]))
-
             counter = 0
             thresh = 3
             while info >0:
