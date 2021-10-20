@@ -147,7 +147,7 @@ class CQModel:
             extrU = extrU+gammas[j]*u[:,-p-1+j]
         return extrU
     
-    def simulate(self,T,N,rhsInhom=None,method = "RadauIIA-2",tolsolver = 10**(-5),reUse=True):
+    def simulate(self,T,N,rhsInhom=None,method = "RadauIIA-2",tolsolver = 10**(-5),reUse=True,debugMode=False):
         tau = T*1.0/N
         ## Initializing right-hand side:
         lengths = self.createFFTLengths(N)
@@ -174,9 +174,10 @@ class CQModel:
         if rhsInhom is None:
             rhsInhom = np.zeros((dof,m*N+1))
         for j in range(0,N):
-            print(j*1.0/N)
+            if debugMode:
+                print(j*1.0/N)
             ## Calculating solution at timepoint tj
-            tj       = tau*j
+            tj = tau*j
             for i in range(m):
                 rhs[:,j*m+i+1] = rhs[:,j*m+i+1] + self.righthandside(tj+c_RK[i]*tau,history=sol[:,:j*m])
                 if j >=1:
@@ -195,7 +196,8 @@ class CQModel:
                     else:
                         scal = 0.9
                     sol[:,j*m+1:(j+1)*m+1],info = self.newtonsolver(tj,tau,c_RK,deltaEigs,rhs[:,j*m+1:(j+1)*m+1],W0,Tdiag,sol[:,j*m+1:(j+1)*m+1],rhsInhom[:,j*m+1:(j+1)*m+1],coeff=scal**(counter-thresh))
-                    print("INFO AFTER {} STEP: ".format(counter),info)
+                    if debugMode:
+                        print("INFO AFTER {} STEP: ".format(counter),info)
                     if np.linalg.norm(sol[:,j*m+1:(j+1)*m+1])>10**5:
                         sol[:,j*m+1:(j+1)*m+1] = extr
                         break
