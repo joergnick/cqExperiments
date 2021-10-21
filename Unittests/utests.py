@@ -1,6 +1,8 @@
 import unittest
 import numpy as np
 import sys
+import bempp.api
+sys.path.append('cqToolbox')
 sys.path.append('../cqToolbox')
 from cqtoolbox import CQModel
 

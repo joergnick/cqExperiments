@@ -32,9 +32,6 @@ class RKMethod():
     b_RK   = 0
     def __init__(self,method):
         if (method is "RadauIIA-1") or (method is "Implicit Euler") or (method is "BDF-1"):
-            m     = 1
-            Tdiag = 1
-            Tinv  = 1
             c_RK  = [1]
             A_RK  = [[1]]
             b_RK  = [1]
@@ -52,8 +49,9 @@ for j in range(Am):
     
     err[j] = max(np.abs(sol[0,::m]-np.linspace(0,1,N+1)**3))
 import matplotlib.pyplot as plt
-plt.loglog(Ns**(-1),Ns**(-1),linestyle='dashed')
-plt.loglog(Ns**(-1),err)
-#plt.plot(sol[0])
-#plt.plot(np.linspace(0,1,N+1)**3,linestyle='dashed')
-plt.show()
+print(err)
+#plt.loglog(Ns**(-1),Ns**(-1),linestyle='dashed')
+#plt.loglog(Ns**(-1),err)
+##plt.plot(sol[0])
+##plt.plot(np.linspace(0,1,N+1)**3,linestyle='dashed')
+#plt.show()
