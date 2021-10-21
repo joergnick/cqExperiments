@@ -59,7 +59,7 @@ class AbstractIntegrator:
             if debugMode: print(j*1.0/N)
             ## Calculating solution at timepoint tj
             tj = tau*j
-            next_sol,info = self.time_step(W0,j,tau,c_RK,sol[:,:j*m+1],conv_hist[:,j*m+1:(j+1)*m+1])
+            next_sol,info = self.time_step(W0,j,tau,method,sol[:,:j*m+1],conv_hist[:,j*m+1:(j+1)*m+1])
             sol[:,j*m+1:(j+1)*m+1] = next_sol
             ## Solving Completed #####################################
             ## Calculating Local History:
@@ -71,7 +71,7 @@ class AbstractIntegrator:
                 break
             ## Updating Global History: 
             curr_len_cut = min(curr_len,N-j-1)
-            conv_hist[:,(j+1)*m+1:(j+1)*m+1+curr_len_cut*m] = conv_hist[:,(j+1)*m+1:(j+1)*m+1+curr_len_cut*m]+local_conv_hist[:,curr_len*m:curr_len*m+curr_len_cut*m]
+            conv_hist[:,(j+1)*m+1:(j+1)*m+1+curr_len_cut*m] +=local_conv_hist[:,curr_len*m:curr_len*m+curr_len_cut*m]
             if not reUse:
                 self.freqUse = dict()
                 self.freqObj = dict()

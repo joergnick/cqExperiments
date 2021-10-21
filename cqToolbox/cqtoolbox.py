@@ -211,7 +211,7 @@ class CQModel:
                 break
             ## Updating Global History: 
             currLenCut = min(currLen,N-j-1)
-            rhs[:,(j+1)*m+1:(j+1)*m+1+currLenCut*m] = rhs[:,(j+1)*m+1:(j+1)*m+1+currLenCut*m]-localconvHist[:,currLen*m:currLen*m+currLenCut*m]
+            rhs[:,(j+1)*m+1:(j+1)*m+1+currLenCut*m] += -localconvHist[:,currLen*m:currLen*m+currLenCut*m]
             if not reUse:
                 self.freqUse = dict()
                 self.freqObj = dict()
