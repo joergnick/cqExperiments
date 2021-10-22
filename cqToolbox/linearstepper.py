@@ -1,42 +1,28 @@
 from cqStepper import AbstractIntegrator
 import numpy as np
+from rkmethods import RKMethod
 class ImplicitEuler(AbstractIntegrator):
     def time_step(self,W0,j,tau,method,history,w_star_sol_j):
         t   = tau*j 
-        [A_RK,b_RK,c_RK,m] = self.tdForward.get_method_characteristics(method)
+        rk = RKMethod(method,tau=tau)
         rhs = np.zeros((1,m))
         for stageInd in range(m):
-            rhs[:,stageInd] = 3*(t+tau*c_RK[stageInd])**2-w_star_sol_j[:,stageInd]
-        S0 = np.linalg.inv(A_RK)/tau
-        deltaEigs,Tdiag = np.linalg.eig(S0)
-        Tinv = np.linalg.inv(Tdiag)
-        rhs = np.matmul(rhs,Tinv.T)
+            rhs[:,stageInd] = 3*(t+tau*rk.c[stageInd])**2-w_star_sol_j[:,stageInd]
+        rhs = rk.diagonalize(rhs)
         sol = np.zeros((1,m))
         for stageInd in range(m):
             sol[:,stageInd] = W0[stageInd]**(-1)*(rhs[:,stageInd])
-        sol = np.real(np.matmul(sol,Tdiag.T))
+        sol = np.real(rk.reverse_diagonalize(sol))
         return sol ,0
     def harmonicForward(self,s,b,precomp = None):
         return precomp*b
     def precomputing(self,s):
         return s    
 
-class RKMethod():
-    "Collects data and methods corresponding to a Runge-Kutta method."
-    method = ""
-    m      = 0
-    Tdiag  = 0
-    Tinv   = 0 
-    c_RK   = 0
-    A_RK   = 0
-    b_RK   = 0
-    def __init__(self,method):
-        if (method is "RadauIIA-1") or (method is "Implicit Euler") or (method is "BDF-1"):
-            c_RK  = [1]
-            A_RK  = [[1]]
-            b_RK  = [1]
+
 
 test = RKMethod("RadauIIA-1") 
+print(test.m)
 int_der = ImplicitEuler()
 Am = 8
 m  = 2
