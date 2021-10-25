@@ -113,12 +113,12 @@ class TestCQMethods(unittest.TestCase):
     def test_nonlinear_RadauIIA_3(self):
         modelN       = NonlinearScatModel()
         m = 3
-        N = 30
+        N = 7
         T = 2
         sol,counters = modelN.simulate(T,N,method = "RadauIIA-"+str(m))
         exSol        = modelN.ex_sol(np.linspace(0,T,N+1))
         err          = max(np.abs(sol[0,::m]-exSol))
-        self.assertLess(np.abs(err),10**(-4))
+        self.assertLess(np.abs(err),10**(-7))
     
     def test_extrapolation_p1(self):
         modelN       = NonlinearScatModel()
@@ -126,7 +126,6 @@ class TestCQMethods(unittest.TestCase):
     def test_extrapolation_p2(self):
         modelN       = NonlinearScatModel()
         self.assertTrue((modelN.extrapol_coefficients(2)==[1,-3,3]).all())
-
 
 
 if __name__ == '__main__':
