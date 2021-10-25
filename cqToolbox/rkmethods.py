@@ -28,7 +28,12 @@ class RKMethod():
         self.delta_zero = np.linalg.inv(self.A/tau)
         self.delta_eigs,self.Tdiag  = np.linalg.eig(self.delta_zero)
         self.Tinv = np.linalg.inv(self.Tdiag)
-    def diagonalize(self,b_dof_x_m):
-        return np.matmul(b_dof_x_m,self.Tinv.T)
+    def diagonalize(self,x):
+       # if len(x.shape)==1:
+       #     if len(x) % self.m !=0:
+       #         raise ValueError("Vector dimensions of Input does not allow diagonalization.")
+       #     x.reshape((len(x)/self.m,self.m))
+        return np.matmul(x,self.Tinv.T)
+
     def reverse_diagonalize(self,b_dof_x_m):
         return np.matmul(b_dof_x_m,self.Tdiag.T)

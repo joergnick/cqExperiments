@@ -2,6 +2,7 @@
 from scipy.sparse.linalg import gmres
 from scipy.optimize import newton_krylov
 import numpy as np
+from rkmethods import RKMethod
 from linearcq import Conv_Operator
 import sys
 class CQModel:
@@ -25,7 +26,7 @@ class CQModel:
 #        raise NotImplementedError("No gradient given.")
     def applyJacobian(self,Jacobian,b):
         try: 
-            return Jacobian*b
+            return Jacobian.dot(b)
         except:
             raise NotImplementedError("Gradient has no custom applyGradient method, however * is not supported.") 
     def righthandside(self,t,history=None):
@@ -56,7 +57,8 @@ class CQModel:
             jacoba[:,i] = (y_plus-y_minus)/(2*taugrad)
         return jacoba
 
-    def newtonsolver(self,t,tau,c_RK,deltaEigs,rhs,W0,Tdiag, x0,rhsInhom,tolsolver = 10**(-4),debugmode=False,coeff = 1):
+    def newtonsolver(self,t,tau,method,c_RK,deltaEigs,rhs,W0,Tdiag, x0,rhsInhom,tolsolver = 10**(-4),debugmode=False,coeff = 1):
+        rk =RKMethod(method)
         x0pure = x0
         dof = len(rhs)
         m = len(W0)
@@ -68,12 +70,11 @@ class CQModel:
 
         jacobList = [self.calc_jacobian(x0[:,k],t,rhsInhom[:,k]) for k in range(m)]
 
-        stageRHS = x0+1j*np.zeros((dof,m))
+        stageRHS = rk.diagonalize(x0+1j*np.zeros((dof,m)))
         ## Calculating right-hand side
-        stageRHS = np.matmul(stageRHS,Tinv.T)
         for stageInd in range(m):
             stageRHS[:,stageInd] = self.harmonicForward(deltaEigs[stageInd],stageRHS[:,stageInd],precomp=W0[stageInd])
-        stageRHS = np.matmul(stageRHS,Tdiag.T)
+        stageRHS = rk.reverse_diagonalize(stageRHS)
         #rhsNewton = [stageRHS[:,k]+self.nonlinearity(x0[:,k])-rhs[:,k] for k in range(m)]
         ax0 = np.zeros((dof,m))
         
@@ -86,20 +87,34 @@ class CQModel:
         for stageInd in range(m):
             rhsLong[stageInd*dof:(stageInd+1)*dof] = rhsNewton[:,stageInd]
             x0pureLong[stageInd*dof:(stageInd+1)*dof] = x0pure[:,stageInd]
+        def NewtonFunc(x_dummy):
+            x_mat    = x_dummy.reshape(m,dof).T
+            x_diag   = rk.diagonalize(x_mat)
 
-        def NewtonFunc(xdummy):
-            idMat  = np.identity(dof)
-            Tinvdof = np.kron(Tinv,idMat)
-            Tdiagdof = np.kron(Tdiag,idMat)
-            ydummy = 1j*np.zeros(dof*m)
-            BsTxdummy = 1j*np.zeros(dof*m)
-            Daxdummy = 1j*np.zeros(dof*m)
-            Txdummy = Tinvdof.dot(xdummy)
-            for j in range(m):  
-                BsTxdummy[j*dof:(j+1)*dof] = self.harmonicForward(deltaEigs[j],Txdummy[j*dof:(j+1)*dof],precomp = W0[j])
-                Daxdummy[j*dof:(j+1)*dof] =self.applyJacobian(jacobList[j],xdummy[j*dof:(j+1)*dof])
-            ydummy = Tdiagdof.dot(BsTxdummy)+Daxdummy
-            return ydummy
+            grad_mat = 1j*np.zeros((dof,m))
+            Bs_mat   = 1j*np.zeros((dof,m))
+            for j in range(m):
+                grad_mat[:,j] = self.applyJacobian(jacobList[j],x_mat[:,j])
+                Bs_mat[:,j]   = self.harmonicForward(deltaEigs[j],x_diag[:,j],precomp = W0[j])
+            #print(Bs_mat)
+            res_mat  = rk.reverse_diagonalize(Bs_mat) + grad_mat
+            new_res =  res_mat.T.ravel()
+            return new_res
+###################################################
+#            xdummy = x_dummy
+#            idMat  = np.identity(dof)
+#            Tinvdof = np.kron(Tinv,idMat)
+#            Tdiagdof = np.kron(Tdiag,idMat)
+#            ydummy = 1j*np.zeros(dof*m)
+#            BsTxdummy = 1j*np.zeros(dof*m)
+#            Daxdummy = 1j*np.zeros(dof*m)
+#            Txdummy = Tinvdof.dot(xdummy)
+#            for j in range(m):  
+#                BsTxdummy[j*dof:(j+1)*dof] = self.harmonicForward(deltaEigs[j],Txdummy[j*dof:(j+1)*dof],precomp = W0[j])
+#                Daxdummy[j*dof:(j+1)*dof] =self.applyJacobian(jacobList[j],xdummy[j*dof:(j+1)*dof])
+#            ydummy = Tdiagdof.dot(BsTxdummy)+Daxdummy
+#            return ydummy
+###################################################
         NewtonLambda = lambda x: NewtonFunc(x)
         from scipy.sparse.linalg import LinearOperator
         NewtonOperator = LinearOperator((m*dof,m*dof),NewtonLambda)
@@ -182,7 +197,7 @@ class CQModel:
                     extr[:,i] = np.zeros(dof)
    #         ###  Use simplified Weighted Newon's method ######
 
-            sol[:,j*m+1:(j+1)*m+1],info = self.newtonsolver(tj,tau,c_RK,deltaEigs,rhs[:,j*m+1:(j+1)*m+1],W0,Tdiag,extr,rhsInhom[:,j*m+1:(j+1)*m+1])
+            sol[:,j*m+1:(j+1)*m+1],info = self.newtonsolver(tj,tau,method,c_RK,deltaEigs,rhs[:,j*m+1:(j+1)*m+1],W0,Tdiag,extr,rhsInhom[:,j*m+1:(j+1)*m+1])
             #print("First Newton step finished. Info: ",info, "Norm of solution: ", np.linalg.norm(sol[:,j*m+1:(j+1)*m+1]))
             counter = 0
             thresh = 3
@@ -191,7 +206,7 @@ class CQModel:
                         scal = 1 
                     else:
                         scal = 0.9
-                    sol[:,j*m+1:(j+1)*m+1],info = self.newtonsolver(tj,tau,c_RK,deltaEigs,rhs[:,j*m+1:(j+1)*m+1],W0,Tdiag,sol[:,j*m+1:(j+1)*m+1],rhsInhom[:,j*m+1:(j+1)*m+1],coeff=scal**(counter-thresh))
+                    sol[:,j*m+1:(j+1)*m+1],info = self.newtonsolver(tj,tau,method,c_RK,deltaEigs,rhs[:,j*m+1:(j+1)*m+1],W0,Tdiag,sol[:,j*m+1:(j+1)*m+1],rhsInhom[:,j*m+1:(j+1)*m+1],coeff=scal**(counter-thresh))
                     if debugMode:
                         print("INFO AFTER {} STEP: ".format(counter),info)
                     if np.linalg.norm(sol[:,j*m+1:(j+1)*m+1])>10**5:

@@ -20,7 +20,12 @@ class ImplicitEuler(AbstractIntegrator):
         return s    
 
 
-
+arr = np.array([1,2,3,4,5,6])
+print("SHAPE: ", arr.shape)
+arr = arr.reshape(2,3)
+print("SHAPE: ", arr.shape)
+print(arr)
+print(arr.T.ravel())
 test = RKMethod("RadauIIA-1") 
 print(test.m)
 int_der = ImplicitEuler()

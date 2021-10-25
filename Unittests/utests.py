@@ -43,6 +43,19 @@ class NonlinearScatModel(CQModel):
     def ex_sol(self,ts):
         return ts**3
 
+class NonlinearScatModel2Components(CQModel):
+    def precomputing(self,s):
+        return np.array([s**1,s**2])
+    def harmonicForward(self,s,b,precomp = None):
+        return np.array([precomp[0]*b[0],precomp[1]*b[1]])
+    def righthandside(self,t,history = None):
+        return np.array([3*t**2+t**9 +t**4,4*3*t**2+t**4])
+    def nonlinearity(self,x,t,phi):
+        return np.array([x[0]**3+x[1],x[1]])
+    def ex_sol(self,ts):
+        return np.array([ts**3,ts**4])
+
+
 ## Test cases, two for each of the predefined models
 ## above.
 class TestCQMethods(unittest.TestCase):
@@ -86,6 +99,16 @@ class TestCQMethods(unittest.TestCase):
         exSol        = modelN.ex_sol(np.linspace(0,T,N+1))
         err          = max(np.abs(sol[0,::m]-exSol))
         self.assertLess(np.abs(err),10**(-3))
+    def test_nonlinear_RadauIIA_2_components(self):
+        modelN       = NonlinearScatModel2Components()
+        m = 2
+        N = 15
+        T = 2
+        sol,counters = modelN.simulate(T,N,method = "RadauIIA-"+str(m))
+        exSol        = modelN.ex_sol(np.linspace(0,T,N+1))
+        err          = np.max(np.max(np.abs(sol[:,::m]-exSol)))
+        self.assertLess(np.abs(err),10**(-3))
+
 
     def test_nonlinear_RadauIIA_3(self):
         modelN       = NonlinearScatModel()

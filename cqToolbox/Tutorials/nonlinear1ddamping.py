@@ -1,5 +1,6 @@
+import sys
+sys.path.append("..")
 from cqtoolbox import CQModel
-import math
 import numpy as np
 class ScatModel(CQModel):
     def precomputing(self,s):
