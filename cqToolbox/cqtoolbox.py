@@ -59,14 +59,14 @@ class CQModel:
             jacoba[:,i] = (y_plus-y_minus)/(2*taugrad)
         return jacoba
 
-    def newton_solver(self,j,rk,rhs,W0, x0,history,tolsolver = 10**(-7)):
-        x0 = np.zeros(rhs.shape)
+    def time_step(self,W0,j,rk,history,w_star_sol_j):
+        x0 = np.zeros(w_star_sol_j.shape)
         for i in range(rk.m):
-            rhs[:,i] = rhs[:,i] + self.righthandside(j*rk.tau+rk.c[i]*rk.tau,history=history)
+            w_star_sol_j[:,i] = -w_star_sol_j[:,i] + self.righthandside(j*rk.tau+rk.c[i]*rk.tau,history=history)
             if j >=1:
                 x0[:,i] = self.extrapol(history[:,i+1:j*rk.m+i+1:rk.m],1)
             else:
-                x0[:,i] = np.zeros(len(rhs[:,0]))
+                x0[:,i] = np.zeros(len(w_star_sol_j[:,0]))
         counter = 0
         thresh = 10
         x = x0
@@ -76,7 +76,7 @@ class CQModel:
                 scal = 1 
             else:
                 scal = 0.5
-            x,info = self.newton_iteration(j,rk,rhs,W0,x,history,tolsolver = tolsolver,coeff=scal**(counter-thresh))
+            x,info = self.newton_iteration(j,rk,w_star_sol_j,W0,x,history,tolsolver = 10**(-7),coeff=scal**(counter-thresh))
             if self.debug_mode:
                 print("INFO AFTER {} STEP: ".format(counter),info)
             if np.linalg.norm(x)>10**5:
@@ -84,7 +84,7 @@ class CQModel:
                 x = x0
                 break
             counter = counter+1
-        return x,counter
+        return x
 
     def newton_iteration(self,j,rk,rhs,W0,x0,history,tolsolver = 10**(-6),coeff = 1):
         t = j*rk.tau
@@ -128,7 +128,6 @@ class CQModel:
         from scipy.sparse.linalg import LinearOperator
         newton_operator = LinearOperator((m*dof,m*dof),newton_lambda)
         dx_long,info = gmres(newton_operator,rhs_long,restart = 2*m*dof,maxiter = 2*dof,x0=x0_pure_long,tol=1e-5)
-        #dxlong,info = gmres(NewtonOperator,rhsLong,restart = 2*dof,maxiter = 2*dof,x0=x0pureLong,tol=1e-5)
         if info != 0:
             print("GMRES Info not zero, Info: ", info)
         dx = 1j*np.zeros((dof,m))
@@ -181,19 +180,14 @@ class CQModel:
         W0 = []
         for j in range(m):
             W0.append(self.precomputing(rk.delta_eigs[j]))
-        rhs = np.zeros((dof,m*N+1))
+        conv_hist = np.zeros((dof,m*N+1))
         sol = np.zeros((dof,m*N+1))
-        extr = np.zeros((dof,m))
         counters = np.zeros(N)
         for j in range(0,N):
             if debugMode:
                 print(j*1.0/N)
             ## Calculating solution at timepoint tj
-
-   #         ###  Use simplified Weighted Newon's method ######
-            sol[:,j*m+1:(j+1)*m+1],info = self.newton_solver(j,rk,rhs[:,j*m+1:(j+1)*m+1],W0,extr,sol[:,:rk.m*(j)+1])
-
-            ## Solving Completed #####################################
+            sol[:,j*m+1:(j+1)*m+1] = self.time_step(W0,j,rk,sol[:,:rk.m*(j)+1],conv_hist[:,j*m+1:(j+1)*m+1])
             ## Calculating Local History:
             currLen = lengths[j]
             localHist = np.concatenate((sol[:,m*(j+1)+1-m*currLen:m*(j+1)+1],np.zeros((dof,m*currLen))),axis=1)
@@ -203,7 +197,7 @@ class CQModel:
                 break
             ## Updating Global History: 
             currLenCut = min(currLen,N-j-1)
-            rhs[:,(j+1)*m+1:(j+1)*m+1+currLenCut*m] += -localconvHist[:,currLen*m:currLen*m+currLenCut*m]
+            conv_hist[:,(j+1)*m+1:(j+1)*m+1+currLenCut*m] += localconvHist[:,currLen*m:currLen*m+currLenCut*m]
             if not reUse:
                 self.freqUse = dict()
                 self.freqObj = dict()
