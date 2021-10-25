@@ -38,3 +38,10 @@ class RKMethod():
 
     def reverse_diagonalize(self,b_dof_x_m):
         return np.matmul(b_dof_x_m,self.Tdiag.T)
+    def get_time_points(self,T):
+        N  = int(T/self.tau)
+        ts = np.zeros(self.m*N+1)
+        for j in range(N):
+            for k in range(self.m):
+                ts[j*self.m+k+1] = (j+self.c[k])
+        return self.tau*T*ts

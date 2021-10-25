@@ -16,14 +16,10 @@ class NewtonIntegrator(AbstractIntegrator):
     def time_step(self,s0,t,history,conv_history,x0):
         raise NotImplementedError("No time stepping given.") 
         ## Methods supplied by user:
-    def nonlinearity(self,x,t,phi):
+    def nonlinearity(self,x,t,time_index):
         raise NotImplementedError("No nonlinearity given.")
-    def nonlinearityInverse(self,x):
-        raise NotImplementedError("No inverse to nonlinearity given.")
     def harmonic_forward(self,s,b,precomp = None):
         raise NotImplementedError("No time-harmonic forward operator given.")
-    def harmonicBackward(self,s,b,precomp = None):
-        raise NotImplementedError("No time-harmonic backward operator given.")
     def applyJacobian(self,Jacobian,b):
         try: 
             return Jacobian.dot(b)
@@ -57,9 +53,10 @@ class NewtonIntegrator(AbstractIntegrator):
         return jacoba
 
     def time_step(self,W0,j,rk,history,w_star_sol_j):
-        x0 = np.zeros(w_star_sol_j.shape)
+        x0  = np.zeros(w_star_sol_j.shape)
+        rhs = np.zeros(w_star_sol_j.shape)
         for i in range(rk.m):
-            w_star_sol_j[:,i] = -w_star_sol_j[:,i] + self.righthandside(j*rk.tau+rk.c[i]*rk.tau,history=history)
+            rhs[:,i] = -w_star_sol_j[:,i] + self.righthandside(j*rk.tau+rk.c[i]*rk.tau,history=history)
             if j >=1:
                 x0[:,i] = self.extrapol(history[:,i+1:j*rk.m+i+1:rk.m],1)
             else:
@@ -73,7 +70,7 @@ class NewtonIntegrator(AbstractIntegrator):
                 scal = 1 
             else:
                 scal = 0.5
-            x,info = self.newton_iteration(j,rk,w_star_sol_j,W0,x,history,tolsolver = 10**(-7),coeff=scal**(counter-thresh))
+            x,info = self.newton_iteration(j,rk,rhs,W0,x,history,tolsolver = 10**(-7),coeff=scal**(counter-thresh))
             if self.debug_mode:
                 print("INFO AFTER {} STEP: ".format(counter),info)
             if np.linalg.norm(x)>10**5:
@@ -89,10 +86,11 @@ class NewtonIntegrator(AbstractIntegrator):
         x0_pure = x0
         dof = len(rhs)
         for stage_ind in range(m):
-            for j in range(dof):
-                if np.abs(x0[j,stage_ind])<10**(-10):
-                    x0[j,stage_ind] = 10**(-10)
-        jacob_list = [self.calc_jacobian(x0[:,k],t+rk.tau*rk.c[k],j*m+k) for k in range(m)]
+            for dof_index in range(dof):
+                if np.abs(x0[dof_index,stage_ind])<10**(-10):
+                    x0[dof_index,stage_ind] = 10**(-10)
+                
+        jacob_list = [self.calc_jacobian(x0[:,k],t+rk.tau*rk.c[k],j*m+k+1) for k in range(m)]
         stage_rhs = rk.diagonalize(x0+1j*np.zeros((dof,m)))
         ## Calculating right-hand side
         for stage_ind in range(m):
@@ -101,7 +99,7 @@ class NewtonIntegrator(AbstractIntegrator):
 
         ax0 = np.zeros((dof,m))
         for stage_ind in range(m):
-            ax0[:,stage_ind] = self.nonlinearity(x0[:,stage_ind],t+rk.tau*rk.c[stage_ind],j*m+stage_ind)
+            ax0[:,stage_ind] = self.nonlinearity(x0[:,stage_ind],t+rk.tau*rk.c[stage_ind],j*m+stage_ind+1)
         rhs_newton = stage_rhs+ax0-rhs
         ## Solving system W0y = b
         rhs_long = 1j*np.zeros(m*dof)
@@ -114,9 +112,9 @@ class NewtonIntegrator(AbstractIntegrator):
             x_diag   = rk.diagonalize(x_mat)
             grad_mat = 1j*np.zeros((dof,m))
             Bs_mat   = 1j*np.zeros((dof,m))
-            for j in range(m):
-                grad_mat[:,j] = self.applyJacobian(jacob_list[j],x_mat[:,j])
-                Bs_mat[:,j]   = self.harmonic_forward(rk.delta_eigs[j],x_diag[:,j],precomp = W0[j])
+            for m_index in range(m):
+                grad_mat[:,m_index] = self.applyJacobian(jacob_list[m_index],x_mat[:,m_index])
+                Bs_mat[:,m_index]   = self.harmonic_forward(rk.delta_eigs[m_index],x_diag[:,m_index],precomp = W0[m_index])
             res_mat  = rk.reverse_diagonalize(Bs_mat) + grad_mat
             new_res =  res_mat.T.ravel()
             return new_res
