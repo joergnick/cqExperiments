@@ -1,13 +1,14 @@
 import unittest
 import numpy as np
 import sys
-import bempp.api
+
 sys.path.append('cqToolbox')
 sys.path.append('../cqToolbox')
 from cqtoolbox import CQModel
+from newtonStepper import NewtonIntegrator
 
 ## Problems with analytic solutions 
-class LinearScatModel(CQModel):
+class LinearScatModel(NewtonIntegrator):
     def precomputing(self,s):
         return s**2
     def harmonic_forward(self,s,b,precomp = None):
@@ -18,7 +19,7 @@ class LinearScatModel(CQModel):
         return 0*x
     def ex_sol(self,ts):
         return ts**8
-class LinearScatModelSimple(CQModel):
+class LinearScatModelSimple(NewtonIntegrator):
     def precomputing(self,s):
         return s**1
     def harmonic_forward(self,s,b,precomp = None):
@@ -31,7 +32,7 @@ class LinearScatModelSimple(CQModel):
         return ts**3
 
 
-class NonlinearScatModel(CQModel):
+class NonlinearScatModel(NewtonIntegrator):
     def precomputing(self,s):
         return s**1
     def harmonic_forward(self,s,b,precomp = None):
@@ -43,7 +44,7 @@ class NonlinearScatModel(CQModel):
     def ex_sol(self,ts):
         return ts**3
 
-class NonlinearScatModel2Components(CQModel):
+class NonlinearScatModel2Components(NewtonIntegrator):
     def precomputing(self,s):
         return np.array([s**1,s**2])
     def harmonic_forward(self,s,b,precomp = None):
@@ -64,7 +65,7 @@ class TestCQMethods(unittest.TestCase):
         m = 1
         N = 30
         T = 1
-        sol,counters = modelL.simulate(T,N,method = "RadauIIA-"+str(m))
+        sol,counters = modelL.integrate(T,N,method = "RadauIIA-"+str(m))
         exSol        = modelL.ex_sol(np.linspace(0,T,N+1))
         err          = max(np.abs(sol[0,::m]-exSol))
         self.assertLess(np.abs(err),10**(-1))
@@ -75,7 +76,7 @@ class TestCQMethods(unittest.TestCase):
         m = 2
         N = 8
         T = 1
-        sol,counters = modelL.simulate(T,N,method = "RadauIIA-"+str(m))
+        sol,counters = modelL.integrate(T,N,method = "RadauIIA-"+str(m))
         exSol        = modelL.ex_sol(np.linspace(0,T,N+1))
         err          = max(np.abs(sol[0,::m]-exSol))
         self.assertLess(np.abs(err),10**(-2))
@@ -85,7 +86,7 @@ class TestCQMethods(unittest.TestCase):
         m = 3
         N = 9
         T = 1
-        sol,counters = modelL.simulate(T,N,method = "RadauIIA-"+str(m))
+        sol,counters = modelL.integrate(T,N,method = "RadauIIA-"+str(m))
         exSol        = modelL.ex_sol(np.linspace(0,T,N+1))
         err          = max(np.abs(sol[0,::m]-exSol))
         self.assertLess(np.abs(err),10**(-3))
@@ -95,7 +96,7 @@ class TestCQMethods(unittest.TestCase):
         m = 2
         N = 11
         T = 2
-        sol,counters = modelN.simulate(T,N,method = "RadauIIA-"+str(m))
+        sol,counters = modelN.integrate(T,N,method = "RadauIIA-"+str(m))
         exSol        = modelN.ex_sol(np.linspace(0,T,N+1))
         err          = max(np.abs(sol[0,::m]-exSol))
         self.assertLess(np.abs(err),10**(-3))
@@ -104,7 +105,7 @@ class TestCQMethods(unittest.TestCase):
         m = 2
         N = 15
         T = 2
-        sol,counters = modelN.simulate(T,N,method = "RadauIIA-"+str(m))
+        sol,counters = modelN.integrate(T,N,method = "RadauIIA-"+str(m))
         exSol        = modelN.ex_sol(np.linspace(0,T,N+1))
         err          = np.max(np.max(np.abs(sol[:,::m]-exSol)))
         self.assertLess(np.abs(err),10**(-3))
@@ -115,7 +116,7 @@ class TestCQMethods(unittest.TestCase):
         m = 3
         N = 7
         T = 2
-        sol,counters = modelN.simulate(T,N,method = "RadauIIA-"+str(m))
+        sol,counters = modelN.integrate(T,N,method = "RadauIIA-"+str(m))
         exSol        = modelN.ex_sol(np.linspace(0,T,N+1))
         err          = max(np.abs(sol[0,::m]-exSol))
         self.assertLess(np.abs(err),10**(-7))

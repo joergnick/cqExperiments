@@ -166,7 +166,7 @@ class CQModel:
             extrU = extrU+gammas[j]*u[:,-p-1+j]
         return extrU
     
-    def simulate(self,T,N,method = "RadauIIA-2",tolsolver = 10**(-5),reUse=True,debugMode=False):
+    def integrate(self,T,N,method = "RadauIIA-2",tolsolver = 10**(-5),re_use=True,debug_mode=False):
         tau = T*1.0/N
         rk = RKMethod(method,tau)
         m = rk.m
@@ -184,7 +184,7 @@ class CQModel:
         sol = np.zeros((dof,m*N+1))
         counters = np.zeros(N)
         for j in range(0,N):
-            if debugMode:
+            if debug_mode:
                 print(j*1.0/N)
             ## Calculating solution at timepoint tj
             sol[:,j*m+1:(j+1)*m+1] = self.time_step(W0,j,rk,sol[:,:rk.m*(j)+1],conv_hist[:,j*m+1:(j+1)*m+1])
@@ -198,7 +198,7 @@ class CQModel:
             ## Updating Global History: 
             currLenCut = min(currLen,N-j-1)
             conv_hist[:,(j+1)*m+1:(j+1)*m+1+currLenCut*m] += localconvHist[:,currLen*m:currLen*m+currLenCut*m]
-            if not reUse:
+            if not re_use:
                 self.freqUse = dict()
                 self.freqObj = dict()
         return sol ,counters
