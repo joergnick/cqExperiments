@@ -38,8 +38,10 @@ class AbstractIntegrator:
             it = it+1
         return lengths
 
-    def integrate(self,T,N,method = "RadauIIA-2",reUse=True,debugMode=False):
-        tau = T*1.0/N
+    def integrate(self,T,rk,reUse=True,debugMode=False):
+        tau = rk.tau
+        m   = rk.m
+        N   = int(T/tau)
         ## Initializing right-hand side:
         lengths = self.createFFTLengths(N)
         try:
@@ -47,8 +49,7 @@ class AbstractIntegrator:
         except:
             dof = 1
         ## Actual solving:
-        [A_RK,b_RK,c_RK,m] = self.tdForward.get_method_characteristics(method)
-        S0 = np.linalg.inv(A_RK)/tau
+        S0 = np.linalg.inv(rk.A)/rk.tau
         delta_eigs,T_diag =np.linalg.eig(S0) 
         W0 = []
         for j in range(m):
@@ -59,14 +60,14 @@ class AbstractIntegrator:
             if debugMode: print(j*1.0/N)
             ## Calculating solution at timepoint tj
             tj = tau*j
-            next_sol,info = self.time_step(W0,j,tau,method,sol[:,:j*m+1],conv_hist[:,j*m+1:(j+1)*m+1])
+            next_sol,info = self.time_step(W0,j,rk,sol[:,:j*m+1],conv_hist[:,j*m+1:(j+1)*m+1])
             sol[:,j*m+1:(j+1)*m+1] = next_sol
             ## Solving Completed #####################################
             ## Calculating Local History:
             curr_len = lengths[j]
             local_hist = np.concatenate((sol[:,m*(j+1)+1-m*curr_len:m*(j+1)+1],np.zeros((dof,m*curr_len))),axis=1)
             if len(local_hist[0,:])>=1:
-                local_conv_hist = np.real(self.tdForward.apply_RKconvol(local_hist,(len(local_hist[0,:]))*tau/m,method = method,show_progress=False))
+                local_conv_hist = np.real(self.tdForward.apply_RKconvol(local_hist,(len(local_hist[0,:]))*tau/m,method = rk.method_name,show_progress=False))
             else:
                 break
             ## Updating Global History: 

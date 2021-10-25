@@ -10,7 +10,7 @@ from cqtoolbox import CQModel
 class LinearScatModel(CQModel):
     def precomputing(self,s):
         return s**2
-    def harmonicForward(self,s,b,precomp = None):
+    def harmonic_forward(self,s,b,precomp = None):
         return precomp*b
     def righthandside(self,t,history = None):
         return 8*7*t**6
@@ -21,7 +21,7 @@ class LinearScatModel(CQModel):
 class LinearScatModelSimple(CQModel):
     def precomputing(self,s):
         return s**1
-    def harmonicForward(self,s,b,precomp = None):
+    def harmonic_forward(self,s,b,precomp = None):
         return precomp*b
     def righthandside(self,t,history = None):
         return 3*t**2
@@ -34,7 +34,7 @@ class LinearScatModelSimple(CQModel):
 class NonlinearScatModel(CQModel):
     def precomputing(self,s):
         return s**1
-    def harmonicForward(self,s,b,precomp = None):
+    def harmonic_forward(self,s,b,precomp = None):
         return precomp*b
     def righthandside(self,t,history = None):
         return 3*t**2+t**9
@@ -46,7 +46,7 @@ class NonlinearScatModel(CQModel):
 class NonlinearScatModel2Components(CQModel):
     def precomputing(self,s):
         return np.array([s**1,s**2])
-    def harmonicForward(self,s,b,precomp = None):
+    def harmonic_forward(self,s,b,precomp = None):
         return np.array([precomp[0]*b[0],precomp[1]*b[1]])
     def righthandside(self,t,history = None):
         return np.array([3*t**2+t**9 +t**4,4*3*t**2+t**4])
@@ -113,12 +113,12 @@ class TestCQMethods(unittest.TestCase):
     def test_nonlinear_RadauIIA_3(self):
         modelN       = NonlinearScatModel()
         m = 3
-        N = 7
+        N = 30
         T = 2
         sol,counters = modelN.simulate(T,N,method = "RadauIIA-"+str(m))
         exSol        = modelN.ex_sol(np.linspace(0,T,N+1))
         err          = max(np.abs(sol[0,::m]-exSol))
-        self.assertLess(np.abs(err),10**(-7))
+        self.assertLess(np.abs(err),10**(-4))
     
     def test_extrapolation_p1(self):
         modelN       = NonlinearScatModel()

@@ -7,7 +7,7 @@ from linearcq import Conv_Operator
 import sys
 class CQModel:
     def __init__(self):
-        self.tdForward = Conv_Operator(self.forward_wrapper)
+        self.tdForward = Conv_Operator(self.forwardWrapper)
         self.freqObj = dict()
         self.freqUse = dict()
         self.countEv = 0
@@ -18,7 +18,7 @@ class CQModel:
         raise NotImplementedError("No nonlinearity given.")
     def nonlinearityInverse(self,x):
         raise NotImplementedError("No inverse to nonlinearity given.")
-    def harmonic_forward(self,s,b,precomp = None):
+    def harmonicForward(self,s,b,precomp = None):
         raise NotImplementedError("No time-harmonic forward operator given.")
     def harmonicBackward(self,s,b,precomp = None):
         raise NotImplementedError("No time-harmonic backward operator given.")
@@ -38,103 +38,91 @@ class CQModel:
     def preconditioning(self,precomp):
         raise NotImplementedError("No preconditioner given.")
         ## Methods provided by class
-    def forward_wrapper(self,s,b):
+    def forwardWrapper(self,s,b):
         if s in self.freqObj:
             self.freqUse[s] = self.freqUse[s]+1
         else:
             self.freqObj[s] = self.precomputing(s)
             self.freqUse[s] = 1
-        return self.harmonic_forward(s,b,precomp=self.freqObj[s])
+        return self.harmonicForward(s,b,precomp=self.freqObj[s])
 
 
-    def calc_jacobian(self,x0,t,time_index):
+    def calc_jacobian(self,x0,t,phi=0):
         taugrad = 10**(-8)
         dof = len(x0)
         idMat = np.identity(dof)
         jacoba = np.zeros((dof,dof))
         for i in range(dof):
-            y_plus =  self.nonlinearity(x0+taugrad*idMat[:,i],t,time_index)
-            y_minus = self.nonlinearity(x0-taugrad*idMat[:,i],t,time_index)
+            y_plus =  self.nonlinearity(x0+taugrad*idMat[:,i],t,phi)
+            y_minus = self.nonlinearity(x0-taugrad*idMat[:,i],t,phi)
             jacoba[:,i] = (y_plus-y_minus)/(2*taugrad)
         return jacoba
 
-    def newton_solver(self,j,rk,rhs,W0, x0,history,tolsolver = 10**(-4),debugmode=False,coeff = 1):
-        x0 = np.zeros(rhs.shape)
-
-        print("Historyshape: ",history.shape)
-
-
-        for i in range(rk.m):
-            rhs[:,i] = rhs[:,i] + self.righthandside(j*rk.tau+rk.c[i]*rk.tau,history=history)
-        counter = 0
-        thresh = 3
-        x = x0
-        info = 1
-        while info >0:
-                if counter <=thresh:
-                    scal = 1 
-                else:
-                    scal = 0.9
-                x,info = self.newton_iteration(j,rk,rhs,W0,x,history,coeff=scal**(counter-thresh))
-                if debugmode:
-                    print("INFO AFTER {} STEP: ".format(counter),info)
-                if np.linalg.norm(x)>10**5:
-                    print("Warning, setback after divergence in Newton's method.")
-                    x = x0
-                    break
-                counter = counter+1
-        return x,counter
-
-    def newton_iteration(self,j,rk,rhs,W0,x0,history,tolsolver = 10**(-6),debugmode=False,coeff = 1):
-        t = j*rk.tau
-        m = rk.m
-       # for i in range(rk.m):
-       #     rhs[:,i] = rhs[:,i] + self.righthandside(t+rk.c[i]*rk.tau,history=history)
-        x0_pure = x0
+    def newtonsolver(self,t,rk,rhs,W0, x0,rhsInhom,tolsolver = 10**(-4),debugmode=False,coeff = 1):
+        x0pure = x0
         dof = len(rhs)
-        for stage_ind in range(m):
+        m = len(W0)
+        for stageInd in range(m):
             for j in range(dof):
-                if np.abs(x0[j,stage_ind])<10**(-10):
-                    x0[j,stage_ind] = 10**(-10)
-        jacob_list = [self.calc_jacobian(x0[:,k],t+rk.tau*rk.c[k],j*m+k) for k in range(m)]
-        stage_rhs = rk.diagonalize(x0+1j*np.zeros((dof,m)))
-        ## Calculating right-hand side
-        for stage_ind in range(m):
-            stage_rhs[:,stage_ind] = self.harmonic_forward(rk.delta_eigs[stage_ind],stage_rhs[:,stage_ind],precomp=W0[stage_ind])
-        stage_rhs = rk.reverse_diagonalize(stage_rhs)
+                if np.abs(x0[j,stageInd])<10**(-10):
+                    x0[j,stageInd] = 10**(-10)
 
+        jacobList = [self.calc_jacobian(x0[:,k],t,rhsInhom[:,k]) for k in range(m)]
+
+        stageRHS = rk.diagonalize(x0+1j*np.zeros((dof,m)))
+        ## Calculating right-hand side
+        for stageInd in range(m):
+            stageRHS[:,stageInd] = self.harmonicForward(rk.delta_eigs[stageInd],stageRHS[:,stageInd],precomp=W0[stageInd])
+        stageRHS = rk.reverse_diagonalize(stageRHS)
+        #rhsNewton = [stageRHS[:,k]+self.nonlinearity(x0[:,k])-rhs[:,k] for k in range(m)]
         ax0 = np.zeros((dof,m))
-        for stage_ind in range(m):
-            ax0[:,stage_ind] = self.nonlinearity(x0[:,stage_ind],t+rk.tau*rk.c[stage_ind],j*m+stage_ind)
-        rhs_newton = stage_rhs+ax0-rhs
+        
+        for stageInd in range(m):
+            ax0[:,stageInd] = self.nonlinearity(x0[:,stageInd],t+rk.tau*rk.c[stageInd],rhsInhom[:,stageInd])
+        rhsNewton = stageRHS+ax0-rhs
         ## Solving system W0y = b
-        rhs_long = 1j*np.zeros(m*dof)
-        x0_pure_long = 1j*np.zeros(m*dof)
-        for stage_ind in range(m):
-            rhs_long[stage_ind*dof:(stage_ind+1)*dof] = rhs_newton[:,stage_ind]
-            x0_pure_long[stage_ind*dof:(stage_ind+1)*dof] = x0_pure[:,stage_ind]
-        def newton_func(x_dummy):
+        rhsLong = 1j*np.zeros(m*dof)
+        x0pureLong = 1j*np.zeros(m*dof)
+        for stageInd in range(m):
+            rhsLong[stageInd*dof:(stageInd+1)*dof] = rhsNewton[:,stageInd]
+            x0pureLong[stageInd*dof:(stageInd+1)*dof] = x0pure[:,stageInd]
+        def NewtonFunc(x_dummy):
             x_mat    = x_dummy.reshape(m,dof).T
             x_diag   = rk.diagonalize(x_mat)
+
             grad_mat = 1j*np.zeros((dof,m))
             Bs_mat   = 1j*np.zeros((dof,m))
             for j in range(m):
-                grad_mat[:,j] = self.applyJacobian(jacob_list[j],x_mat[:,j])
-                Bs_mat[:,j]   = self.harmonic_forward(rk.delta_eigs[j],x_diag[:,j],precomp = W0[j])
+                grad_mat[:,j] = self.applyJacobian(jacobList[j],x_mat[:,j])
+                Bs_mat[:,j]   = self.harmonicForward(rk.delta_eigs[j],x_diag[:,j],precomp = W0[j])
             res_mat  = rk.reverse_diagonalize(Bs_mat) + grad_mat
             new_res =  res_mat.T.ravel()
             return new_res
-
-        newton_lambda = lambda x: newton_func(x)
+###################################################
+#            xdummy = x_dummy
+#            idMat  = np.identity(dof)
+#            Tinvdof = np.kron(Tinv,idMat)
+#            Tdiagdof = np.kron(Tdiag,idMat)
+#            ydummy = 1j*np.zeros(dof*m)
+#            BsTxdummy = 1j*np.zeros(dof*m)
+#            Daxdummy = 1j*np.zeros(dof*m)
+#            Txdummy = Tinvdof.dot(xdummy)
+#            for j in range(m):  
+#                BsTxdummy[j*dof:(j+1)*dof] = self.harmonicForward(deltaEigs[j],Txdummy[j*dof:(j+1)*dof],precomp = W0[j])
+#                Daxdummy[j*dof:(j+1)*dof] =self.applyJacobian(jacobList[j],xdummy[j*dof:(j+1)*dof])
+#            ydummy = Tdiagdof.dot(BsTxdummy)+Daxdummy
+#            return ydummy
+###################################################
+        NewtonLambda = lambda x: NewtonFunc(x)
         from scipy.sparse.linalg import LinearOperator
-        newton_operator = LinearOperator((m*dof,m*dof),newton_lambda)
-        dx_long,info = gmres(newton_operator,rhs_long,restart = 2*m*dof,maxiter = 2*dof,x0=x0_pure_long,tol=1e-5)
+        NewtonOperator = LinearOperator((m*dof,m*dof),NewtonLambda)
+        dxlong,info = gmres(NewtonOperator,rhsLong,restart = 2*m*dof,maxiter = 2*dof,x0=x0pureLong,tol=1e-5)
         #dxlong,info = gmres(NewtonOperator,rhsLong,restart = 2*dof,maxiter = 2*dof,x0=x0pureLong,tol=1e-5)
         if info != 0:
             print("GMRES Info not zero, Info: ", info)
         dx = 1j*np.zeros((dof,m))
         for stageInd in range(m):
-            dx[:,stageInd] = dx_long[dof*stageInd:dof*(stageInd+1)]
+            dx[:,stageInd] = dxlong[dof*stageInd:dof*(stageInd+1)]
         x1 = x0-coeff*dx
         #print("np.linalg.norm(dx) = ",np.linalg.norm(dx))
         if coeff*np.linalg.norm(dx)/dof<tolsolver:
@@ -168,10 +156,8 @@ class CQModel:
             extrU = extrU+gammas[j]*u[:,-p-1+j]
         return extrU
     
-    def simulate(self,T,N,method = "RadauIIA-2",tolsolver = 10**(-5),reUse=True,debugMode=False):
+    def simulate(self,T,N,rhsInhom=None,method = "RadauIIA-2",tolsolver = 10**(-5),reUse=True,debugMode=False):
         tau = T*1.0/N
-        rk = RKMethod(method,tau)
-        m = rk.m
         ## Initializing right-hand side:
         lengths = self.createFFTLengths(N)
         try:
@@ -179,25 +165,54 @@ class CQModel:
         except:
             dof = 1
         ## Actual solving:
+        rk  = RKMethod(method,tau)
+        [A_RK,b_RK,c_RK,m] = self.tdForward.get_method_characteristics(method)
+        charMatrix0 = np.linalg.inv(A_RK)/tau
+        deltaEigs,Tdiag =np.linalg.eig(charMatrix0) 
+    #   print(np.matmul(Tdiag,np.linalg.inv(Tdiag)))
+    #   print(np.matmul(np.matmul(np.linalg.inv(Tdiag),charMatrix0),Tdiag))
         W0 = []
         for j in range(m):
-            W0.append(self.precomputing(rk.delta_eigs[j]))
+            W0.append(self.precomputing(deltaEigs[j]))
+        #zeta0 = self.tdForward.delta(0)/tau
+        #W0 = self.precomputing(zeta0)
         rhs = np.zeros((dof,m*N+1))
         sol = np.zeros((dof,m*N+1))
         extr = np.zeros((dof,m))
         counters = np.zeros(N)
+        if rhsInhom is None:
+            rhsInhom = np.zeros((dof,m*N+1))
         for j in range(0,N):
             if debugMode:
                 print(j*1.0/N)
             ## Calculating solution at timepoint tj
-            for i in range(rk.m):
+            tj = tau*j
+            for i in range(m):
+                rhs[:,j*m+i+1] = rhs[:,j*m+i+1] + self.righthandside(tj+c_RK[i]*tau,history=sol[:,:j*m])
                 if j >=1:
-                    extr[:,i] = self.extrapol(sol[:,i+1:j*rk.m+i+1:rk.m],1)
+                    extr[:,i] = self.extrapol(sol[:,i+1:j*m+i+1:m],1)
                 else:
-                    extr[:,i] = np.zeros(len(rhs[:,0]))
+                    extr[:,i] = np.zeros(dof)
    #         ###  Use simplified Weighted Newon's method ######
-            sol[:,j*m+1:(j+1)*m+1],info = self.newton_solver(j,rk,rhs[:,j*m+1:(j+1)*m+1],W0,extr,sol[:,:rk.m*j])
+
+            sol[:,j*m+1:(j+1)*m+1],info = self.newtonsolver(tj,rk,rhs[:,j*m+1:(j+1)*m+1],W0,extr,rhsInhom[:,j*m+1:(j+1)*m+1])
             #print("First Newton step finished. Info: ",info, "Norm of solution: ", np.linalg.norm(sol[:,j*m+1:(j+1)*m+1]))
+            counter = 0
+            thresh = 3
+            while info >0:
+                    if counter <=thresh:
+                        scal = 1 
+                    else:
+                        scal = 0.9
+                    sol[:,j*m+1:(j+1)*m+1],info = self.newtonsolver(tj,rk,rhs[:,j*m+1:(j+1)*m+1],W0,extr,rhsInhom[:,j*m+1:(j+1)*m+1],coeff=scal**(counter-thresh))
+                    if debugMode:
+                        print("INFO AFTER {} STEP: ".format(counter),info)
+                    if np.linalg.norm(sol[:,j*m+1:(j+1)*m+1])>10**5:
+                        sol[:,j*m+1:(j+1)*m+1] = extr
+                        break
+                    counter = counter+1
+            #print("Extr-sol: ",np.linalg.norm(extr-sol[:,j*m+1:(j+1)*m+1]))
+            counters[j] = counter
 
             ## Solving Completed #####################################
             ## Calculating Local History:

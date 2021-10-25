@@ -4,8 +4,8 @@ class RKMethod():
     "Collects data and methods corresponding to a Runge-Kutta multistage method."
     method_name = ""
     c,A,b,m = 0,0,0,0
-    delta_eigs,Tdiag,Tinv,delta_zero  = 0,0,0,0
-    def __init__(self,method,tau=1):
+    delta_eigs,Tdiag,Tinv,delta_zero,tau  = 0,0,0,0,0
+    def __init__(self,method,tau):
         if (method =="RadauIIA-1") or (method =="BDF-1") or (method == "Implicit Euler"):
             self.A=np.array([[1]])
             self.c=np.array([1])
@@ -24,8 +24,9 @@ class RKMethod():
         else:
             raise ValueError("Given method "+method+" not implemented.")
         self.method_name = method
-        self.m = len(self.c)
-        self.delta_zero = np.linalg.inv(self.A/tau)
+        self.m    = len(self.c)
+        self.tau  = tau
+        self.delta_zero = np.linalg.inv(self.A)/tau
         self.delta_eigs,self.Tdiag  = np.linalg.eig(self.delta_zero)
         self.Tinv = np.linalg.inv(self.Tdiag)
     def diagonalize(self,x):
