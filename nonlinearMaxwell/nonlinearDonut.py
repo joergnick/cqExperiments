@@ -1,6 +1,10 @@
-from cqtoolbox import CQModel
-
+import sys
+sys.path.append('cqToolbox')
+sys.path.append('../cqToolbox')
+#from cqtoolbox import CQModel
+from newtonStepper import NewtonIntegrator
 from linearcq import Conv_Operator
+from rkmethods import RKMethod
 from customOperators import precompMM,sparseWeightedMM,applyNonlinearity
 import bempp.api
 import os.path
@@ -25,8 +29,8 @@ def Da(x):
 #        x=10**(-15)*np.ones(3)
 #    return np.eye(3)
     return -0.5*np.linalg.norm(x)**(-2.5)*np.outer(x,x)+np.linalg.norm(x)**(-0.5)*np.eye(3)
-def calcRighthandside(c_RK,grid,N,T):
-    m = len(c_RK)
+def calc_gtH(rk,grid,N,T):
+    m = len(rk.c)
     tau = T*1.0/N
     RT_space=bempp.api.function_space(grid, "RT",0)
     dof = RT_space.global_dof_count
@@ -34,7 +38,7 @@ def calcRighthandside(c_RK,grid,N,T):
     curls = np.zeros((dof,m*N))
     for j in range(N):
         for stageInd in range(m):
-            t = tau*j+tau*c_RK[stageInd] 
+            t = tau*j+tau*rk.c[stageInd] 
             def func_rhs(x,n,domain_index,result):
                 inc =  np.array([np.exp(-50*(x[2]-t+2)**2), 0. * x[2], 0. * x[2]])    
                 tang = np.cross(n,np.cross(inc, n))
@@ -44,35 +48,38 @@ def calcRighthandside(c_RK,grid,N,T):
                 curlU=np.array([ 0. * x[2],-100*(x[2]-t+2)*np.exp(-50*(x[2]-t+2)**2), 0. * x[2]])
                 result[:] = np.cross(curlU,n)
             curlfun_inc = bempp.api.GridFunction(RT_space,fun = func_curls,dual_space = RT_space) 
-            curls[:,j*m+stageInd]  = curlfun_inc.coefficients
-            rhs[dof:,j*m+stageInd] = tangtrace_inc.coefficients
+            curls[:,j*rk.m+stageInd]  = curlfun_inc.coefficients
+            rhs[dof:,j*rk.m+stageInd] = tangtrace_inc.coefficients
     def sinv(s,b):
         return s**(-1)*b
-    IntegralOperator=Conv_Operator(sinv)
-    gTH=IntegralOperator.apply_RKconvol(curls,T,method="RadauIIA-"+str(m),show_progress=False)
+    IntegralOperator = Conv_Operator(sinv)
+    gTH = IntegralOperator.apply_RKconvol(curls,T,method="RadauIIA-"+str(m),show_progress=False)
     gTH = np.concatenate((np.zeros((dof,1)),gTH),axis = 1)
     #rhs[0:dof,:]=np.real(gTH)-rhs[0:dof,:]
     return gTH
 
 
-def nonlinearScattering(N,gridfilename,T,m):
+def nonlinearScattering(N,gridfilename,T,rk):
     import scipy.io
-    mat_contents=scipy.io.loadmat(gridfilename)
-    Nodes=np.array(mat_contents['Nodes']).T
-    rawElements=mat_contents['Elements']
-    for j in range(len(rawElements)):
-        betw=rawElements[j][0]
-        rawElements[j][0]=rawElements[j][1]
-        rawElements[j][1]=betw
-    Elements=np.array(rawElements).T
-    Elements=Elements-1
-    grid=bempp.api.grid_from_element_data(Nodes,Elements)
-
+#    mat_contents=scipy.io.loadmat(gridfilename)
+#    Nodes=np.array(mat_contents['Nodes']).T
+#    rawElements=mat_contents['Elements']
+#    ## Switching orientation
+#    for j in range(len(rawElements)):
+#        betw=rawElements[j][0]
+#        rawElements[j][0]=rawElements[j][1]
+#        rawElements[j][1]=betw
+#    Elements=np.array(rawElements).T
+#    ## Subtraction due to different conventions of distmesh and bempp, grid starts from 0 instead of 1
+#    Elements=Elements-1
+#    grid=bempp.api.grid_from_element_data(Nodes,Elements)
+    grid = bempp.api.shapes.sphere(h=1)
     RT_space=bempp.api.function_space(grid, "RT",0)
     gridfunList,neighborlist,domainDict = precompMM(RT_space)
     id_op=bempp.api.operators.boundary.sparse.identity(RT_space, RT_space, RT_space)
     id_weak = id_op.weak_form()
-    class ScatModel(CQModel):
+    gtH     = calc_gtH(rk,grid,N,T)
+    class ScatModel(NewtonIntegrator):
         def precomputing(self,s):
             NC_space=bempp.api.function_space(grid, "NC",0)
             RT_space=bempp.api.function_space(grid, "RT",0)
@@ -86,30 +93,30 @@ def nonlinearScattering(N,gridfilename,T,m):
             blocks[1,0] = -magn.weak_form()-1.0/2*identity.weak_form()
             blocks[1,1] = -elec.weak_form()
             return [bempp.api.BlockedDiscreteOperator(blocks),identity2]
-        def harmonicForward(self,s,b,precomp = None):
+        def harmonic_forward(self,s,b,precomp = None):
             return precomp[0]*b
-        def calcJacobian(self,x,t,inhom):
+        def calc_jacobian(self,x,t,time_index):
             weightphiGF = bempp.api.GridFunction(RT_space,coefficients = x[:dof])
-            weightIncGF = bempp.api.GridFunction(RT_space,coefficients = inhom)
+            weightIncGF = bempp.api.GridFunction(RT_space,coefficients = gtH[:,time_index])
             jacob = sparseWeightedMM(RT_space,weightphiGF+weightIncGF,Da,gridfunList,neighborlist,domainDict)
             return jacob
-        def applyJacobian(self,jacob,x):
+        def apply_jacobian(self,jacob,x):
             dof = len(x)/2
             jx = 1j*np.zeros(2*dof)
             jx[:dof] = jacob*x[:dof]
             return jx
-        def nonlinearity(self,coeff,t,inhom):
+        def nonlinearity(self,coeff,t,time_index):
             dof = len(coeff)/2
             phiGridFun = bempp.api.GridFunction(RT_space,coefficients=coeff[:dof]) 
-            gTHFun = bempp.api.GridFunction(RT_space,coefficients = inhom)
-            agridFun= applyNonlinearity(phiGridFun+gTHFun,a,gridfunList,domainDict)
-            result = np.zeros(2*dof) 
+            gTHFun     = bempp.api.GridFunction(RT_space,coefficients = gtH[:,time_index])
+            agridFun   = applyNonlinearity(phiGridFun+gTHFun,a,gridfunList,domainDict)
+            result     = np.zeros(2*dof) 
             result[:dof] = id_weak*agridFun.coefficients
             return result
     
         def righthandside(self,t,history=None):
             def func_rhs(x,n,domain_index,result):
-                inc =  np.array([np.exp(-50*(x[2]-t+2)**2), 0. * x[2], 0. * x[2]])    
+                inc  = np.array([np.exp(-50*(x[2]-t+2)**2), 0. * x[2], 0. * x[2]])    
                 tang = np.cross(np.cross(inc, n),n)
                 curlU=np.array([ 0. * x[2],-100*(x[2]-t+2)*np.exp(-50*(x[2]-t+2)**2), 0. * x[2]])   
                 result[:] = tang
@@ -125,28 +132,28 @@ def nonlinearScattering(N,gridfilename,T,m):
     model = ScatModel()
     import time
     start = time.time()
-    [A_RK,b_RK,c_RK,m] = model.tdForward.get_method_characteristics("RadauIIA-"+str(m))
     dof = RT_space.global_dof_count
     print("GLOBAL DOF: ",dof)
-    rhsInhom = calcRighthandside(c_RK,grid,N,T)
     print("Finished RHS.")
-    sol ,counters  = model.simulate(T,N,rhsInhom =rhsInhom, method = "RadauIIA-2",reUse=False)
+    sol ,counters  = model.integrate(T,N, method = rk.method_name,re_use=False,debug_mode=True)
     end = time.time()
     import matplotlib.pyplot as plt
     dof = RT_space.global_dof_count
     norms = [np.linalg.norm(sol[:,k]) for k in range(len(sol[0,:]))]
     return sol
 
-gridfilename='grids/TorusDOF340.mat'
-m = 3
-N= 200
-T=8
-sol = nonlinearScattering(N,gridfilename,T,m)
+gridfilename='null'
+#gridfilename='grids/TorusDOF340.mat'
+T= 1
+N=10
+tau = T*1.0/N
+rk = RKMethod("RadauIIA-2",tau)
+sol = nonlinearScattering(N,gridfilename,T,rk)
 filename = 'data/donutDOF340N200.npy'
 resDict = dict()
 resDict["sol"] = sol
 resDict["T"] = T
-resDict["m"] = m
+resDict["m"] = rk.m
 resDict["N"] = N
 np.save(filename,resDict)
 

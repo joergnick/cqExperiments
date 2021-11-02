@@ -3,7 +3,6 @@ from scipy.sparse.linalg import gmres
 from scipy.optimize import newton_krylov
 import numpy as np
 from linearcq import Conv_Operator
-import sys
 from rkmethods import RKMethod
 class AbstractIntegrator:
     def __init__(self):

@@ -56,6 +56,22 @@ class NonlinearScatModel2Components(NewtonIntegrator):
     def ex_sol(self,ts):
         return np.array([ts**3,ts**4])
 
+class NonlinearScatModelCustomGradient(NewtonIntegrator):
+    def precomputing(self,s):
+        return np.array([s**1,s**2])
+    def harmonic_forward(self,s,b,precomp = None):
+        return np.array([precomp[0]*b[0],precomp[1]*b[1]])
+    def righthandside(self,t,history = None):
+        return np.array([3*t**2+t**9 +t**4,4*3*t**2+t**4])
+    def nonlinearity(self,x,t,time_index):
+        return np.array([x[0]**3+x[1],x[1]])
+    def calc_jacobian(self,x,t,time_index):
+        return np.array([[3*x[0]**2,1],[0,1]])
+    def apply_jacobian(self,jacobian,x):
+        return jacobian.dot(x)
+    def ex_sol(self,ts):
+        return np.array([ts**3,ts**4])
+
 
 
 
@@ -123,6 +139,24 @@ class TestCQMethods(unittest.TestCase):
         exSol        = modelN.ex_sol(np.linspace(0,T,N+1))
         err          = np.max(np.max(np.abs(sol[:,::m]-exSol)))
         self.assertLess(np.abs(err),10**(-2))
+    def test_nonlinear_RadauIIA_2_custom_gradient(self):
+        modelN       = NonlinearScatModelCustomGradient()
+        m = 2
+        N = 31
+        T = 2
+        sol,counters = modelN.integrate(T,N,method = "RadauIIA-"+str(m))
+        exSol        = modelN.ex_sol(np.linspace(0,T,N+1))
+        err          = np.max(np.max(np.abs(sol[:,::m]-exSol)))
+        self.assertLess(np.abs(err),10**(-4))
+    def test_nonlinear_RadauIIA_3_custom_gradient(self):
+        modelN       = NonlinearScatModelCustomGradient()
+        m = 3
+        N = 31
+        T = 2
+        sol,counters = modelN.integrate(T,N,method = "RadauIIA-"+str(m))
+        exSol        = modelN.ex_sol(np.linspace(0,T,N+1))
+        err          = np.max(np.max(np.abs(sol[:,::m]-exSol)))
+        self.assertLess(np.abs(err),10**(-8))
     def test_nonlinear_inhom_RadauIIA_2(self):
         N       = 15
         T       = 2

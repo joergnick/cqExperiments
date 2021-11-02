@@ -13,16 +13,14 @@ class NewtonIntegrator(AbstractIntegrator):
         self.freqUse = dict()
         self.countEv = 0
         self.debug_mode = False
-    def time_step(self,s0,t,history,conv_history,x0):
-        raise NotImplementedError("No time stepping given.") 
         ## Methods supplied by user:
     def nonlinearity(self,x,t,time_index):
         raise NotImplementedError("No nonlinearity given.")
     def harmonic_forward(self,s,b,precomp = None):
         raise NotImplementedError("No time-harmonic forward operator given.")
-    def applyJacobian(self,Jacobian,b):
+    def apply_jacobian(self,jacobian,b):
         try: 
-            return Jacobian.dot(b)
+            return jacobian.dot(b)
         except:
             raise NotImplementedError("Gradient has no custom applyGradient method, however * is not supported.") 
     def righthandside(self,t,history=None):
@@ -89,7 +87,6 @@ class NewtonIntegrator(AbstractIntegrator):
             for dof_index in range(dof):
                 if np.abs(x0[dof_index,stage_ind])<10**(-10):
                     x0[dof_index,stage_ind] = 10**(-10)
-                
         jacob_list = [self.calc_jacobian(x0[:,k],t+rk.tau*rk.c[k],j*m+k+1) for k in range(m)]
         stage_rhs = rk.diagonalize(x0+1j*np.zeros((dof,m)))
         ## Calculating right-hand side
@@ -113,7 +110,7 @@ class NewtonIntegrator(AbstractIntegrator):
             grad_mat = 1j*np.zeros((dof,m))
             Bs_mat   = 1j*np.zeros((dof,m))
             for m_index in range(m):
-                grad_mat[:,m_index] = self.applyJacobian(jacob_list[m_index],x_mat[:,m_index])
+                grad_mat[:,m_index] = self.apply_jacobian(jacob_list[m_index],x_mat[:,m_index])
                 Bs_mat[:,m_index]   = self.harmonic_forward(rk.delta_eigs[m_index],x_diag[:,m_index],precomp = W0[m_index])
             res_mat  = rk.reverse_diagonalize(Bs_mat) + grad_mat
             new_res =  res_mat.T.ravel()
@@ -122,7 +119,7 @@ class NewtonIntegrator(AbstractIntegrator):
         newton_lambda = lambda x: newton_func(x)
         from scipy.sparse.linalg import LinearOperator
         newton_operator = LinearOperator((m*dof,m*dof),newton_lambda)
-        dx_long,info = gmres(newton_operator,rhs_long,restart = 2*m*dof,maxiter = 2*dof,x0=x0_pure_long,tol=1e-5)
+        dx_long,info = gmres(newton_operator,rhs_long,maxiter = 100,x0=x0_pure_long,tol=1e-4)
         if info != 0:
             print("GMRES Info not zero, Info: ", info)
         dx = 1j*np.zeros((dof,m))
@@ -152,41 +149,3 @@ class NewtonIntegrator(AbstractIntegrator):
         for j in range(p+1):
             extrU = extrU+gammas[j]*u[:,-p-1+j]
         return extrU
-    
-   # def integrate(self,T,N,method = "RadauIIA-2",tolsolver = 10**(-5),re_use=True,debug_mode=False):
-   #     tau = T*1.0/N
-   #     rk = RKMethod(method,tau)
-   #     m = rk.m
-   #     ## Initializing right-hand side:
-   #     lengths = self.createFFTLengths(N)
-   #     try:
-   #         dof = len(self.righthandside(0))
-   #     except:
-   #         dof = 1
-   #     ## Actual solving:
-   #     W0 = []
-   #     for j in range(m):
-   #         W0.append(self.precomputing(rk.delta_eigs[j]))
-   #     conv_hist = np.zeros((dof,m*N+1))
-   #     sol = np.zeros((dof,m*N+1))
-   #     counters = np.zeros(N)
-   #     for j in range(0,N):
-   #         if debug_mode:
-   #             print(j*1.0/N)
-   #         ## Calculating solution at timepoint tj
-   #         sol[:,j*m+1:(j+1)*m+1] = self.time_step(W0,j,rk,sol[:,:rk.m*(j)+1],conv_hist[:,j*m+1:(j+1)*m+1])
-   #         ## Calculating Local History:
-   #         currLen = lengths[j]
-   #         localHist = np.concatenate((sol[:,m*(j+1)+1-m*currLen:m*(j+1)+1],np.zeros((dof,m*currLen))),axis=1)
-   #         if len(localHist[0,:])>=1:
-   #             localconvHist = np.real(self.tdForward.apply_RKconvol(localHist,(len(localHist[0,:]))*tau/m,method = method,show_progress=False))
-   #         else:
-   #             break
-   #         ## Updating Global History: 
-   #         currLenCut = min(currLen,N-j-1)
-   #         conv_hist[:,(j+1)*m+1:(j+1)*m+1+currLenCut*m] += localconvHist[:,currLen*m:currLen*m+currLenCut*m]
-   #         if not re_use:
-   #             self.freqUse = dict()
-   #             self.freqObj = dict()
-   #     return sol ,counters
- 
