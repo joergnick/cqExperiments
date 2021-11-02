@@ -5,7 +5,14 @@ import numpy as np
 from cqStepper import AbstractIntegrator
 from rkmethods import RKMethod
 from linearcq import Conv_Operator
-
+class gmres_counter(object):
+    def __init__(self, disp=False):
+        self._disp = disp
+        self.niter = 0
+    def __call__(self, rk=None):
+        self.niter += 1
+        if self._disp:
+            print('iter %3i\trk = %s' % (self.niter, str(rk)))
 class NewtonIntegrator(AbstractIntegrator):
     def __init__(self):
         self.tdForward = Conv_Operator(self.forward_wrapper)
@@ -119,13 +126,19 @@ class NewtonIntegrator(AbstractIntegrator):
         newton_lambda = lambda x: newton_func(x)
         from scipy.sparse.linalg import LinearOperator
         newton_operator = LinearOperator((m*dof,m*dof),newton_lambda)
-        dx_long,info = gmres(newton_operator,rhs_long,maxiter = 100,x0=x0_pure_long,tol=1e-4)
+        counterObj = gmres_counter()
+        print("Residual: ",np.linalg.norm(rhs_long))
+        dx_long,info = gmres(newton_operator,rhs_long,maxiter = 100,callback = counterObj,tol=1e-4)
+        print("Residual after GMRES: ",np.linalg.norm(rhs_long-newton_func(dx_long)))
+        print("COUNT GMRES: ",counterObj.niter)
+        print("NORM dx_long: ",np.linalg.norm(dx_long))
         if info != 0:
             print("GMRES Info not zero, Info: ", info)
         dx = 1j*np.zeros((dof,m))
         for stageInd in range(m):
             dx[:,stageInd] = dx_long[dof*stageInd:dof*(stageInd+1)]
         x1 = x0-coeff*dx
+
         #print("np.linalg.norm(dx) = ",np.linalg.norm(dx))
         if coeff*np.linalg.norm(dx)/dof<tolsolver:
             info = 0

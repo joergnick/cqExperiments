@@ -144,8 +144,8 @@ def nonlinearScattering(N,gridfilename,T,rk):
 
 gridfilename='null'
 #gridfilename='grids/TorusDOF340.mat'
-T= 1
-N=10
+T = 5
+N = 300
 tau = T*1.0/N
 rk = RKMethod("RadauIIA-2",tau)
 sol = nonlinearScattering(N,gridfilename,T,rk)
@@ -155,7 +155,7 @@ resDict["sol"] = sol
 resDict["T"] = T
 resDict["m"] = rk.m
 resDict["N"] = N
-np.save(filename,resDict)
+#np.save(filename,resDict)
 
 #np.save('data/counterssmall.npy',counters)
 #plt.plot(norms)
