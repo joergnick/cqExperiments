@@ -1,8 +1,13 @@
 import numpy as np
 import bempp.api
+import sys
+sys.path.append('cqToolbox')
+sys.path.append('../cqToolbox')
+sys.path.append('data')
+sys.path.append('../data')
 #grid = bempp.api.shapes.sphere(h=2**(0))
 import scipy.io
-mat_contents=scipy.io.loadmat("grids/TorusDOF340.mat")
+mat_contents=scipy.io.loadmat("data/grids/TorusDOF340.mat")
 Nodes=np.array(mat_contents['Nodes']).T
 rawElements=mat_contents['Elements']
 for j in range(len(rawElements)):
@@ -50,7 +55,7 @@ x_a=-2
 x_b=2
 y_a=-2
 y_b=2
-n_grid_points= 400
+n_grid_points= 100
 nx = n_grid_points
 nz = n_grid_points
 ############################################
@@ -70,7 +75,8 @@ def kirchhoff_repr(s,lambda_data):
 
     print("s: ",s)
     trycounter = 0
-    while trycounter<10:
+
+    while trycounter<5:
         try:
             slp_pot = bempp.api.operators.potential.maxwell.electric_field(RT_space, points, s*1j)
             dlp_pot = bempp.api.operators.potential.maxwell.magnetic_field(RT_space, points, s*1j)

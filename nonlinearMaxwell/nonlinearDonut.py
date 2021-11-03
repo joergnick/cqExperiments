@@ -1,6 +1,9 @@
 import sys
 sys.path.append('cqToolbox')
 sys.path.append('../cqToolbox')
+sys.path.append('data')
+sys.path.append('../data')
+sys.path.append('..')
 #from cqtoolbox import CQModel
 from newtonStepper import NewtonIntegrator
 from linearcq import Conv_Operator
@@ -9,7 +12,7 @@ from customOperators import precompMM,sparseWeightedMM,applyNonlinearity
 import bempp.api
 import os.path
 import numpy as np
-OrderQF = 8
+OrderQF = 7
 bempp.api.global_parameters.quadrature.near.max_rel_dist = 2
 bempp.api.global_parameters.quadrature.near.single_order =OrderQF-1
 bempp.api.global_parameters.quadrature.near.double_order = OrderQF-1
@@ -61,19 +64,19 @@ def calc_gtH(rk,grid,N,T):
 
 def nonlinearScattering(N,gridfilename,T,rk):
     import scipy.io
-#    mat_contents=scipy.io.loadmat(gridfilename)
-#    Nodes=np.array(mat_contents['Nodes']).T
-#    rawElements=mat_contents['Elements']
-#    ## Switching orientation
-#    for j in range(len(rawElements)):
-#        betw=rawElements[j][0]
-#        rawElements[j][0]=rawElements[j][1]
-#        rawElements[j][1]=betw
-#    Elements=np.array(rawElements).T
-#    ## Subtraction due to different conventions of distmesh and bempp, grid starts from 0 instead of 1
-#    Elements=Elements-1
-#    grid=bempp.api.grid_from_element_data(Nodes,Elements)
-    grid = bempp.api.shapes.sphere(h=1)
+    mat_contents=scipy.io.loadmat(gridfilename)
+    Nodes=np.array(mat_contents['Nodes']).T
+    rawElements=mat_contents['Elements']
+    ## Switching orientation
+    for j in range(len(rawElements)):
+        betw=rawElements[j][0]
+        rawElements[j][0]=rawElements[j][1]
+        rawElements[j][1]=betw
+    Elements=np.array(rawElements).T
+    ## Subtraction due to different conventions of distmesh and bempp, grid starts from 0 instead of 1
+    Elements=Elements-1
+    grid=bempp.api.grid_from_element_data(Nodes,Elements)
+#    grid = bempp.api.shapes.sphere(h=1)
     RT_space=bempp.api.function_space(grid, "RT",0)
     gridfunList,neighborlist,domainDict = precompMM(RT_space)
     id_op=bempp.api.operators.boundary.sparse.identity(RT_space, RT_space, RT_space)
@@ -135,19 +138,19 @@ def nonlinearScattering(N,gridfilename,T,rk):
     dof = RT_space.global_dof_count
     print("GLOBAL DOF: ",dof)
     print("Finished RHS.")
-    sol ,counters  = model.integrate(T,N, method = rk.method_name,re_use=False,debug_mode=True)
+    sol ,counters  = model.integrate(T,N, method = rk.method_name,re_use=True,debug_mode=True)
     end = time.time()
     import matplotlib.pyplot as plt
     dof = RT_space.global_dof_count
     norms = [np.linalg.norm(sol[:,k]) for k in range(len(sol[0,:]))]
     return sol
 
-gridfilename='null'
-#gridfilename='grids/TorusDOF340.mat'
-T = 5
-N = 300
+#gridfilename='null'
+gridfilename='data/grids/TorusDOF340.mat'
+T = 8
+N = 200
 tau = T*1.0/N
-rk = RKMethod("RadauIIA-2",tau)
+rk = RKMethod("RadauIIA-3",tau)
 sol = nonlinearScattering(N,gridfilename,T,rk)
 filename = 'data/donutDOF340N200.npy'
 resDict = dict()
@@ -155,7 +158,7 @@ resDict["sol"] = sol
 resDict["T"] = T
 resDict["m"] = rk.m
 resDict["N"] = N
-#np.save(filename,resDict)
+np.save(filename,resDict)
 
 #np.save('data/counterssmall.npy',counters)
 #plt.plot(norms)

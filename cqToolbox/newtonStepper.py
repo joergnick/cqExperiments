@@ -75,7 +75,7 @@ class NewtonIntegrator(AbstractIntegrator):
                 scal = 1 
             else:
                 scal = 0.5
-            x,info = self.newton_iteration(j,rk,rhs,W0,x,history,tolsolver = 10**(-7),coeff=scal**(counter-thresh))
+            x,info = self.newton_iteration(j,rk,rhs,W0,x,history,tolsolver = 10**(-5),coeff=scal**(counter-thresh))
             if self.debug_mode:
                 print("INFO AFTER {} STEP: ".format(counter),info)
             if np.linalg.norm(x)>10**5:
@@ -83,9 +83,10 @@ class NewtonIntegrator(AbstractIntegrator):
                 x = x0
                 break
             counter = counter+1
+            print("NEWTON ITERATION COUNTER: ",counter, " info: ",info)
         return x
 
-    def newton_iteration(self,j,rk,rhs,W0,x0,history,tolsolver = 10**(-6),coeff = 1):
+    def newton_iteration(self,j,rk,rhs,W0,x0,history,tolsolver = 10**(-5),coeff = 1):
         t = j*rk.tau
         m = rk.m
         x0_pure = x0
@@ -128,7 +129,7 @@ class NewtonIntegrator(AbstractIntegrator):
         newton_operator = LinearOperator((m*dof,m*dof),newton_lambda)
         counterObj = gmres_counter()
         print("Residual: ",np.linalg.norm(rhs_long))
-        dx_long,info = gmres(newton_operator,rhs_long,maxiter = 100,callback = counterObj,tol=1e-4)
+        dx_long,info = gmres(newton_operator,rhs_long,maxiter = 100,callback = counterObj,tol=1e-3)
         print("Residual after GMRES: ",np.linalg.norm(rhs_long-newton_func(dx_long)))
         print("COUNT GMRES: ",counterObj.niter)
         print("NORM dx_long: ",np.linalg.norm(dx_long))
