@@ -158,7 +158,7 @@ class TestCQMethods(unittest.TestCase):
         err          = np.max(np.max(np.abs(sol[:,::m]-exSol)))
         self.assertLess(np.abs(err),10**(-8))
     def test_nonlinear_inhom_RadauIIA_2(self):
-        N       = 15
+        N       = 300
         T       = 2
         m       = 2
         tau     = T*1.0/N
@@ -177,10 +177,10 @@ class TestCQMethods(unittest.TestCase):
             def ex_sol(self,ts):
                 return np.array([ts**3,ts**4])
         modelNI = NonlinearScatModel2Components()
-        sol,counters = modelNI.integrate(T,N,tolsolver=10**(-3),method = "RadauIIA-"+str(m))
+        sol,counters = modelNI.integrate(T,N,tolsolver=10**(-10),method = "RadauIIA-"+str(m))
         exSol        = modelNI.ex_sol(np.linspace(0,T,N+1))
         err          = np.max(np.max(np.abs(sol[:,::m]-exSol)))
-        self.assertLess(np.abs(err),10**(-3))
+        self.assertLess(np.abs(err),10**(-6))
     def test_nonlinear_inhom_RadauIIA_3(self):
         N       = 19
         T       = 1.5

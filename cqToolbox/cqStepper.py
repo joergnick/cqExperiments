@@ -6,28 +6,36 @@ from linearcq import Conv_Operator
 from rkmethods import RKMethod
 class AbstractIntegrator:
     def __init__(self):
-        self.tdForward = Conv_Operator(self.forwardWrapper)
+        self.tdForward = Conv_Operator(self.forward_wrapper)
         self.freqObj = dict()
         self.freqUse = dict()
         self.countEv = 0
-
+        
         ## Methods supplied by user:
     def time_step(self,s0,W0,t,history,conv_history,x0):
         raise NotImplementedError("No time stepping given.") 
-    def harmonicForward(self,s,b,precomp = None):
+    def harmonic_forward(self,s,b,precomp = None):
         raise NotImplementedError("No time-harmonic forward operator given.")
         ## Optional method supplied by user:
     def precomputing(self,s):
         raise NotImplementedError("No precomputing given.")
 
         ## Methods provided by class
-    def forwardWrapper(self,s,b):
+    def forward_wrapper(self,s,b):
+        ## Frequency was already seen and evaluation has been saved:            
         if s in self.freqObj:
             self.freqUse[s] = self.freqUse[s]+1
-        else:
+            return self.harmonic_forward(s,b,precomp=self.freqObj[s])
+        ## Frequency has not been seen and we have saved less than the maximum
+        self.countEv += 1
+        if (self.count_saved_evals < self.max_evals_saved):
             self.freqObj[s] = self.precomputing(s)
             self.freqUse[s] = 1
-        return self.harmonicForward(s,b,precomp=self.freqObj[s])
+            self.count_saved_evals +=1
+            return self.harmonic_forward(s,b,precomp=self.freqObj[s])
+        ## Frequency has not been seen and we have already saved the maximum amount of evaluations,
+        ## Thus we simply apply the forward application without saving the objects.
+        return self.harmonic_forward(s,b,precomp=self.precomputing(s))
 
     def createFFTLengths(self,N):
         lengths = [1]
@@ -38,7 +46,9 @@ class AbstractIntegrator:
             it = it+1
         return lengths
 
-    def integrate(self,T,N,method = "RadauIIA-2",tolsolver = 10**(-5),re_use=True,debug_mode=False):
+    def integrate(self,T,N,method = "RadauIIA-2",tolsolver = 10**(-5),max_evals_saved=0,debug_mode=False):
+        self.max_evals_saved   = max_evals_saved
+        self.count_saved_evals = 0
         tau = T*1.0/N
         rk = RKMethod(method,tau)
         m = rk.m
@@ -70,9 +80,8 @@ class AbstractIntegrator:
             ## Updating Global History: 
             currLenCut = min(currLen,N-j-1)
             conv_hist[:,(j+1)*m+1:(j+1)*m+1+currLenCut*m] += localconvHist[:,currLen*m:currLen*m+currLenCut*m]
-            if not re_use:
-                self.freqUse = dict()
-                self.freqObj = dict()
+        if debug_mode: 
+            print("N: ",N," m: ",rk.m," 2*m*N ",2*m*N, " Amount evaluations: ",self.countEv)
         return sol ,counters
 #    def integrate(self,T,rk,reUse=True,debugMode=False):
 #        tau = rk.tau

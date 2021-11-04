@@ -8,7 +8,7 @@ class Conv_Operator():
     def get_integration_parameters(self,N,T):
         tol=self.tol
         dt=(T*1.0)/N
-        L=2*N
+        L=N
         rho=tol**(1.0/(4*L))
         return L,dt,tol,rho
 

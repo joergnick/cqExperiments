@@ -37,13 +37,13 @@ class NewtonIntegrator(AbstractIntegrator):
     def preconditioning(self,precomp):
         raise NotImplementedError("No preconditioner given.")
         ## Methods provided by class
-    def forward_wrapper(self,s,b):
-        if s in self.freqObj:
-            self.freqUse[s] = self.freqUse[s]+1
-        else:
-            self.freqObj[s] = self.precomputing(s)
-            self.freqUse[s] = 1
-        return self.harmonic_forward(s,b,precomp=self.freqObj[s])
+#    def forward_wrapper(self,s,b):
+#        if s in self.freqObj:
+#            self.freqUse[s] = self.freqUse[s]+1
+#        else:
+#            self.freqObj[s] = self.precomputing(s)
+#            self.freqUse[s] = 1
+#        return self.harmonic_forward(s,b,precomp=self.freqObj[s])
 
 
     def calc_jacobian(self,x0,t,time_index):

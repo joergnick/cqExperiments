@@ -138,7 +138,7 @@ def nonlinearScattering(N,gridfilename,T,rk):
     dof = RT_space.global_dof_count
     print("GLOBAL DOF: ",dof)
     print("Finished RHS.")
-    sol ,counters  = model.integrate(T,N, method = rk.method_name,re_use=False,debug_mode=True)
+    sol ,counters  = model.integrate(T,N, method = rk.method_name,max_evals_saved=100,debug_mode=True)
     end = time.time()
     import matplotlib.pyplot as plt
     dof = RT_space.global_dof_count
@@ -148,7 +148,7 @@ def nonlinearScattering(N,gridfilename,T,rk):
 #gridfilename='null'
 gridfilename='data/grids/TorusDOF340.mat'
 T = 8
-N = 50
+N = 200
 tau = T*1.0/N
 rk = RKMethod("RadauIIA-2",tau)
 sol = nonlinearScattering(N,gridfilename,T,rk)
