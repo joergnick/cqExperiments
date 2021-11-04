@@ -129,7 +129,7 @@ class TestCQMethods(unittest.TestCase):
         exSol        = modelN.ex_sol(np.linspace(0,T,N+1))
         err          = max(np.abs(sol[0,::m]-exSol))
 
-        self.assertLess(np.abs(err),10**(-7))
+        self.assertLess(np.abs(err),10**(-5))
     def test_nonlinear_RadauIIA_2_components(self):
         modelN       = NonlinearScatModel2Components()
         m = 2
@@ -153,7 +153,7 @@ class TestCQMethods(unittest.TestCase):
         m = 3
         N = 31
         T = 2
-        sol,counters = modelN.integrate(T,N,method = "RadauIIA-"+str(m))
+        sol,counters = modelN.integrate(T,N,tolsolver=10**(-8),method = "RadauIIA-"+str(m))
         exSol        = modelN.ex_sol(np.linspace(0,T,N+1))
         err          = np.max(np.max(np.abs(sol[:,::m]-exSol)))
         self.assertLess(np.abs(err),10**(-8))
@@ -177,7 +177,7 @@ class TestCQMethods(unittest.TestCase):
             def ex_sol(self,ts):
                 return np.array([ts**3,ts**4])
         modelNI = NonlinearScatModel2Components()
-        sol,counters = modelNI.integrate(T,N,method = "RadauIIA-"+str(m))
+        sol,counters = modelNI.integrate(T,N,tolsolver=10**(-3),method = "RadauIIA-"+str(m))
         exSol        = modelNI.ex_sol(np.linspace(0,T,N+1))
         err          = np.max(np.max(np.abs(sol[:,::m]-exSol)))
         self.assertLess(np.abs(err),10**(-3))
@@ -201,7 +201,7 @@ class TestCQMethods(unittest.TestCase):
             def ex_sol(self,ts):
                 return np.array([ts**3,ts**4])
         modelNI = NonlinearScatModel2Components()
-        sol,counters = modelNI.integrate(T,N,method = "RadauIIA-"+str(m))
+        sol,counters = modelNI.integrate(T,N,tolsolver=10**(-6),method = "RadauIIA-"+str(m))
         exSol        = modelNI.ex_sol(np.linspace(0,T,N+1))
         err          = np.max(np.max(np.abs(sol[:,::m]-exSol)))
         self.assertLess(np.abs(err),10**(-7))

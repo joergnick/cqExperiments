@@ -57,7 +57,7 @@ class NewtonIntegrator(AbstractIntegrator):
             jacoba[:,i] = (y_plus-y_minus)/(2*taugrad)
         return jacoba
 
-    def time_step(self,W0,j,rk,history,w_star_sol_j):
+    def time_step(self,W0,j,rk,history,w_star_sol_j,tolsolver=10**(-5)):
         x0  = np.zeros(w_star_sol_j.shape)
         rhs = np.zeros(w_star_sol_j.shape)
         for i in range(rk.m):
@@ -75,7 +75,7 @@ class NewtonIntegrator(AbstractIntegrator):
                 scal = 1 
             else:
                 scal = 0.5
-            x,info = self.newton_iteration(j,rk,rhs,W0,x,history,tolsolver = 10**(-5),coeff=scal**(counter-thresh))
+            x,info = self.newton_iteration(j,rk,rhs,W0,x,history,tolsolver = tolsolver,coeff=scal**(counter-thresh))
             if self.debug_mode:
                 print("INFO AFTER {} STEP: ".format(counter),info)
             if np.linalg.norm(x)>10**5:
@@ -83,7 +83,7 @@ class NewtonIntegrator(AbstractIntegrator):
                 x = x0
                 break
             counter = counter+1
-            print("NEWTON ITERATION COUNTER: ",counter, " info: ",info)
+            #print("NEWTON ITERATION COUNTER: ",counter, " info: ",info)
         return x
 
     def newton_iteration(self,j,rk,rhs,W0,x0,history,tolsolver = 10**(-5),coeff = 1):
@@ -128,11 +128,11 @@ class NewtonIntegrator(AbstractIntegrator):
         from scipy.sparse.linalg import LinearOperator
         newton_operator = LinearOperator((m*dof,m*dof),newton_lambda)
         counterObj = gmres_counter()
-        print("Residual: ",np.linalg.norm(rhs_long))
-        dx_long,info = gmres(newton_operator,rhs_long,maxiter = 100,callback = counterObj,tol=1e-3)
-        print("Residual after GMRES: ",np.linalg.norm(rhs_long-newton_func(dx_long)))
-        print("COUNT GMRES: ",counterObj.niter)
-        print("NORM dx_long: ",np.linalg.norm(dx_long))
+        #print("Residual: ",np.linalg.norm(rhs_long))
+        dx_long,info = gmres(newton_operator,rhs_long,maxiter = 100,callback = counterObj,tol=tolsolver)
+        #print("Residual after GMRES: ",np.linalg.norm(rhs_long-newton_func(dx_long)))
+        #print("COUNT GMRES: ",counterObj.niter)
+        #print("NORM dx_long: ",np.linalg.norm(dx_long))
         if info != 0:
             print("GMRES Info not zero, Info: ", info)
         dx = 1j*np.zeros((dof,m))
@@ -141,7 +141,7 @@ class NewtonIntegrator(AbstractIntegrator):
         x1 = x0-coeff*dx
 
         #print("np.linalg.norm(dx) = ",np.linalg.norm(dx))
-        if coeff*np.linalg.norm(dx)/dof<tolsolver:
+        if coeff*np.linalg.norm(dx)/np.sqrt(dof)<tolsolver:
             info = 0
         else:
             info = coeff*np.linalg.norm(dx)/dof
