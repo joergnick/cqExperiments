@@ -22,10 +22,12 @@ grid=bempp.api.grid_from_element_data(Nodes,Elements)
 RT_space = bempp.api.function_space(grid,"RT",0)
 dof = RT_space.global_dof_count
 #sol = np.load('data/solh1.0N64m2.npy')
-solDict = np.load('data/donutDOF340N200.npy').item()
+solDict = np.load('data/donutDOF340N200_v2.npy').item()
 
 sol = solDict["sol"]
-
+import matplotlib.pyplot as plt
+plt.plot(np.linalg.norm(sol,axis=0))
+#plt.show()
 #import matplotlib.pyplot as plt
 #print(len(sol[:,0]),len(sol[0,:]))
 #plt.plot([np.linalg.norm(sol[:,k]) for k in range(len(sol[0,:]))] )
@@ -55,7 +57,7 @@ x_a=-2
 x_b=2
 y_a=-2
 y_b=2
-n_grid_points= 100
+n_grid_points= 400
 nx = n_grid_points
 nz = n_grid_points
 ############################################
@@ -74,18 +76,9 @@ def kirchhoff_repr(s,lambda_data):
     psigrid=bempp.api.GridFunction(RT_space,coefficients=lambda_data[dof:2*dof],dual_space=RT_space)
 
     print("s: ",s)
-    trycounter = 0
-
-    while trycounter<5:
-        try:
-            slp_pot = bempp.api.operators.potential.maxwell.electric_field(RT_space, points, s*1j)
-            dlp_pot = bempp.api.operators.potential.maxwell.magnetic_field(RT_space, points, s*1j)
-            scattered_field_data = -slp_pot * phigrid+dlp_pot*psigrid
-            break
-        except:
-            print("EXCEPTION CAUGHT, TRYCOUNTER : ",trycounter)
-            trycounter +=1
-
+    slp_pot = bempp.api.operators.potential.maxwell.electric_field(RT_space, points, s*1j)
+    dlp_pot = bempp.api.operators.potential.maxwell.magnetic_field(RT_space, points, s*1j)
+    scattered_field_data = -slp_pot * phigrid+dlp_pot*psigrid
     print("Is any field nan ? ",np.isnan(scattered_field_data).any())
     scattered_field_data[np.isnan(scattered_field_data)] = 0 
     return scattered_field_data.reshape(n_grid_points**2*3,1)[:,0]

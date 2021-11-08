@@ -12,7 +12,7 @@ from customOperators import precompMM,sparseWeightedMM,applyNonlinearity
 import bempp.api
 import os.path
 import numpy as np
-OrderQF = 7
+OrderQF = 8
 bempp.api.global_parameters.quadrature.near.max_rel_dist = 2
 bempp.api.global_parameters.quadrature.near.single_order =OrderQF-1
 bempp.api.global_parameters.quadrature.near.double_order = OrderQF-1
@@ -56,7 +56,7 @@ def calc_gtH(rk,grid,N,T):
     def sinv(s,b):
         return s**(-1)*b
     IntegralOperator = Conv_Operator(sinv)
-    gTH = IntegralOperator.apply_RKconvol(curls,T,method="RadauIIA-"+str(m),show_progress=False)
+    gTH = -IntegralOperator.apply_RKconvol(curls,T,method="RadauIIA-"+str(m),show_progress=False)
     gTH = np.concatenate((np.zeros((dof,1)),gTH),axis = 1)
     #rhs[0:dof,:]=np.real(gTH)-rhs[0:dof,:]
     return gTH
@@ -138,7 +138,7 @@ def nonlinearScattering(N,gridfilename,T,rk):
     dof = RT_space.global_dof_count
     print("GLOBAL DOF: ",dof)
     print("Finished RHS.")
-    sol ,counters  = model.integrate(T,N, method = rk.method_name,max_evals_saved=100,debug_mode=True)
+    sol ,counters  = model.integrate(T,N, method = rk.method_name,max_evals_saved=200,debug_mode=True)
     end = time.time()
     import matplotlib.pyplot as plt
     dof = RT_space.global_dof_count
@@ -146,13 +146,13 @@ def nonlinearScattering(N,gridfilename,T,rk):
     return sol
 
 #gridfilename='null'
-gridfilename='data/grids/TorusDOF340.mat'
+gridfilename='data/grids/TorusDOF896.mat'
 T = 8
 N = 200
 tau = T*1.0/N
 rk = RKMethod("RadauIIA-2",tau)
 sol = nonlinearScattering(N,gridfilename,T,rk)
-filename = 'data/donutDOF340N50.npy'
+filename = 'data/donutDOF896N200.npy'
 resDict = dict()
 resDict["sol"] = sol
 resDict["T"] = T

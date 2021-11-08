@@ -45,3 +45,31 @@ class RKMethod():
             for k in range(self.m):
                 ts[j*self.m+k+1] = (j+self.c[k])
         return self.tau*T*ts
+
+class Extrapolator():
+    "Provides functionality with regards to extrapolation."
+    prolonged = 0
+    coeff     = []
+    order     = 0
+    def __init__(self,p):
+        self.coeff = self.extrapol_coefficients(p)
+        self.order = p 
+    def extrapol_coefficients(self,p):
+        coeffs = np.ones(p+1)
+        for j in range(p+1):
+                for m in range(p+1):
+                        if m != j:
+                                coeffs[j]=coeffs[j]*(p+1-m)*1.0/(j-m)
+        return coeffs
+
+    def extrapol(self,u):
+        p = self.order
+        if len(u[0,:])<=p+1:
+            u = np.concatenate((np.zeros((len(u[:,0]),p+1-len(u[0,:]))),u),axis=1)
+        extrU = np.zeros(len(u[:,0]))
+        gammas = self.extrapol_coefficients(p)
+        for j in range(p+1):
+            extrU = extrU+gammas[j]*u[:,-p-1+j]
+        return extrU
+    def prolonge_towards_0(self,u,n_additional,tol):
+        return 0
