@@ -71,10 +71,19 @@ class Extrapolator():
         for j in range(p+1):
             extrU = extrU+gammas[j]*u[:,-p-1+j]
         return extrU
-    def clamp_evals(self,amount,speed=1):
-        t = np.clip(t-t_min)
-        return 
-    def prolonge_towards_0(self,u,n_additional,rk,tol):
+    def clamp_evals(self,x,speed=8):
+        from scipy.special import comb
+        x= x-x[0]
+        x = x/x[-1]
+        x = 1-x
+        print(x)
+        result = np.zeros(len(x))
+        for n in range(0,speed+1):
+            result += comb(speed+n,n)*comb(2*speed+1,speed-n)*(-x)**n
+        result *=x**(speed+1)
+        return result
+
+    def prolonge_towards_0(self,u,n_additional,rk,decay_speed=8):
         dof = len(u[:,0])
         additional_entries = np.zeros((dof,n_additional*rk.m))
         additional_times = np.array([])
@@ -84,17 +93,17 @@ class Extrapolator():
         interpolation_times = np.array([0])
         interpolation_times = np.append(interpolation_times,rk.tau*rk.c)
         interpolation_times = np.append(interpolation_times,rk.tau+rk.tau*rk.c)
+        print(decay_speed)
+        clamp_vals = self.clamp_evals(additional_times,speed=decay_speed)
+        print("CLAMPVALS:",clamp_vals)
         from scipy import interpolate
         for j in range(dof):
             ipp = interpolate.UnivariateSpline(interpolation_times,u[j,-len(interpolation_times):])
-            additional_entries[j,:] = ipp(additional_times)
-        print("INSIDE: ",u[0,-len(interpolation_times):])
-        print(interpolation_times)
-        print(additional_times)
+            additional_entries[j,:] = ipp(additional_times)*clamp_vals
         return np.concatenate((u,additional_entries),axis = 1)
 
 extr = Extrapolator(2)
-N = 5
+N = 10
 T=0.5
 
 rk =RKMethod("RadauIIA-2",T*1.0/N)
@@ -103,14 +112,14 @@ u = np.zeros((2,N*rk.m+1))
 timepoints = rk.get_time_points(T)
 u[0,:] = timepoints**2
 u[1,:] = timepoints**3
-print("TIMEPOINTS: ",timepoints)
-print("OUTSIDE: ",u[0,:])
 timepoints = rk.get_time_points(2*T)
-u = extr.prolonge_towards_0(u,N,rk,0)
+u = extr.prolonge_towards_0(u,N,rk,decay_speed = 5)
+#vals = extr.clamp_evals(timepoints,decay_speed=5)
 import matplotlib.pyplot as plt
 plt.plot(timepoints,u[0,:])
 plt.plot(timepoints,u[1,:])
 
 plt.plot(timepoints,timepoints**2,linestyle='dashed')
 plt.plot(timepoints,timepoints**3,linestyle='dashed')
+#plt.plot(vals)
 plt.show()
