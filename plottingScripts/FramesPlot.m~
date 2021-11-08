@@ -8,6 +8,11 @@ X_mesh(:,:)=plot_grid(1,:,:);
 Y_mesh(:,:)=plot_grid(2,:,:);
 n_grid=sqrt(length(u_ges(:,1))) ; 
 n_grid
+N=200;
+norms_u = zeros(1,200);
+for j=1:N+1
+    norms_u(j) = norm(abs(u_ges[:,j]));
+end
 
 [scatterer ] = create_torus(X_mesh,Y_mesh);
 % figure(11)
@@ -17,13 +22,7 @@ n_grid=sqrt(length(u_ges(:,1)));
 %[scatterer] = create_scatterer(X_mesh,Y_mesh);
 % 
 %%%%%%%%%%%%%%%%%%%%
-%  [u_ges ] = draw_scatterer( u_ges, scatterer);
- N=200;
-% norms_u = zeros(1,200);
-% for j=1:N+1
-%     norms_u(j) = norm(abs(u_ges[:,j]));
-% end
-
+ [u_ges ] = draw_scatterer( u_ges, scatterer);
 %%%%%%%%%%%%%%%%%%%5
 % load('data/Absorbing')
 

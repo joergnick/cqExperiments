@@ -44,7 +44,7 @@ class RKMethod():
         for j in range(N):
             for k in range(self.m):
                 ts[j*self.m+k+1] = (j+self.c[k])
-        return self.tau*T*ts
+        return self.tau*ts
 
 class Extrapolator():
     "Provides functionality with regards to extrapolation."
@@ -71,5 +71,46 @@ class Extrapolator():
         for j in range(p+1):
             extrU = extrU+gammas[j]*u[:,-p-1+j]
         return extrU
-    def prolonge_towards_0(self,u,n_additional,tol):
-        return 0
+    def clamp_evals(self,amount,speed=1):
+        t = np.clip(t-t_min)
+        return 
+    def prolonge_towards_0(self,u,n_additional,rk,tol):
+        dof = len(u[:,0])
+        additional_entries = np.zeros((dof,n_additional*rk.m))
+        additional_times = np.array([])
+        for j in range(n_additional):
+            additional_times = np.append(additional_times,rk.tau*(j+2)+rk.tau*rk.c)
+
+        interpolation_times = np.array([0])
+        interpolation_times = np.append(interpolation_times,rk.tau*rk.c)
+        interpolation_times = np.append(interpolation_times,rk.tau+rk.tau*rk.c)
+        from scipy import interpolate
+        for j in range(dof):
+            ipp = interpolate.UnivariateSpline(interpolation_times,u[j,-len(interpolation_times):])
+            additional_entries[j,:] = ipp(additional_times)
+        print("INSIDE: ",u[0,-len(interpolation_times):])
+        print(interpolation_times)
+        print(additional_times)
+        return np.concatenate((u,additional_entries),axis = 1)
+
+extr = Extrapolator(2)
+N = 5
+T=0.5
+
+rk =RKMethod("RadauIIA-2",T*1.0/N)
+
+u = np.zeros((2,N*rk.m+1))
+timepoints = rk.get_time_points(T)
+u[0,:] = timepoints**2
+u[1,:] = timepoints**3
+print("TIMEPOINTS: ",timepoints)
+print("OUTSIDE: ",u[0,:])
+timepoints = rk.get_time_points(2*T)
+u = extr.prolonge_towards_0(u,N,rk,0)
+import matplotlib.pyplot as plt
+plt.plot(timepoints,u[0,:])
+plt.plot(timepoints,u[1,:])
+
+plt.plot(timepoints,timepoints**2,linestyle='dashed')
+plt.plot(timepoints,timepoints**3,linestyle='dashed')
+plt.show()
