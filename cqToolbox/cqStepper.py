@@ -46,7 +46,7 @@ class AbstractIntegrator:
             it = it+1
         return lengths
 
-    def integrate(self,T,N,method = "RadauIIA-2",tolsolver = 10**(-5),max_evals_saved=0,debug_mode=False):
+    def integrate(self,T,N,method = "RadauIIA-2",tolsolver = 10**(-5),max_evals_saved=0,factor_laplace_evaluations = 1,debug_mode=False):
         self.max_evals_saved   = max_evals_saved
         self.count_saved_evals = 0
         tau = T*1.0/N
@@ -74,7 +74,7 @@ class AbstractIntegrator:
             currLen = lengths[j]
             localHist = np.concatenate((sol[:,m*(j+1)+1-m*currLen:m*(j+1)+1],np.zeros((dof,m*currLen))),axis=1)
             if len(localHist[0,:])>=1:
-                localconvHist = np.real(self.tdForward.apply_RKconvol(localHist,(len(localHist[0,:]))*tau/m,method = method,show_progress=False))
+                localconvHist = np.real(self.tdForward.apply_RKconvol(localHist,(len(localHist[0,:]))*tau/m,method = method,factor_laplace_evaluations=factor_laplace_evaluations,prolonge_by=0,show_progress=False))
             else:
                 break
             ## Updating Global History: 

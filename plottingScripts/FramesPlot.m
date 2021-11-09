@@ -17,7 +17,7 @@ n_grid=sqrt(length(u_ges(:,1)));
 %[scatterer] = create_scatterer(X_mesh,Y_mesh);
 % 
 %%%%%%%%%%%%%%%%%%%%
-%  [u_ges ] = draw_scatterer( u_ges, scatterer);
+  [u_ges ] = draw_scatterer( u_ges, scatterer);
  N=200;
 % norms_u = zeros(1,200);
 % for j=1:N+1

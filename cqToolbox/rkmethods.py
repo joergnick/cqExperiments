@@ -39,7 +39,7 @@ class RKMethod():
     def reverse_diagonalize(self,b_dof_x_m):
         return np.matmul(b_dof_x_m,self.Tdiag.T)
     def get_time_points(self,T):
-        N  = int(T/self.tau)
+        N  = int(np.round(T/self.tau))
         ts = np.zeros(self.m*N+1)
         for j in range(N):
             for k in range(self.m):
@@ -50,24 +50,23 @@ class Extrapolator():
     "Provides functionality with regards to extrapolation."
     prolonged = 0
     coeff     = []
-    order     = 0
-    def __init__(self,p):
-        self.coeff = self.extrapol_coefficients(p)
-        self.order = p 
+    p         = 0
     def extrapol_coefficients(self,p):
         coeffs = np.ones(p+1)
         for j in range(p+1):
                 for m in range(p+1):
                         if m != j:
                                 coeffs[j]=coeffs[j]*(p+1-m)*1.0/(j-m)
+        self.coeff = coeffs
+        self.p = p
         return coeffs
 
     def extrapol(self,u):
-        p = self.order
+        p = self.p
         if len(u[0,:])<=p+1:
             u = np.concatenate((np.zeros((len(u[:,0]),p+1-len(u[0,:]))),u),axis=1)
         extrU = np.zeros(len(u[:,0]))
-        gammas = self.extrapol_coefficients(p)
+        gammas = self.coeff
         for j in range(p+1):
             extrU = extrU+gammas[j]*u[:,-p-1+j]
         return extrU
@@ -76,14 +75,15 @@ class Extrapolator():
         x= x-x[0]
         x = x/x[-1]
         x = 1-x
-        print(x)
         result = np.zeros(len(x))
         for n in range(0,speed+1):
             result += comb(speed+n,n)*comb(2*speed+1,speed-n)*(-x)**n
         result *=x**(speed+1)
         return result
 
-    def prolonge_towards_0(self,u,n_additional,rk,decay_speed=8):
+    def prolonge_towards_0(self,u,n_additional,rk,decay_speed=4):
+        if n_additional == 0:
+            return u
         dof = len(u[:,0])
         additional_entries = np.zeros((dof,n_additional*rk.m))
         additional_times = np.array([])
@@ -93,33 +93,44 @@ class Extrapolator():
         interpolation_times = np.array([0])
         interpolation_times = np.append(interpolation_times,rk.tau*rk.c)
         interpolation_times = np.append(interpolation_times,rk.tau+rk.tau*rk.c)
-        print(decay_speed)
+       # interpolation_times = interpolation_times[:min(len(interpolation_times),len(u[0,:]))]
         clamp_vals = self.clamp_evals(additional_times,speed=decay_speed)
-        print("CLAMPVALS:",clamp_vals)
         from scipy import interpolate
+        len_u = len(u[0,:])
         for j in range(dof):
-            ipp = interpolate.UnivariateSpline(interpolation_times,u[j,-len(interpolation_times):])
+            #ipp = interpolate.interp1d(interpolation_times,u[j,-len(interpolation_times):],fill_value='extrapolate')
+            #additional_entries[j,:] = ipp(additional_times)*clamp_vals
+            ipp = interpolate.UnivariateSpline(interpolation_times,u[j,-len(interpolation_times):],k=1)
             additional_entries[j,:] = ipp(additional_times)*clamp_vals
+        self.prolonged = len(additional_entries[0,:])
         return np.concatenate((u,additional_entries),axis = 1)
-
-extr = Extrapolator(2)
-N = 10
-T=0.5
-
-rk =RKMethod("RadauIIA-2",T*1.0/N)
-
-u = np.zeros((2,N*rk.m+1))
-timepoints = rk.get_time_points(T)
-u[0,:] = timepoints**2
-u[1,:] = timepoints**3
-timepoints = rk.get_time_points(2*T)
-u = extr.prolonge_towards_0(u,N,rk,decay_speed = 5)
-#vals = extr.clamp_evals(timepoints,decay_speed=5)
-import matplotlib.pyplot as plt
-plt.plot(timepoints,u[0,:])
-plt.plot(timepoints,u[1,:])
-
-plt.plot(timepoints,timepoints**2,linestyle='dashed')
-plt.plot(timepoints,timepoints**3,linestyle='dashed')
-#plt.plot(vals)
-plt.show()
+    def cut_back(self,u):
+        ret= u[:,:len(u[0,:])-self.prolonged]
+        self.prolonged = 0
+        return ret
+#
+#extr = Extrapolator()
+#N = 2
+#T=0.5#
+#tau = T*1.0/N
+#rk =RKMethod("RadauIIA-2",tau)
+#u = np.zeros((2,N*rk.m+1))
+#timepoints = rk.get_time_points(T)
+#u[0,:] = timepoints**2
+#u[1,:] = timepoints**3
+#prolonge_by = 10
+#print(timepoints)
+#print(u[0,:])
+#timepoints = rk.get_time_points(T+tau*prolonge_by)
+#print(timepoints)
+#print(u[0,:])
+#u = extr.prolonge_towards_0(u,prolonge_by,rk,decay_speed = 8)
+#print(u[0,:])
+##import matplotlib.pyplot as plt
+#plt.plot(timepoints,u[0,:])
+#plt.plot(timepoints,u[1,:])
+#
+#plt.plot(timepoints,timepoints**2,linestyle='dashed')
+#plt.plot(timepoints,timepoints**3,linestyle='dashed')
+##plt.plot(vals)
+#plt.show()

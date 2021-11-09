@@ -5,9 +5,23 @@ sys.path.append('cqToolbox')
 sys.path.append('../cqToolbox')
 sys.path.append('data')
 sys.path.append('../data')
+print("ORIGINAL BEMPPORDER: ",bempp.api.global_parameters.quadrature.near.single_order)
+OrderQF = 8
+bempp.api.global_parameters.quadrature.near.max_rel_dist = 2
+bempp.api.global_parameters.quadrature.near.single_order =OrderQF-1
+bempp.api.global_parameters.quadrature.near.double_order = OrderQF-1
+bempp.api.global_parameters.quadrature.medium.max_rel_dist =4
+bempp.api.global_parameters.quadrature.medium.single_order =OrderQF-2
+bempp.api.global_parameters.quadrature.medium.double_order =OrderQF-2
+bempp.api.global_parameters.quadrature.far.single_order =OrderQF-3
+bempp.api.global_parameters.quadrature.far.double_order =OrderQF-3
+bempp.api.global_parameters.quadrature.double_singular = OrderQF
+bempp.api.global_parameters.hmat.eps=10**-3
+bempp.api.global_parameters.hmat.admissibility='strong'
 #grid = bempp.api.shapes.sphere(h=2**(0))
 import scipy.io
-mat_contents=scipy.io.loadmat("data/grids/TorusDOF340.mat")
+#mat_contents=scipy.io.loadmat("data/grids/TorusDOF340.mat")
+mat_contents=scipy.io.loadmat("data/grids/TorusDOF896.mat")
 Nodes=np.array(mat_contents['Nodes']).T
 rawElements=mat_contents['Elements']
 for j in range(len(rawElements)):
@@ -22,11 +36,12 @@ grid=bempp.api.grid_from_element_data(Nodes,Elements)
 RT_space = bempp.api.function_space(grid,"RT",0)
 dof = RT_space.global_dof_count
 #sol = np.load('data/solh1.0N64m2.npy')
-solDict = np.load('data/donutDOF340N200_v2.npy').item()
+solDict = np.load('data/donutDOF896N200.npy').item()
+#solDict = np.load('data/donutDOF340N200_v2.npy').item()
 
 sol = solDict["sol"]
-import matplotlib.pyplot as plt
-plt.plot(np.linalg.norm(sol,axis=0))
+#import matplotlib.pyplot as plt
+#plt.plot(np.linalg.norm(sol,axis=0))
 #plt.show()
 #import matplotlib.pyplot as plt
 #print(len(sol[:,0]),len(sol[0,:]))
@@ -74,7 +89,6 @@ def kirchhoff_repr(s,lambda_data):
         return np.zeros(n_grid_points**2*3)
     phigrid=bempp.api.GridFunction(RT_space,coefficients=lambda_data[0:dof],dual_space=RT_space)
     psigrid=bempp.api.GridFunction(RT_space,coefficients=lambda_data[dof:2*dof],dual_space=RT_space)
-
     print("s: ",s)
     slp_pot = bempp.api.operators.potential.maxwell.electric_field(RT_space, points, s*1j)
     dlp_pot = bempp.api.operators.potential.maxwell.magnetic_field(RT_space, points, s*1j)
@@ -84,7 +98,7 @@ def kirchhoff_repr(s,lambda_data):
     return scattered_field_data.reshape(n_grid_points**2*3,1)[:,0]
 from linearcq import Conv_Operator
 mSpt_Dpt = Conv_Operator(kirchhoff_repr)
-uscatStages = mSpt_Dpt.apply_RKconvol(sol,T,method = "RadauIIA-2")
+uscatStages = mSpt_Dpt.apply_RKconvol(sol,T,method = "RadauIIA-2",cutoff=10**(-3),prolonge_by=0,factor_laplace_evaluations=1)
 uscat = uscatStages[:,::2]
 #uscat = np.zeros((n_grid_points**2*3,N))
 uscat = np.concatenate((np.zeros((len(uscat[:,0]),1)),uscat),axis = 1)
@@ -121,4 +135,5 @@ for j in range(N+1):
     plt.clim((-1,1))
 
 import scipy.io
-scipy.io.savemat('data/DonutFieldDataDOF340N200.mat',dict(u_ges=u_ges,N=N,T=T,plot_grid=plot_grid,points=points))
+#scipy.io.savemat('data/DonutFieldDataDOF340N200.mat',dict(u_ges=u_ges,N=N,T=T,plot_grid=plot_grid,points=points))
+scipy.io.savemat('data/DonutFieldDataDOF896N200.mat',dict(u_ges=u_ges,N=N,T=T,plot_grid=plot_grid,points=points))

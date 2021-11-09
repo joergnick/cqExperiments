@@ -1,6 +1,8 @@
 import numpy as np
+from rkmethods import Extrapolator,RKMethod
 class Conv_Operator():
     tol=10**-14
+    factor_laplace_evaluations=2
     def __init__(self,apply_elliptic_operator,order=2):
         self.order=order
         self.delta=lambda zeta : self.char_functions(zeta,order)
@@ -8,7 +10,7 @@ class Conv_Operator():
     def get_integration_parameters(self,N,T):
         tol=self.tol
         dt=(T*1.0)/N
-        L=N
+        L=int(np.round(self.factor_laplace_evaluations*N))
         rho=tol**(1.0/(4*L))
         return L,dt,tol,rho
 
@@ -67,8 +69,18 @@ class Conv_Operator():
     
         return rhs,N
 
-    def apply_RKconvol(self,rhs,T,show_progress=True,method="RadauIIA-2",cutoff=10**(-8)):
+    def apply_RKconvol(self,rhs,T,show_progress=True,method="RadauIIA-2",factor_laplace_evaluations=1,cutoff=10**(-8),prolonge_by = 0):
+        m      = RKMethod(method,1).m
+        [rhs,N]=self.format_rhs(rhs,m)
+        tau = T*1.0/N ## tau stays the same after prolongation
+        rk   = RKMethod(method,tau) ## rk also stays the same, as tau is equal.
+        prolonged_flag = (prolonge_by>0)
+        ### Prolongation
+        if (N>10) and prolonged_flag : 
+            extr = Extrapolator()
+            rhs  = extr.prolonge_towards_0(rhs,prolonge_by,rk)    
         ## Step 1
+        self.factor_laplace_evaluations = max(1,factor_laplace_evaluations)
         [A_RK,b_RK,c_RK,m]=self.get_method_characteristics(method)
         self.m=m    
         [rhs,N]=self.format_rhs(rhs,m)
@@ -77,6 +89,7 @@ class Conv_Operator():
 
         for stageInd in range(m):
             rhs_fft[:,stageInd:m*L:m]=self.scale_fft(rhs[:,stageInd:m*N:m],N,T)
+        
         #Initialising important parameters for the later stage  
         s_vect=self.get_frequencies(N,T)
         dof=len(rhs[:,0])
@@ -93,6 +106,11 @@ class Conv_Operator():
         HalfL= int(np.ceil(float(L)/2.0))
         if show_progress:
             print("Amount of Systems needed: "+ str(counter))
+       # import matplotlib.pyplot as plt
+       # #plt.plot(np.linalg.norm(rhs,axis=0),linestyle='dashed')
+       # plt.semilogy(normsRHS)
+       # plt.show()
+       # raise ValueError("You wanted it that way :-E")
         #Timing the elliptic systems
         import time
         start=0
@@ -148,7 +166,10 @@ class Conv_Operator():
         for stageInd in range(m):
             phi_hat[:,stageInd:m*L:m]=self.rescale_ifft(phi_hat[:,stageInd:m*L:m],N,T)
         phi_sol=phi_hat[:,:m*N]
-        return phi_sol
+        if prolonged_flag:
+            return extr.cut_back(phi_sol)
+        else:
+            return phi_sol
 
     def apply_convol(self,rhs,T,show_progress=False,method="BDF2",cutoff=10**(-8)):
         ## Step 1
