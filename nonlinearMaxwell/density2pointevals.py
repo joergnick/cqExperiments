@@ -5,7 +5,6 @@ sys.path.append('cqToolbox')
 sys.path.append('../cqToolbox')
 sys.path.append('data')
 sys.path.append('../data')
-print("ORIGINAL BEMPPORDER: ",bempp.api.global_parameters.quadrature.near.single_order)
 OrderQF = 8
 bempp.api.global_parameters.quadrature.near.max_rel_dist = 2
 bempp.api.global_parameters.quadrature.near.single_order =OrderQF-1
@@ -20,8 +19,8 @@ bempp.api.global_parameters.hmat.eps=10**-3
 bempp.api.global_parameters.hmat.admissibility='strong'
 #grid = bempp.api.shapes.sphere(h=2**(0))
 import scipy.io
-#mat_contents=scipy.io.loadmat("data/grids/TorusDOF340.mat")
 mat_contents=scipy.io.loadmat("data/grids/TorusDOF896.mat")
+#mat_contents=scipy.io.loadmat("data/grids/TorusDOF896.mat")
 Nodes=np.array(mat_contents['Nodes']).T
 rawElements=mat_contents['Elements']
 for j in range(len(rawElements)):
@@ -40,6 +39,7 @@ solDict = np.load('data/donutDOF896N200.npy').item()
 #solDict = np.load('data/donutDOF340N200_v2.npy').item()
 
 sol = solDict["sol"]
+######################################################################
 #import matplotlib.pyplot as plt
 #plt.plot(np.linalg.norm(sol,axis=0))
 #plt.show()
@@ -48,6 +48,7 @@ sol = solDict["sol"]
 #plt.plot([np.linalg.norm(sol[:,k]) for k in range(len(sol[0,:]))] )
 #plt.show()
 #raise ValueError("End of plot")
+#######################################################################
 print("Does sol contain Nan values? Answer: "+str(np.isnan(sol).any()))
 m = solDict["m"]
 T = solDict["T"]
@@ -98,7 +99,7 @@ def kirchhoff_repr(s,lambda_data):
     return scattered_field_data.reshape(n_grid_points**2*3,1)[:,0]
 from linearcq import Conv_Operator
 mSpt_Dpt = Conv_Operator(kirchhoff_repr)
-uscatStages = mSpt_Dpt.apply_RKconvol(sol,T,method = "RadauIIA-2",cutoff=10**(-3),prolonge_by=0,factor_laplace_evaluations=1)
+uscatStages = mSpt_Dpt.apply_RKconvol(sol,T,method = "RadauIIA-2",cutoff=10**(-3),prolonge_by=0,factor_laplace_evaluations=2)
 uscat = uscatStages[:,::2]
 #uscat = np.zeros((n_grid_points**2*3,N))
 uscat = np.concatenate((np.zeros((len(uscat[:,0]),1)),uscat),axis = 1)

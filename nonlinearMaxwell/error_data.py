@@ -37,7 +37,7 @@ def calc_gtH(rk,grid,N,T):
     tau = T*1.0/N
     RT_space=bempp.api.function_space(grid, "RT",0)
     dof = RT_space.global_dof_count
-    gTE = np.zeros((2*dof,m*N))
+    gTE = np.zeros((dof,m*N))
     curls = np.zeros((dof,m*N))
     for j in range(N):
         for stageInd in range(m):
@@ -53,31 +53,32 @@ def calc_gtH(rk,grid,N,T):
                 result[:] = np.cross(curlU,n)
             curlfun_inc = bempp.api.GridFunction(RT_space,fun = func_curls,dual_space = RT_space) 
             curls[:,j*rk.m+stageInd]  = curlfun_inc.coefficients
-            gTE[dof:,j*rk.m+stageInd] = gt_Einc_grid.coefficients
+            gTE[:,j*rk.m+stageInd] = gt_Einc_grid.coefficients
     def sinv(s,b):
         return s**(-1)*b
     IntegralOperator = Conv_Operator(sinv)
     gTH = -IntegralOperator.apply_RKconvol(curls,T,method="RadauIIA-"+str(m),show_progress=False)
     gTH = np.concatenate((np.zeros((dof,1)),gTH),axis = 1)
+    gTE = np.concatenate((np.zeros((dof,1)),gTE),axis = 1)
     #rhs[0:dof,:]=np.real(gTH)-rhs[0:dof,:]
     return gTH,gTE
 
 
 def nonlinearScattering(N,gridfilename,T,rk):
-    import scipy.io
-    mat_contents=scipy.io.loadmat(gridfilename)
-    Nodes=np.array(mat_contents['Nodes']).T
-    rawElements=mat_contents['Elements']
-    ## Switching orientation
-    for j in range(len(rawElements)):
-        betw=rawElements[j][0]
-        rawElements[j][0]=rawElements[j][1]
-        rawElements[j][1]=betw
-    Elements=np.array(rawElements).T
-    ## Subtraction due to different conventions of distmesh and bempp, grid starts from 0 instead of 1
-    Elements=Elements-1
-    grid=bempp.api.grid_from_element_data(Nodes,Elements)
-#    grid = bempp.api.shapes.sphere(h=1)
+  #  import scipy.io
+  #  mat_contents=scipy.io.loadmat(gridfilename)
+  #  Nodes=np.array(mat_contents['Nodes']).T
+  #  rawElements=mat_contents['Elements']
+  #  ## Switching orientation
+  #  for j in range(len(rawElements)):
+  #      betw=rawElements[j][0]
+  #      rawElements[j][0]=rawElements[j][1]
+  #      rawElements[j][1]=betw
+  #  Elements=np.array(rawElements).T
+  #  ## Subtraction due to different conventions of distmesh and bempp, grid starts from 0 instead of 1
+  #  Elements=Elements-1
+  #  grid=bempp.api.grid_from_element_data(Nodes,Elements)
+    grid = bempp.api.shapes.sphere(h=1)
     RT_space=bempp.api.function_space(grid, "RT",0)
     gridfunList,neighborlist,domainDict = precompMM(RT_space)
     id_op=bempp.api.operators.boundary.sparse.identity(RT_space, RT_space, RT_space)
@@ -146,93 +147,17 @@ def nonlinearScattering(N,gridfilename,T,rk):
     norms = [np.linalg.norm(sol[:,k]) for k in range(len(sol[0,:]))]
     return sol
 
-#gridfilename='null'
-gridfilename='data/grids/TorusDOF896.mat'
+gridfilename='null'
+#gridfilename='data/grids/TorusDOF896.mat'
 T = 8
-N = 200
+N = 50
 tau = T*1.0/N
 rk = RKMethod("RadauIIA-2",tau)
 sol = nonlinearScattering(N,gridfilename,T,rk)
-filename = 'data/donutDOF896N200.npy'
+filename = 'data/sphereDOF' + str(len(sol[:,0])/2) + '.npy'
 resDict = dict()
 resDict["sol"] = sol
 resDict["T"] = T
 resDict["m"] = rk.m
 resDict["N"] = N
 np.save(filename,resDict)
-
-#np.save('data/counterssmall.npy',counters)
-#plt.plot(norms)
-#plt.show()
-#norms = [bempp.api.GridFunction(RT_space,coefficients = sol[:dof,k]).l2_norm() for k in range(len(sol[0,:]))]
-#plt.plot(norms)
-#plt.show()
-#gridfunphi = bempp.api.GridFunction(RT_space,coefficients = sol[:dof,-1])
-#
-##gridfunpsi = bempp.api.GridFunction(RT_space,coefficients = sol[.1,dof:])
-#gridfunphi.plot()
-#def harmonic_calderon(s,b,grid):
-#        points=np.array([[0],[0],[2]])
-#        #normb=np.linalg.norm(b[0])+np.linalg.norm(b[1])+np.linalg.norm(b[2])
-#        normb=np.max(np.abs(b))
-#        bound=np.abs(s)**4*np.exp(-s.real)*normb
-#        print("s: ",s, " maxb: ", normb, " bound : ", bound)
-#        if bound <10**(-9):
-#                print("JUMPED")
-#                return np.zeros(3)
-#        
-#        #tol= np.finfo(float).eps
-#
-####    Define Spaces
-##       A_mat=bempp.api.as_matrix(blocks)
-##       print("A_mat : ",A_mat)
-##       e,D=np.linalg.eig(A_mat)
-##       print("Eigs : ", e)
-##       print("Cond : ", np.linalg.cond(A_mat))
-###
-###      trace_fun= bempp.api.GridFunction(multitrace.range_spaces[0], coefficients=b[0:dof],dual_space=multitrace.dual_to_range_spaces[0])
-###
-###      zero_fun= bempp.api.GridFunction(multitrace.range_spaces[1],coefficients = b[dof:],dual_space=multitrace.dual_to_range_spaces[1])
-###
-###      rhs=[trace_fun,zero_fun]
-###
-###      #print("Still living")
-###      
-#        #from bempp.api.linalg import gmres 
-#        from scipy.sparse.linalg import gmres
-#        print("Start GMRES : ")
-##       def print_res(rk):
-##               print("Norm of residual: "+ str(np.linalg.norm(rk)))
-#        #print(np.linalg.norm(lambda_data))
-#        #lambda_data,info = gmres(blocks, b,tol=10**-4,restart=50,maxiter=100,callback=print_res)
-#        lambda_data,info = gmres(blocks, b,tol=10**-5,maxiter=300)
-#        print("INFO :", info)
-#        #lambda_data,info = gmres(blocks, b,tol=10**-4,callback=print_res)
-#        #print("I survived!")
-#        #from bempp.api.linalg import lu
-#        #lambda_data = lu(elec, trace_fun)
-#        #lambda_data.plot()
-#        #print("Norm lambda_data : ",np.linalg.norm(lambda_data))
-#        #if (np.linalg.norm(lambda_data)<10**-10):
-#        phigrid=bempp.api.GridFunction(RT_space,coefficients=lambda_data[0:dof],dual_space=RT_space)
-#        psigrid=bempp.api.GridFunction(RT_space,coefficients=lambda_data[dof:2*dof],dual_space=RT_space)
-#
-#        slp_pot = bempp.api.operators.potential.maxwell.electric_field(RT_space, points, s*1j)
-#
-#        dlp_pot = bempp.api.operators.potential.maxwell.magnetic_field(RT_space, points, s*1j)
-#        print("Evaluate field : ")      
-#        scattered_field_data = -slp_pot * phigrid+dlp_pot*psigrid
-##       scattered_field_H = -slp_pot * psigrid-dlp_pot*phigrid
-##       H = scattered_field_H.reshape(3,1)[:,0]
-##       print(" E : ", E, " H : ", H)
-##       print("Angle: ", np.dot(E,H), " Scalar product with conjugation : ", np.dot(np.conj(E),H))
-##       print("NORM COMBINED OPERATOR :" , np.linalg.norm(scattered_field_data)/np.linalg.norm(b))
-##       print(scattered_field_data)
-##       print("NORM ScatteredField :", np.linalg.norm(scattered_field_data))
-##
-##       print("s : ", s)
-##       print("NORM B :" ,np.linalg.norm(b))
-#        if np.isnan(scattered_field_data).any():
-#                print("NAN Warning, s = ", s)
-#                scattered_field_data=np.zeros(np.shape(scattered_field_data)3
-#        return scattered_field_data.reshape(3,1)[:,0]

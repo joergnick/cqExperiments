@@ -17,7 +17,7 @@ n_grid=sqrt(length(u_ges(:,1)));
 %[scatterer] = create_scatterer(X_mesh,Y_mesh);
 % 
 %%%%%%%%%%%%%%%%%%%%
-  [u_ges ] = draw_scatterer( u_ges, scatterer);
+ % [u_ges ] = draw_scatterer( u_ges, scatterer);
  N=200;
 % norms_u = zeros(1,200);
 % for j=1:N+1
@@ -60,7 +60,7 @@ n_grid=sqrt(length(u_ges(:,1)));
 frames = [1:201];
 %frames=[80,100,120,140,160,180];
 %  figure('Position',[200 -2000 400 800])
-  video_object = VideoWriter('testvideoN200');
+  video_object = VideoWriter('testvideoN200_DOF340');
   video_object.Quality = 95;
   video_object.FrameRate = 20;
   open(video_object);
