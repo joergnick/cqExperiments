@@ -57,7 +57,7 @@ class NewtonIntegrator(AbstractIntegrator):
             jacoba[:,i] = (y_plus-y_minus)/(2*taugrad)
         return jacoba
 
-    def time_step(self,W0,j,rk,history,w_star_sol_j,tolsolver=10**(-5)):
+    def time_step(self,W0,j,rk,history,w_star_sol_j,tolsolver=10**(-5),debug_mode=False):
         x0  = np.zeros(w_star_sol_j.shape)
         rhs = np.zeros(w_star_sol_j.shape)
         for i in range(rk.m):
