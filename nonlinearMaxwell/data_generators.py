@@ -76,7 +76,7 @@ def compute_densities(N,gridfilename,T,rk,debug_mode=True):
         Elements=Elements-1
         load_success = True
     if gridfilename[-3:] == 'npy':
-        mat_contents = np.load(gridfilename).item()
+        mat_contents = np.load(gridfilename,allow_pickle=True).item()
         Nodes        = mat_contents['Nodes']
         Elements     = mat_contents['Elements']
         load_success = True
@@ -126,12 +126,12 @@ def compute_densities(N,gridfilename,T,rk,debug_mode=True):
             jacob = sparseWeightedMM(RT_space,weightphiGF+weightIncGF,self.Da,gridfunList,neighborlist,domainDict)
             return jacob
         def apply_jacobian(self,jacob,x):
-            dof = len(x)/2
+            dof = int(np.round(len(x)/2))
             jx = 1j*np.zeros(2*dof)
             jx[:dof] = jacob*x[:dof]
             return jx
         def nonlinearity(self,coeff,t,time_index):
-            dof = len(coeff)/2
+            dof = int(np.round(len(coeff)/2))
             phiGridFun = bempp.api.GridFunction(RT_space,coefficients=coeff[:dof]) 
             gTHFun     = bempp.api.GridFunction(RT_space,coefficients = gtH[:,time_index])
             agridFun   = applyNonlinearity(phiGridFun+gTHFun,self.a,gridfunList,domainDict)

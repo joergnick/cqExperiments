@@ -29,7 +29,7 @@ for space_index in range(am_space):
             print("File "+filename+" already computed, jumped.")
             continue
         rk = RKMethod("RadauIIA-"+str(m),tau)
-        sol = compute_densities(N,gridfilename,T,rk,)
+        sol = compute_densities(N,gridfilename,T,rk)
         resDict = dict()
         resDict["sol"] = sol
         resDict["T"] = T
