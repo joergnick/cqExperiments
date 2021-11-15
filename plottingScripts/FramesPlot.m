@@ -3,7 +3,7 @@ clear all
 set(groot, 'defaultAxesTickLabelInterpreter','latex'); 
 set(groot, 'defaultLegendInterpreter','latex');
 
-load('../data/DonutFieldDataDOF340N200')
+load('../data/DonutFieldDataDOF896N200')
 X_mesh(:,:)=plot_grid(1,:,:);
 Y_mesh(:,:)=plot_grid(2,:,:);
 n_grid=sqrt(length(u_ges(:,1))) ; 
@@ -60,7 +60,7 @@ n_grid=sqrt(length(u_ges(:,1)));
 frames = [1:201];
 %frames=[80,100,120,140,160,180];
 %  figure('Position',[200 -2000 400 800])
-  video_object = VideoWriter('testvideoN200_DOF340');
+  video_object = VideoWriter('testvideoN200_DOF896');
   video_object.Quality = 95;
   video_object.FrameRate = 20;
   open(video_object);

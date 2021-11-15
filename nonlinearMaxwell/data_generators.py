@@ -8,15 +8,10 @@ sys.path.append('..')
 import numpy as np
 import bempp.api
 import scipy.io
-
 ## Own inclusions
 from linearcq import Conv_Operator
 from customOperators import precompMM,sparseWeightedMM,applyNonlinearity
 from newtonStepper import NewtonIntegrator
-
-
-
-
 
 OrderQF = 8
 bempp.api.global_parameters.quadrature.near.max_rel_dist = 2
