@@ -19,35 +19,46 @@ bempp.api.global_parameters.hmat.eps=10**-3
 bempp.api.global_parameters.hmat.admissibility='strong'
 #grid = bempp.api.shapes.sphere(h=2**(0))
 import scipy.io
-mat_contents=scipy.io.loadmat("data/grids/TorusDOF896.mat")
-#mat_contents=scipy.io.loadmat("data/grids/TorusDOF896.mat")
-Nodes=np.array(mat_contents['Nodes']).T
-rawElements=mat_contents['Elements']
-for j in range(len(rawElements)):
-    betw=rawElements[j][0]
-    rawElements[j][0]=rawElements[j][1]
-    rawElements[j][1]=betw
-Elements=np.array(rawElements).T
-Elements=Elements-1
+gridfilename = 'data/grids/sphere_python3_h1.0.npy'
+load_success = False
+if gridfilename[-3:] == 'mat':
+    mat_contents=scipy.io.loadmat(gridfilename)
+    Nodes=np.array(mat_contents['Nodes']).T
+    rawElements=mat_contents['Elements']
+    ## Switching orientation
+    for j in range(len(rawElements)):
+        betw=rawElements[j][0]
+        rawElements[j][0]=rawElements[j][1]
+        rawElements[j][1]=betw
+    Elements=np.array(rawElements).T
+    ## Subtraction due to different conventions of distmesh and bempp, grid starts from 0 instead of 1
+    Elements=Elements-1
+    load_success = True
+if gridfilename[-3:] == 'npy':
+    mat_contents = np.load(gridfilename,allow_pickle=True).item()
+    Nodes        = mat_contents['Nodes']
+    Elements     = mat_contents['Elements']
+    load_success = True
+if not load_success:
+    raise ValueError("Filename of grid: "+gridfilename+" does not have .mat or .npy ending.")
 grid=bempp.api.grid_from_element_data(Nodes,Elements)
-
 
 RT_space = bempp.api.function_space(grid,"RT",0)
 dof = RT_space.global_dof_count
 #sol = np.load('data/solh1.0N64m2.npy')
-solDict = np.load('data/donutDOF896N200.npy').item()
+solDict = np.load('data/density_sphere_h_1.0_N_512_m_2.npy',allow_pickle=True).item()
 #solDict = np.load('data/donutDOF340N200_v2.npy').item()
 
 sol = solDict["sol"]
 ######################################################################
-#import matplotlib.pyplot as plt
-#plt.plot(np.linalg.norm(sol,axis=0))
-#plt.show()
-#import matplotlib.pyplot as plt
-#print(len(sol[:,0]),len(sol[0,:]))
-#plt.plot([np.linalg.norm(sol[:,k]) for k in range(len(sol[0,:]))] )
-#plt.show()
-#raise ValueError("End of plot")
+import matplotlib.pyplot as plt
+plt.plot(np.linalg.norm(sol,axis=0))
+plt.show()
+import matplotlib.pyplot as plt
+print(len(sol[:,0]),len(sol[0,:]))
+plt.plot([np.linalg.norm(sol[:,k]) for k in range(len(sol[0,:]))] )
+plt.show()
+raise ValueError("End of plot")
 #######################################################################
 print("Does sol contain Nan values? Answer: "+str(np.isnan(sol).any()))
 m = solDict["m"]
