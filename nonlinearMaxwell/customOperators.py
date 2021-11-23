@@ -21,6 +21,8 @@ from scipy.sparse.linalg import aslinearoperator
 ##print(dict(grid))
 #
 #RT_space = bempp.api.function_space(grid,"RT",0)
+
+bempp.api.global_parameters.hmat.eps=10**-7
 def precompMM(space):
     nontrivialEntries = []
     dof = space.global_dof_count
@@ -92,7 +94,7 @@ def applyNonlinearity(gridFun,nonlinearity,gridfunList,domainDict):
     identity = bempp.api.operators.boundary.sparse.identity(space, space, space)
     id_weak = identity.weak_form()
     from scipy.sparse.linalg import gmres
-    coeffsol,info = gmres(id_weak,weightIntegrals,tol=10**(-8))
+    coeffsol,info = gmres(id_weak,weightIntegrals,tol=10**(-10),atol = 10**(-7))
     return bempp.api.GridFunction(gridFun.space,coefficients = coeffsol)
 
 

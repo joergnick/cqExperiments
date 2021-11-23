@@ -46,7 +46,7 @@ grid=bempp.api.grid_from_element_data(Nodes,Elements)
 RT_space = bempp.api.function_space(grid,"RT",0)
 dof = RT_space.global_dof_count
 #sol = np.load('data/solh1.0N64m2.npy')
-solDict = np.load('data/density_sphere_h_1.0_N_512_m_2.npy',allow_pickle=True).item()
+solDict = np.load('data/density_sphere_h_1.0_N_1024_m_2.npy',allow_pickle=True).item()
 #solDict = np.load('data/donutDOF340N200_v2.npy').item()
 
 sol = solDict["sol"]

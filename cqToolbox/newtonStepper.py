@@ -57,15 +57,17 @@ class NewtonIntegrator(AbstractIntegrator):
             jacoba[:,i] = (y_plus-y_minus)/(2*taugrad)
         return jacoba
 
-    def time_step(self,W0,j,rk,history,w_star_sol_j,tolsolver=10**(-5),debug_mode=False):
+    def time_step(self,W0,j,rk,history,w_star_sol_j,tolsolver=10**(-7),debug_mode=True):
         x0  = np.zeros(w_star_sol_j.shape)
         rhs = np.zeros(w_star_sol_j.shape)
         for i in range(rk.m):
             rhs[:,i] = -w_star_sol_j[:,i] + self.righthandside(j*rk.tau+rk.c[i]*rk.tau,history=history)
             if j >=1:
-                x0[:,i] = self.extrapol(history[:,i+1:j*rk.m+i+1:rk.m],1)
+                x0[:,i] = self.extrapol(history[:,i+1:j*rk.m+i+1:rk.m],0)
             else:
                 x0[:,i] = np.zeros(len(w_star_sol_j[:,0]))
+
+        print("Begin Newton, ||x0|| = "+str(np.linalg.norm(x0))+" ||rhs|| = "+str(np.linalg.norm(rhs)))
         counter = 0
         thresh = 10
         x = x0
@@ -79,22 +81,24 @@ class NewtonIntegrator(AbstractIntegrator):
             if self.debug_mode:
                 print("INFO AFTER {} STEP: ".format(counter),info)
             if np.linalg.norm(x)>10**5:
-                print("Warning, setback after divergence in Newton's method.")
+                print("Warning, setback after divergence in Newton's method, ||x|| = "+str(np.linalg.norm(x)))
+                raise ValueError("Newton method diverging.")
                 x = x0
-                break
+                counter = thresh
+                info = 1
             counter = counter+1
             #print("NEWTON ITERATION COUNTER: ",counter, " info: ",info)
         return x
 
-    def newton_iteration(self,j,rk,rhs,W0,x0,history,tolsolver = 10**(-5),coeff = 1):
+    def newton_iteration(self,j,rk,rhs,W0,x0,history,tolsolver = 10**(-7),coeff = 1,debug_mode=True):
         t = j*rk.tau
         m = rk.m
         x0_pure = x0
         dof = len(rhs)
         for stage_ind in range(m):
             for dof_index in range(dof):
-                if np.abs(x0[dof_index,stage_ind])<10**(-10):
-                    x0[dof_index,stage_ind] = 10**(-10)
+                if np.abs(x0[dof_index,stage_ind])<10**(-30):
+                    x0[dof_index,stage_ind] = 10**(-30)
         jacob_list = [self.calc_jacobian(x0[:,k],t+rk.tau*rk.c[k],j*m+k+1) for k in range(m)]
         stage_rhs = rk.diagonalize(x0+1j*np.zeros((dof,m)))
         ## Calculating right-hand side
@@ -105,7 +109,7 @@ class NewtonIntegrator(AbstractIntegrator):
         ax0 = np.zeros((dof,m))
         for stage_ind in range(m):
             ax0[:,stage_ind] = self.nonlinearity(x0[:,stage_ind],t+rk.tau*rk.c[stage_ind],j*m+stage_ind+1)
-        rhs_newton = stage_rhs+ax0-rhs
+        rhs_newton = np.real(stage_rhs+ax0-rhs)
         ## Solving system W0y = b
         rhs_long = 1j*np.zeros(m*dof)
         x0_pure_long = 1j*np.zeros(m*dof)
@@ -122,25 +126,34 @@ class NewtonIntegrator(AbstractIntegrator):
                 Bs_mat[:,m_index]   = self.harmonic_forward(rk.delta_eigs[m_index],x_diag[:,m_index],precomp = W0[m_index])
             res_mat  = rk.reverse_diagonalize(Bs_mat) + grad_mat
             new_res =  res_mat.T.ravel()
-            return new_res
+            return np.real(new_res)
 
         newton_lambda = lambda x: newton_func(x)
         from scipy.sparse.linalg import LinearOperator
         newton_operator = LinearOperator((m*dof,m*dof),newton_lambda)
         counterObj = gmres_counter()
         #print("Residual: ",np.linalg.norm(rhs_long))
-        dx_long,info = gmres(newton_operator,rhs_long,maxiter = 100,callback = counterObj,tol=tolsolver)
-        #print("Residual after GMRES: ",np.linalg.norm(rhs_long-newton_func(dx_long)))
-        #print("COUNT GMRES: ",counterObj.niter)
-        #print("NORM dx_long: ",np.linalg.norm(dx_long))
+        dx_long,info = gmres(newton_operator,rhs_long,maxiter = 500,callback = counterObj,tol=tolsolver)
+        #print("Residual after GMRES: ",np.linalg.norm(rhs_long-newton_func(dx_long))," COUNT GMRES: ",counterObj.niter)
         if info != 0:
             print("GMRES Info not zero, Info: ", info)
+
         dx = 1j*np.zeros((dof,m))
         for stageInd in range(m):
             dx[:,stageInd] = dx_long[dof*stageInd:dof*(stageInd+1)]
         x1 = x0-coeff*dx
 
         #print("np.linalg.norm(dx) = ",np.linalg.norm(dx))
+        diag_x1 = rk.diagonalize(x1)
+        W0x1    = 1j*np.zeros((dof,m))
+        ax1 = np.zeros((dof,m))
+        for stage_ind in range(m):
+            W0x1[:,stage_ind] = self.harmonic_forward(rk.delta_eigs[stage_ind],diag_x1[:,stage_ind],precomp=W0[stage_ind])
+            ax1[:,stage_ind] = self.nonlinearity(np.real(x1[:,stage_ind]),t+rk.tau*rk.c[stage_ind],j*m+stage_ind+1)
+        W0x1 = np.real(rk.reverse_diagonalize(W0x1))
+        nonlinear_residual = W0x1+ax1 -rhs
+        if debug_mode:
+            print("Newton step completed, residual : "+str(np.linalg.norm(nonlinear_residual)))
         if coeff*np.linalg.norm(dx)/np.sqrt(dof)<tolsolver:
             info = 0
         else:

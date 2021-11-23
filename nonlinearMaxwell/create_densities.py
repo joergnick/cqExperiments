@@ -16,7 +16,7 @@ from data_generators import compute_densities
 T = 5
 m = 2
 am_space = 7
-am_time  = 9
+am_time  = 10
 for space_index in range(am_space):
     for time_index in range(am_time):
         h   = 2**(-space_index*1.0/2)

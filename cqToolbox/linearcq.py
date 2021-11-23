@@ -2,7 +2,7 @@ import numpy as np
 from rkmethods import Extrapolator,RKMethod
 class Conv_Operator():
     tol=10**-14
-    factor_laplace_evaluations=2
+    factor_laplace_evaluations=1
     def __init__(self,apply_elliptic_operator,order=2):
         self.order=order
         self.delta=lambda zeta : self.char_functions(zeta,order)
@@ -11,6 +11,7 @@ class Conv_Operator():
         tol=self.tol
         dt=(T*1.0)/N
         L=int(np.round(self.factor_laplace_evaluations*N))
+        #rho=tol**(1.0/(2*L))
         rho=tol**(1.0/(4*L))
         return L,dt,tol,rho
 

@@ -45,7 +45,6 @@ class RKMethod():
             for k in range(self.m):
                 ts[j*self.m+k+1] = (j+self.c[k])
         return self.tau*ts
-
 class Extrapolator():
     "Provides functionality with regards to extrapolation."
     prolonged = 0
@@ -110,10 +109,12 @@ class Extrapolator():
         return ret
 #
 #extr = Extrapolator()
-#N = 2
+#N = 10
 #T=0.5#
 #tau = T*1.0/N
-#rk =RKMethod("RadauIIA-2",tau)
+#rk =RKMethod("RadauIIA-3",tau)
+#import numpy as np
+#print(1-rk.b.dot(np.linalg.inv(rk.A).dot(np.ones((3)))))
 #u = np.zeros((2,N*rk.m+1))
 #timepoints = rk.get_time_points(T)
 #u[0,:] = timepoints**2

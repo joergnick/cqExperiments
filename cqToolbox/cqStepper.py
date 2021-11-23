@@ -1,4 +1,5 @@
 #import psutil
+import time
 from scipy.sparse.linalg import gmres
 from scipy.optimize import newton_krylov
 import numpy as np
@@ -66,15 +67,18 @@ class AbstractIntegrator:
         sol = np.zeros((dof,m*N+1))
         counters = np.zeros(N)
         for j in range(0,N):
-            if debug_mode:
-                print(j*1.0/N)
             ## Calculating solution at timepoint tj
+            start_ts = time.time()
             sol[:,j*m+1:(j+1)*m+1] = self.time_step(W0,j,rk,sol[:,:rk.m*(j)+1],conv_hist[:,j*m+1:(j+1)*m+1],tolsolver=tolsolver)
+            end_ts   = time.time() 
+            if debug_mode:
+                print("Computed new step, relative progress: "+str(j*1.0/N)+". Time taken: "+str(np.round(end_ts-start_ts)/60.0)+"Min. ||x(t_j)|| = "+str(np.linalg.norm(sol[:,j*m+1:(j+1)*m+1])))
             ## Calculating Local History:
             currLen = lengths[j]
             localHist = np.concatenate((sol[:,m*(j+1)+1-m*currLen:m*(j+1)+1],np.zeros((dof,m*currLen))),axis=1)
             if len(localHist[0,:])>=1:
-                localconvHist = np.real(self.tdForward.apply_RKconvol(localHist,(len(localHist[0,:]))*tau/m,method = method,factor_laplace_evaluations=factor_laplace_evaluations,prolonge_by=0,show_progress=False))
+                localconvHist = np.real(self.tdForward.apply_RKconvol(localHist,(len(localHist[0,:]))*tau/m,method = method,factor_laplace_evaluations=1,prolonge_by=0,show_progress=False))
+                #localconvHist = np.real(self.tdForward.apply_RKconvol(localHist,(len(localHist[0,:]))*tau/m,method = method,factor_laplace_evaluations=factor_laplace_evaluations,prolonge_by=0,show_progress=False))
             else:
                 break
             ## Updating Global History: 
