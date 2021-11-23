@@ -20,7 +20,7 @@ class RKMethod():
                            [37.0/225+169.0*math.sqrt(6)/1800,11.0/45+7*math.sqrt(6)/360,-2.0/225-math.sqrt(6)/75],
                            [4.0/9-math.sqrt(6)/36,4.0/9+math.sqrt(6)/36,1.0/9]])
             self.c=np.array([2.0/5-math.sqrt(6)/10,2.0/5+math.sqrt(6)/10,1])
-            self.b=np.array([4.0/9-math.sqrt(6)/36,4.0/9+math.sqrt(6)/36,1.0/9])
+            self.b=np.array([[4.0/9-math.sqrt(6)/36,4.0/9+math.sqrt(6)/36,1.0/9]])
         else:
             raise ValueError("Given method "+method+" not implemented.")
         self.method_name = method

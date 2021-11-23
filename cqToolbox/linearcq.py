@@ -61,16 +61,16 @@ class Conv_Operator():
         
     def format_rhs(self,rhs,m):
         try:
-            N=(len(rhs[0,:]))//m
+            N=int(round((len(rhs[0,:]))//m))
         except:
-            N=(len(rhs))/m
-            rhs_mat=np.zeros((1,N+1))
+            N=int(round((len(rhs))/m))
+            rhs_mat=np.zeros((1,m*N))
             rhs_mat[0,:]=rhs
             rhs=rhs_mat 
     
         return rhs,N
 
-    def apply_RKconvol(self,rhs,T,show_progress=True,method="RadauIIA-2",factor_laplace_evaluations=1,cutoff=10**(-8),prolonge_by = 0):
+    def apply_RKconvol(self,rhs,T,show_progress=True,method="RadauIIA-2",factor_laplace_evaluations=2,cutoff=10**(-8),prolonge_by = 0):
         m      = RKMethod(method,1).m
         [rhs,N]=self.format_rhs(rhs,m)
         tau = T*1.0/N ## tau stays the same after prolongation
