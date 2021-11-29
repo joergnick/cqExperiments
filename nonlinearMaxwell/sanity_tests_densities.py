@@ -2,28 +2,37 @@ import numpy as np
 import bempp.api
 import sys
 sys.path.append('cqToolbox')
-sys.path.append('../cqToolbox')
+#sys.path.append('../cqToolbox')
 sys.path.append('data')
-sys.path.append('../data')
+#sys.path.append('../data')
 import scipy.io
 #mat_contents=scipy.io.loadmat("data/grids/TorusDOF340.mat")
-mat_contents=scipy.io.loadmat("data/grids/TorusDOF896.mat")
-Nodes=np.array(mat_contents['Nodes']).T
-rawElements=mat_contents['Elements']
-for j in range(len(rawElements)):
-    betw=rawElements[j][0]
-    rawElements[j][0]=rawElements[j][1]
-    rawElements[j][1]=betw
-Elements=np.array(rawElements).T
-Elements=Elements-1
+#h=1.0
+h=0.5
+gridfilename='data/grids/sphere_python3_h'+str(np.round(h,3))+'.npy'
+mat_contents = np.load(gridfilename,allow_pickle=True).item()
+Nodes        = mat_contents['Nodes']
+Elements     = mat_contents['Elements']
+
+#Nodes=np.array(mat_contents['Nodes']).T
+#rawElements=mat_contents['Elements']
+#for j in range(len(rawElements)):
+#    betw=rawElements[j][0]
+#    rawElements[j][0]=rawElements[j][1]
+#    rawElements[j][1]=betw
+#Elements=np.array(rawElements).T
+#Elements=Elements-1
 grid=bempp.api.grid_from_element_data(Nodes,Elements)
 #grid = bempp.api.shapes.sphere(h=1)
 
 RT_space = bempp.api.function_space(grid,"RT",0)
-dof = RT_space.global_dof_count
-
+dof = int(RT_space.global_dof_count)
+#N   = 16
+N   = 128
+m = 2
+density_filename = 'data/density_sphere_h_'+str(np.round(h,3)) +'_N_'+str(N)+'_m_'+str(m)+ '.npy'
 #solDict = np.load('data/sphereDOF72.npy').item()
-solDict = np.load('data/donutDOF896N200.npy').item()
+solDict = np.load(density_filename,allow_pickle=True).item()
 sol = solDict["sol"]
 ######################################################################
 #import matplotlib.pyplot as plt
@@ -39,11 +48,11 @@ print("Does sol contain Nan values? Answer: "+str(np.isnan(sol).any()))
 m = solDict["m"]
 T = solDict["T"]
 
-N = (len(sol[0,:])-1)/2
+#N = (len(sol[0,:])-1)/2
 from rkmethods import RKMethod
 rk = RKMethod("RadauIIA-"+str(m),T*1.0/N)
 print("N= ",N)
-dof = len(sol[:,0])/2
+dof = int(np.round(len(sol[:,0])/2))
 
 id_op=bempp.api.operators.boundary.sparse.identity(RT_space, RT_space, RT_space)
 id_weak = id_op.weak_form()
@@ -61,7 +70,7 @@ def calc_gtH(rk,grid,N,T):
     m = len(rk.c)
     tau = T*1.0/N
     RT_space=bempp.api.function_space(grid, "RT",0)
-    dof = RT_space.global_dof_count
+    dof = int(RT_space.global_dof_count)
     gTE = np.zeros((dof,m*N))
     curls = np.zeros((dof,m*N))
     for j in range(N):
@@ -95,10 +104,10 @@ print("FINISHED PRECOMPUTATION FOR CUSTOM_OPERATOR.")
 for time_index in range(len(sol[0,:])):
     phi_j = sol[:dof,time_index]
     psi_j = sol[dof:,time_index]
-    gTHFun     = bempp.api.GridFunction(RT_space,coefficients = gTH_inc[:,time_index]+phi_j)
+    gTHFun     = bempp.api.GridFunction(RT_space,coefficients = gTH_inc[:,time_index]-phi_j)
     agridFun   = applyNonlinearity(gTHFun,a,gridfunList,domainDict)
     projection_aH_tot = id_weak*agridFun.coefficients
-    gTE_tot_coefficients = -psi_j+gTE_inc[:,time_index]
+    gTE_tot_coefficients = -psi_j-gTE_inc[:,time_index]
     projection_gTE_tot   = idrot_weak*gTE_tot_coefficients
     print("NORM gtE_tot: ",np.linalg.norm(projection_gTE_tot),"  NORM aH_tot: ", np.linalg.norm(projection_aH_tot)," NORM addition: ", np.linalg.norm(projection_gTE_tot+projection_aH_tot), " NORM difference: ", np.linalg.norm(projection_gTE_tot-projection_aH_tot))
 #grid_fun = bempp.api.GridFunction(RT_space,coefficients=gTE_inc[:,time_index])
