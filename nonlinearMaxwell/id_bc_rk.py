@@ -18,7 +18,7 @@ def create_timepoints(c,N,T):
     return T*time_points
 
 def create_rhs(grid,dx,N,T,m):
-    OrderQF = 8
+    OrderQF = 9
     bempp.api.global_parameters.quadrature.near.max_rel_dist = 2
     bempp.api.global_parameters.quadrature.near.single_order =OrderQF-1
     bempp.api.global_parameters.quadrature.near.double_order = OrderQF-1
@@ -68,7 +68,8 @@ def create_rhs(grid,dx,N,T,m):
         return s**(-1)*b
     IntegralOperator=Conv_Operator(sinv)
     def HarmonicImpedance(s,b):
-        return 0.1*s**(0.5)*b
+        return 0*b
+        #return 0.1*s**(0.5)*b
     TimeImpedance=Conv_Operator(HarmonicImpedance)  
     if (m==2):
         curls=IntegralOperator.apply_RKconvol(curls,T,method="RadauIIA-2",show_progress=False)
@@ -117,7 +118,7 @@ def harmonic_calderon(s,b,grid):
     b[0:dof]=id_discrete*b[0:dof]
 
     blocks = np.array([[None,None], [None,None]])
-    blocks[0,0] = -elec.weak_form()+identity2.weak_form()
+    blocks[0,0] = -elec.weak_form()+0*identity2.weak_form()
     blocks[0,1] =  magn.weak_form()-1.0/2*identity.weak_form()
     blocks[1,0] = -magn.weak_form()-1.0/2*identity.weak_form()
     blocks[1,1] = -elec.weak_form()
@@ -162,7 +163,7 @@ import time
 
 T=6
 #N_ref=2**4
-N_ref=2**3
+N_ref=2**4
 tt_ref=np.linspace(0,T,N_ref+1)
 dx_ref=np.sqrt(2)**(0)
 #dx_ref=np.sqrt(2)**(-9)

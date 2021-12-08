@@ -4,15 +4,17 @@ sys.path.append('../cqToolbox')
 sys.path.append('data')
 sys.path.append('../data')
 sys.path.append('..')
-
+import warnings
+warnings.filterwarnings('error')
 import numpy as np
+import time 
 import os.path
 #from cqtoolbox import CQModel
 from newtonStepper import NewtonIntegrator
 from linearcq import Conv_Operator
 from rkmethods import RKMethod
 from data_generators import compute_densities
-
+start = time.time()
 T = 6
 m = 2
 am_space = 1
@@ -24,7 +26,6 @@ for space_index in range(am_space):
         tau = T*1.0/N
         gridfilename='data/grids/sphereh'+str(np.round(h,3))+'.npy'
         #gridfilename='data/grids/sphere_python3_h'+str(np.round(h,3))+'.npy'
-        
         filename = 'data/density_sphere_h_'+str(np.round(h,3)) +'_N_'+str(N)+'_m_'+str(m)+ '.npy'
         if os.path.isfile(filename):
             print("File "+filename+" already computed, jumped.")
@@ -40,3 +41,5 @@ for space_index in range(am_space):
         #np.save(filename,resDict)
 
 
+end = time.time()
+print("COMPLETE DURATION: "+str(end-start))

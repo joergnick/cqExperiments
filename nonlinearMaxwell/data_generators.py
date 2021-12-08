@@ -39,19 +39,19 @@ def calc_gtH(rk,grid,N,T):
             def func_rhs(x,n,domain_index,result):
                 Einc =  np.array([np.exp(-50*(x[2]-t+2)**2), 0. * x[2], 0. * x[2]])    
                 #tang = np.cross(n,np.cross(inc, n))
-                gT_Einc = np.cross(Einc, n)
-                result[:] = gT_Einc
+                PT_Einc = np.cross(n,np.cross(Einc, n))
+                result[:] = PT_Einc
             gt_Einc_grid = bempp.api.GridFunction(RT_space,fun = func_rhs,dual_space = RT_space)
+            gTE[:,j*rk.m+stageInd] = gt_Einc_grid.coefficients
             def func_curls(x,n,domain_index,result):
                 curlU=np.array([ 0. * x[2],-100*(x[2]-t+2)*np.exp(-50*(x[2]-t+2)**2), 0. * x[2]])
                 result[:] = np.cross(curlU,n)
-            curlfun_inc = bempp.api.GridFunction(RT_space,fun = func_curls,dual_space = RT_space) 
+            curlfun_inc = -bempp.api.GridFunction(RT_space,fun = func_curls,dual_space = RT_space) 
             curls[:,j*rk.m+stageInd]  = curlfun_inc.coefficients
-            gTE[:,j*rk.m+stageInd] = gt_Einc_grid.coefficients
     def sinv(s,b):
         return s**(-1)*b
     IntegralOperator = Conv_Operator(sinv)
-    gTH = -IntegralOperator.apply_RKconvol(curls,T,method="RadauIIA-"+str(m),show_progress=False)
+    gTH = np.real(-IntegralOperator.apply_RKconvol(curls,T,method="RadauIIA-"+str(m),show_progress=False))
     gTH = np.concatenate((np.zeros((dof,1)),gTH),axis = 1)
     gTE = np.concatenate((np.zeros((dof,1)),gTE),axis = 1)
     #rhs[0:dof,:]=np.real(gTH)-rhs[0:dof,:]
@@ -90,21 +90,21 @@ def compute_densities(N,gridfilename,T,rk,debug_mode=True):
     id_weak = id_op.weak_form()
     gtH ,dummy    = calc_gtH(rk,grid,N,T)
     class ScatModel(NewtonIntegrator):
-        alpha = 1
+        alpha = -1.0
         debug_mode = False
-        def __init__(self,alpha=1):
+        def __init__(self,alpha=1.0):
             NewtonIntegrator.__init__(self)
             if (alpha<=0) or (alpha>1):
                 raise ValueError("The parameter alpha must be in the interval (0,1].")
             self.alpha = alpha
         def a(self,x):
-            return np.linalg.norm(x)**(1-self.alpha)*x
+            return 0*np.linalg.norm(x)**(1-self.alpha)*x
             #return np.linalg.norm(x)**(1-self.alpha)*x
         def Da(self,x):
         #    if np.linalg.norm(x)<10**(-15):
         #        x=10**(-15)*np.ones(3)
         #    return np.eye(3)
-            return (self.alpha-1)*np.linalg.norm(x)**(self.alpha-3)*np.outer(x,x)+np.linalg.norm(x)**(self.alpha-1)*np.eye(3)
+            return 0*((self.alpha-1)*np.linalg.norm(x)**(self.alpha-3)*np.outer(x,x)+np.linalg.norm(x)**(self.alpha-1)*np.eye(3))
            # return -0.5*np.linalg.norm(x)**(-2.5)*np.outer(x,x)+np.linalg.norm(x)**(-0.5)*np.eye(3)
         def precomputing(self,s):
             NC_space=bempp.api.function_space(grid, "NC",0)
@@ -151,7 +151,7 @@ def compute_densities(N,gridfilename,T,rk,debug_mode=True):
             gridfunrhs = bempp.api.GridFunction(RT_space,fun = func_rhs,dual_space = RT_space)
             dof = RT_space.global_dof_count
             rhs = np.zeros(dof*2)
-            rhs[:dof] = gridfunrhs.coefficients
+            #rhs[:dof] = gridfunrhs.coefficients
             rhs[:dof] = id_weak*gridfunrhs.coefficients
             #print(np.linalg.norm(rhs))
             return rhs
@@ -161,5 +161,4 @@ def compute_densities(N,gridfilename,T,rk,debug_mode=True):
     print("Finished RHS.")
     sol ,counters  = model.integrate(T,N, method = rk.method_name,max_evals_saved=10000,debug_mode=debug_mode)
     dof = RT_space.global_dof_count
-    norms = [np.linalg.norm(sol[:,k]) for k in range(len(sol[0,:]))]
     return sol
