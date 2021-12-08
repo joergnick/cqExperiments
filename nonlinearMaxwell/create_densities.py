@@ -13,28 +13,30 @@ from linearcq import Conv_Operator
 from rkmethods import RKMethod
 from data_generators import compute_densities
 
-T = 5
+T = 6
 m = 2
-am_space = 7
-am_time  = 10
+am_space = 1
+am_time  = 1
 for space_index in range(am_space):
     for time_index in range(am_time):
         h   = 2**(-space_index*1.0/2)
-        N = 4*2**time_index
+        N   = 16*2**time_index
         tau = T*1.0/N
-        gridfilename='data/grids/sphere_python3_h'+str(np.round(h,3))+'.npy'
+        gridfilename='data/grids/sphereh'+str(np.round(h,3))+'.npy'
+        #gridfilename='data/grids/sphere_python3_h'+str(np.round(h,3))+'.npy'
         
         filename = 'data/density_sphere_h_'+str(np.round(h,3)) +'_N_'+str(N)+'_m_'+str(m)+ '.npy'
         if os.path.isfile(filename):
             print("File "+filename+" already computed, jumped.")
-            continue
+        #    continue
         rk = RKMethod("RadauIIA-"+str(m),tau)
         sol = compute_densities(N,gridfilename,T,rk)
+        print(np.linalg.norm(sol[:,::m],axis =0))
         resDict = dict()
         resDict["sol"] = sol
         resDict["T"] = T
         resDict["m"] = rk.m
         resDict["N"] = N
-        np.save(filename,resDict)
+        #np.save(filename,resDict)
 
 

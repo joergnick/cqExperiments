@@ -16,12 +16,15 @@ def invDelta(zeta):
 tt = np.linspace(0,2*np.pi,10000)
 points_inner_circle = 0.9999999999*np.exp(1j*tt)
 evals = np.zeros(len(tt))
+B_diag = np.diag(rk.b[0,:])
 for index,point in enumerate(points_inner_circle):
     #evals[index] = np.linalg.norm(  Delta(np.conj(point)).T.dot(invDelta(point)))
     #evals[index] = np.linalg.norm(  np.conj(invDelta(point)).T.dot(Delta(point)))
-    evals[index] = np.linalg.norm(  np.conj(invDelta(point)).T.dot(Delta(point)))
+    evals[index] = np.linalg.norm(np.conj(invDelta(point)).T.dot(B_diag).dot(Delta(point)))
 
 print("MAX EVALS: ",max(evals))
-print(Delta(0.99).dot(invDelta(0.99)))
-print(np.ones((rk.m,1)).dot(rk.b))
-vals = np
+#print(Delta(0.99).dot(invDelta(0.99)))
+#print(np.ones((rk.m,1)).dot(rk.b))
+print(rk.b.dot(invA))
+print(rk.b.dot(invA).dot( np.eye(rk.m)-1*np.ones((rk.m,1)).dot(rk.b).dot(invA) ) )
+#print(np.ones((rk.m,1)).dot(rk.b).dot(invA))

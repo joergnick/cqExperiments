@@ -107,7 +107,7 @@ for time_index in range(len(sol[0,:])):
     gTHFun     = bempp.api.GridFunction(RT_space,coefficients = gTH_inc[:,time_index]-phi_j)
     agridFun   = applyNonlinearity(gTHFun,a,gridfunList,domainDict)
     projection_aH_tot = id_weak*agridFun.coefficients
-    gTE_tot_coefficients = -psi_j-gTE_inc[:,time_index]
+    gTE_tot_coefficients = -psi_j+gTE_inc[:,time_index]
     projection_gTE_tot   = idrot_weak*gTE_tot_coefficients
     print("NORM gtE_tot: ",np.linalg.norm(projection_gTE_tot),"  NORM aH_tot: ", np.linalg.norm(projection_aH_tot)," NORM addition: ", np.linalg.norm(projection_gTE_tot+projection_aH_tot), " NORM difference: ", np.linalg.norm(projection_gTE_tot-projection_aH_tot))
 #grid_fun = bempp.api.GridFunction(RT_space,coefficients=gTE_inc[:,time_index])

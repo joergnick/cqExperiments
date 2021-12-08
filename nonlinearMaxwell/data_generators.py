@@ -90,15 +90,16 @@ def compute_densities(N,gridfilename,T,rk,debug_mode=True):
     id_weak = id_op.weak_form()
     gtH ,dummy    = calc_gtH(rk,grid,N,T)
     class ScatModel(NewtonIntegrator):
-        alpha = 0.5
+        alpha = 1
         debug_mode = False
-        def __init__(self,alpha=0.5):
+        def __init__(self,alpha=1):
             NewtonIntegrator.__init__(self)
             if (alpha<=0) or (alpha>1):
                 raise ValueError("The parameter alpha must be in the interval (0,1].")
             self.alpha = alpha
         def a(self,x):
             return np.linalg.norm(x)**(1-self.alpha)*x
+            #return np.linalg.norm(x)**(1-self.alpha)*x
         def Da(self,x):
         #    if np.linalg.norm(x)<10**(-15):
         #        x=10**(-15)*np.ones(3)

@@ -67,7 +67,7 @@ class NewtonIntegrator(AbstractIntegrator):
             else:
                 x0[:,i] = np.zeros(len(w_star_sol_j[:,0]))
 
-        print("Begin Newton, ||x0|| = "+str(np.linalg.norm(x0))+" ||rhs|| = "+str(np.linalg.norm(rhs)))
+        #print("Begin Newton, ||x0|| = "+str(np.linalg.norm(x0))+" ||rhs|| = "+str(np.linalg.norm(rhs)))
         counter = 0
         thresh = 10
         x = x0
@@ -89,9 +89,10 @@ class NewtonIntegrator(AbstractIntegrator):
                 info = 1
             counter = counter+1
             #print("NEWTON ITERATION COUNTER: ",counter, " info: ",info)
+        print("||res|| = "+str(np.linalg.norm(res)))
         return x
 
-    def newton_iteration(self,j,rk,rhs,W0,x0,history,tolsolver = 10**(-7),coeff = 1,debug_mode=True,last_residual=None):
+    def newton_iteration(self,j,rk,rhs,W0,x0,history,tolsolver = 10**(-7),coeff = 1,debug_mode=False,last_residual=None):
         t = j*rk.tau
         m = rk.m
         x0_pure = x0
@@ -153,9 +154,10 @@ class NewtonIntegrator(AbstractIntegrator):
             ax1[:,stage_ind] = self.nonlinearity(np.real(x1[:,stage_ind]),t+rk.tau*rk.c[stage_ind],j*m+stage_ind+1)
         W0x1 = np.real(rk.reverse_diagonalize(W0x1)) 
         
-        nonlinear_residual = W0x1+ax1 -rhs
-        if (last_residual is not None) and (np.linalg.norm(nonlinear_residual-last_residual)/np.linalg.norm(last_residual))<10**(-3):
-            print("Early finish, residual: "+str(np.linalg.norm(nonlinear_residual)))
+        nonlinear_residual = W0x1+ax1 - rhs
+        #if (last_residual is not None) and (np.linalg.norm(nonlinear_residual-last_residual)/np.linalg.norm(last_residual))<10**(-3):
+        if (last_residual is not None) and (np.linalg.norm(nonlinear_residual-last_residual))<10**(-3):
+            #print("Early finish, residual: "+str(np.linalg.norm(nonlinear_residual)))
             return np.real(x1), 0,nonlinear_residual
         if debug_mode:
             print("Newton step completed, residual : "+str(np.linalg.norm(nonlinear_residual)))

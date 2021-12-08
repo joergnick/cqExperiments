@@ -25,13 +25,13 @@ bempp.api.global_parameters.quadrature.double_singular = OrderQF
 bempp.api.global_parameters.hmat.eps=10**-3
 bempp.api.global_parameters.hmat.admissibility='strong'
 def a(x):
-    return np.linalg.norm(x)**(-0.5)*x
-#    return x
+    return x
+    #return np.linalg.norm(x)**(-0.5)*x
 def Da(x):
 #    if np.linalg.norm(x)<10**(-15):
 #        x=10**(-15)*np.ones(3)
-#    return np.eye(3)
-    return -0.5*np.linalg.norm(x)**(-2.5)*np.outer(x,x)+np.linalg.norm(x)**(-0.5)*np.eye(3)
+    return np.eye(3)
+#    return -0.5*np.linalg.norm(x)**(-2.5)*np.outer(x,x)+np.linalg.norm(x)**(-0.5)*np.eye(3)
 def calc_gtH(rk,grid,N,T):
     m = len(rk.c)
     tau = T*1.0/N

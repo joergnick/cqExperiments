@@ -94,7 +94,8 @@ def applyNonlinearity(gridFun,nonlinearity,gridfunList,domainDict):
     identity = bempp.api.operators.boundary.sparse.identity(space, space, space)
     id_weak = identity.weak_form()
     from scipy.sparse.linalg import gmres
-    coeffsol,info = gmres(id_weak,weightIntegrals,tol=10**(-10),atol = 10**(-7))
+    coeffsol,info = gmres(id_weak,weightIntegrals,tol=10**(-10))
+    #coeffsol,info = gmres(id_weak,weightIntegrals,tol=10**(-10),atol = 10**(-7))
     return bempp.api.GridFunction(gridFun.space,coefficients = coeffsol)
 
 
