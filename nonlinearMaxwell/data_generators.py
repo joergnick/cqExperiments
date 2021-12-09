@@ -46,7 +46,7 @@ def calc_gtH(rk,grid,N,T):
             def func_curls(x,n,domain_index,result):
                 curlU=np.array([ 0. * x[2],-100*(x[2]-t+2)*np.exp(-50*(x[2]-t+2)**2), 0. * x[2]])
                 result[:] = np.cross(curlU,n)
-            curlfun_inc = -bempp.api.GridFunction(RT_space,fun = func_curls,dual_space = RT_space) 
+            curlfun_inc = bempp.api.GridFunction(RT_space,fun = func_curls,dual_space = RT_space) 
             curls[:,j*rk.m+stageInd]  = curlfun_inc.coefficients
     def sinv(s,b):
         return s**(-1)*b
@@ -90,7 +90,7 @@ def compute_densities(N,gridfilename,T,rk,debug_mode=True):
     id_weak = id_op.weak_form()
     gtH ,dummy    = calc_gtH(rk,grid,N,T)
     class ScatModel(NewtonIntegrator):
-        alpha = -1.0
+        alpha = -1.0 ## invalid value
         debug_mode = False
         def __init__(self,alpha=1.0):
             NewtonIntegrator.__init__(self)
@@ -98,13 +98,14 @@ def compute_densities(N,gridfilename,T,rk,debug_mode=True):
                 raise ValueError("The parameter alpha must be in the interval (0,1].")
             self.alpha = alpha
         def a(self,x):
-            return 0*np.linalg.norm(x)**(1-self.alpha)*x
+            return x
+            #return 0*np.linalg.norm(x)**(1-self.alpha)*x
             #return np.linalg.norm(x)**(1-self.alpha)*x
         def Da(self,x):
         #    if np.linalg.norm(x)<10**(-15):
         #        x=10**(-15)*np.ones(3)
-        #    return np.eye(3)
-            return 0*((self.alpha-1)*np.linalg.norm(x)**(self.alpha-3)*np.outer(x,x)+np.linalg.norm(x)**(self.alpha-1)*np.eye(3))
+            return np.eye(3)
+        #    return 0*((self.alpha-1)*np.linalg.norm(x)**(self.alpha-3)*np.outer(x,x)+np.linalg.norm(x)**(self.alpha-1)*np.eye(3))
            # return -0.5*np.linalg.norm(x)**(-2.5)*np.outer(x,x)+np.linalg.norm(x)**(-0.5)*np.eye(3)
         def precomputing(self,s):
             NC_space=bempp.api.function_space(grid, "NC",0)

@@ -68,7 +68,7 @@ def create_rhs(grid,dx,N,T,m):
         return s**(-1)*b
     IntegralOperator=Conv_Operator(sinv)
     def HarmonicImpedance(s,b):
-        return 0*b
+        return b
         #return 0.1*s**(0.5)*b
     TimeImpedance=Conv_Operator(HarmonicImpedance)  
     if (m==2):
@@ -118,7 +118,7 @@ def harmonic_calderon(s,b,grid):
     b[0:dof]=id_discrete*b[0:dof]
 
     blocks = np.array([[None,None], [None,None]])
-    blocks[0,0] = -elec.weak_form()+0*identity2.weak_form()
+    blocks[0,0] = -elec.weak_form()+identity2.weak_form()
     blocks[0,1] =  magn.weak_form()-1.0/2*identity.weak_form()
     blocks[1,0] = -magn.weak_form()-1.0/2*identity.weak_form()
     blocks[1,1] = -elec.weak_form()
