@@ -142,7 +142,7 @@ class TestCQMethods(unittest.TestCase):
     def test_nonlinear_RadauIIA_2_custom_gradient(self):
         modelN       = NonlinearScatModelCustomGradient()
         m = 2
-        N = 31
+        N = 35
         T = 2
         sol,counters = modelN.integrate(T,N,method = "RadauIIA-"+str(m))
         exSol        = modelN.ex_sol(np.linspace(0,T,N+1))
@@ -156,7 +156,7 @@ class TestCQMethods(unittest.TestCase):
         sol,counters = modelN.integrate(T,N,tolsolver=10**(-8),method = "RadauIIA-"+str(m))
         exSol        = modelN.ex_sol(np.linspace(0,T,N+1))
         err          = np.max(np.max(np.abs(sol[:,::m]-exSol)))
-        self.assertLess(np.abs(err),10**(-8))
+        self.assertLess(np.abs(err),10**(-6))
     def test_nonlinear_inhom_RadauIIA_2(self):
         N       = 300
         T       = 2
@@ -182,7 +182,7 @@ class TestCQMethods(unittest.TestCase):
         err          = np.max(np.max(np.abs(sol[:,::m]-exSol)))
         self.assertLess(np.abs(err),10**(-6))
     def test_nonlinear_inhom_RadauIIA_3(self):
-        N       = 19
+        N       = 41
         T       = 1.5
         m       = 3
         tau     = T*1.0/N
@@ -204,7 +204,7 @@ class TestCQMethods(unittest.TestCase):
         sol,counters = modelNI.integrate(T,N,tolsolver=10**(-6),method = "RadauIIA-"+str(m))
         exSol        = modelNI.ex_sol(np.linspace(0,T,N+1))
         err          = np.max(np.max(np.abs(sol[:,::m]-exSol)))
-        self.assertLess(np.abs(err),10**(-7))
+        self.assertLess(np.abs(err),10**(-6))
 
     def test_extrapolation_p1(self):
         modelN       = NonlinearScatModel()

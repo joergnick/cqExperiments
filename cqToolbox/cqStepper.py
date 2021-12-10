@@ -47,7 +47,7 @@ class AbstractIntegrator:
             it = it+1
         return lengths
 
-    def integrate(self,T,N,method = "RadauIIA-2",tolsolver = 10**(-5),max_evals_saved=0,factor_laplace_evaluations = 1,debug_mode=False):
+    def integrate(self,T,N,method = "RadauIIA-2",tolsolver = 10**(-5),max_evals_saved=100,factor_laplace_evaluations = 2,debug_mode=False,same_rho = False):
         self.max_evals_saved   = max_evals_saved
         self.count_saved_evals = 0
         tau = T*1.0/N
@@ -66,6 +66,7 @@ class AbstractIntegrator:
         conv_hist = np.zeros((dof,m*N+1))
         sol = np.zeros((dof,m*N+1))
         counters = np.zeros(N)
+        external_rho = 10**(-15*1.0/(6*N))
         for j in range(0,N):
             ## Calculating solution at timepoint tj
             start_ts = time.time()
@@ -77,7 +78,10 @@ class AbstractIntegrator:
             currLen = lengths[j]
             localHist = np.concatenate((sol[:,m*(j+1)+1-m*currLen:m*(j+1)+1],np.zeros((dof,m*currLen))),axis=1)
             if len(localHist[0,:])>=1:
-                localconvHist = np.real(self.tdForward.apply_RKconvol(localHist,(len(localHist[0,:]))*tau/m,method = method,factor_laplace_evaluations=1,prolonge_by=0,show_progress=False))
+                if same_rho:
+                    localconvHist = np.real(self.tdForward.apply_RKconvol(localHist,(len(localHist[0,:]))*tau/m,method = method,factor_laplace_evaluations=factor_laplace_evaluations,external_rho=external_rho,prolonge_by=0,show_progress=False))
+                else:
+                    localconvHist = np.real(self.tdForward.apply_RKconvol(localHist,(len(localHist[0,:]))*tau/m,method = method,factor_laplace_evaluations=factor_laplace_evaluations,prolonge_by=0,show_progress=False))
                 #localconvHist = np.real(self.tdForward.apply_RKconvol(localHist,(len(localHist[0,:]))*tau/m,method = method,factor_laplace_evaluations=factor_laplace_evaluations,prolonge_by=0,show_progress=False))
             else:
                 break
@@ -86,6 +90,7 @@ class AbstractIntegrator:
             conv_hist[:,(j+1)*m+1:(j+1)*m+1+currLenCut*m] += localconvHist[:,currLen*m:currLen*m+currLenCut*m]
         if debug_mode: 
             print("N: ",N," m: ",rk.m," 2*m*N ",2*m*N, " Amount evaluations: ",self.countEv)
+        print("N: ",N," m: ",rk.m," 2*m*N ",2*m*N, " Amount evaluations: ",self.countEv)
         return sol ,counters
 #    def integrate(self,T,rk,reUse=True,debugMode=False):
 #        tau = rk.tau

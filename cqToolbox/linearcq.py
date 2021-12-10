@@ -1,8 +1,9 @@
 import numpy as np
 from rkmethods import Extrapolator,RKMethod
 class Conv_Operator():
-    tol=10**-14
-    factor_laplace_evaluations=1
+    tol=10**-15
+    external_rho = None
+    factor_laplace_evaluations= -1
     def __init__(self,apply_elliptic_operator,order=2):
         self.order=order
         self.delta=lambda zeta : self.char_functions(zeta,order)
@@ -10,9 +11,13 @@ class Conv_Operator():
     def get_integration_parameters(self,N,T):
         tol=self.tol
         dt=(T*1.0)/N
-        L=int(np.round(self.factor_laplace_evaluations*N))
+        #L=int(np.round(self.factor_laplace_evaluations*N))
+        L=2*N
         #rho=tol**(1.0/(2*L))
-        rho=tol**(1.0/(4*L))
+        if self.external_rho:
+            rho = self.external_rho
+        else:
+            rho=tol**(1.0/(4*L))
         return L,dt,tol,rho
 
     def char_functions(self,zeta,order):
@@ -67,10 +72,11 @@ class Conv_Operator():
             rhs_mat=np.zeros((1,m*N))
             rhs_mat[0,:]=rhs
             rhs=rhs_mat 
-    
         return rhs,N
 
-    def apply_RKconvol(self,rhs,T,show_progress=True,method="RadauIIA-2",factor_laplace_evaluations=2,cutoff=10**(-8),prolonge_by = 0):
+    def apply_RKconvol(self,rhs,T,show_progress=True,method="RadauIIA-2",factor_laplace_evaluations=2,cutoff=10**(-8),prolonge_by = 0,external_rho = None):
+        if external_rho:
+            self.external_rho = external_rho
         m      = RKMethod(method,1).m
         [rhs,N]=self.format_rhs(rhs,m)
         tau = T*1.0/N ## tau stays the same after prolongation
@@ -90,7 +96,6 @@ class Conv_Operator():
 
         for stageInd in range(m):
             rhs_fft[:,stageInd:m*L:m]=self.scale_fft(rhs[:,stageInd:m*N:m],N,T)
-        
         #Initialising important parameters for the later stage  
         s_vect=self.get_frequencies(N,T)
         dof=len(rhs[:,0])

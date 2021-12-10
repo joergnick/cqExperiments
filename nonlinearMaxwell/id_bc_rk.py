@@ -163,7 +163,7 @@ import time
 
 T=6
 #N_ref=2**4
-N_ref=2**4
+N_ref=1024
 tt_ref=np.linspace(0,T,N_ref+1)
 dx_ref=np.sqrt(2)**(0)
 #dx_ref=np.sqrt(2)**(-9)

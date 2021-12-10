@@ -60,7 +60,7 @@ def calc_gtH(rk,grid,N,T):
 
 
 
-def compute_densities(N,gridfilename,T,rk,debug_mode=True):
+def compute_densities(alpha,N,gridfilename,T,rk,debug_mode=True):
     load_success = False
     if gridfilename[-3:] == 'mat':
         mat_contents=scipy.io.loadmat(gridfilename)
@@ -98,15 +98,15 @@ def compute_densities(N,gridfilename,T,rk,debug_mode=True):
                 raise ValueError("The parameter alpha must be in the interval (0,1].")
             self.alpha = alpha
         def a(self,x):
-            return x
+#            return x
             #return 0*np.linalg.norm(x)**(1-self.alpha)*x
-            #return np.linalg.norm(x)**(1-self.alpha)*x
+            return np.linalg.norm(x)**(1-self.alpha)*x
         def Da(self,x):
         #    if np.linalg.norm(x)<10**(-15):
         #        x=10**(-15)*np.ones(3)
-            return np.eye(3)
-        #    return 0*((self.alpha-1)*np.linalg.norm(x)**(self.alpha-3)*np.outer(x,x)+np.linalg.norm(x)**(self.alpha-1)*np.eye(3))
-           # return -0.5*np.linalg.norm(x)**(-2.5)*np.outer(x,x)+np.linalg.norm(x)**(-0.5)*np.eye(3)
+           # return np.eye(3)
+            return ((self.alpha-1)*np.linalg.norm(x)**(self.alpha-3)*np.outer(x,x)+np.linalg.norm(x)**(self.alpha-1)*np.eye(3))
+          #  return -0.5*np.linalg.norm(x)**(-2.5)*np.outer(x,x)+np.linalg.norm(x)**(-0.5)*np.eye(3)
         def precomputing(self,s):
             NC_space=bempp.api.function_space(grid, "NC",0)
             RT_space=bempp.api.function_space(grid, "RT",0)
@@ -156,10 +156,10 @@ def compute_densities(N,gridfilename,T,rk,debug_mode=True):
             rhs[:dof] = id_weak*gridfunrhs.coefficients
             #print(np.linalg.norm(rhs))
             return rhs
-    model = ScatModel()
+    model = ScatModel(alpha = alpha)
     dof = RT_space.global_dof_count
     print("GLOBAL DOF: ",dof)
     print("Finished RHS.")
-    sol ,counters  = model.integrate(T,N, method = rk.method_name,max_evals_saved=10000,debug_mode=debug_mode)
+    sol ,counters  = model.integrate(T,N, method = rk.method_name,max_evals_saved=10000,debug_mode=debug_mode,same_rho = True)
     dof = RT_space.global_dof_count
     return sol
