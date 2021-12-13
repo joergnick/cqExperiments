@@ -66,7 +66,7 @@ class AbstractIntegrator:
         conv_hist = np.zeros((dof,m*N+1))
         sol = np.zeros((dof,m*N+1))
         counters = np.zeros(N)
-        external_rho = 10**(-15*1.0/(6*N))
+        external_rho = 10**(-15*1.0/(4*N))
         for j in range(0,N):
             ## Calculating solution at timepoint tj
             start_ts = time.time()
@@ -90,7 +90,7 @@ class AbstractIntegrator:
             conv_hist[:,(j+1)*m+1:(j+1)*m+1+currLenCut*m] += localconvHist[:,currLen*m:currLen*m+currLenCut*m]
         if debug_mode: 
             print("N: ",N," m: ",rk.m," 2*m*N ",2*m*N, " Amount evaluations: ",self.countEv)
-        print("N: ",N," m: ",rk.m," 2*m*N ",2*m*N, " Amount evaluations: ",self.countEv)
+        #print("N: ",N," m: ",rk.m," 2*m*N ",2*m*N, " Amount evaluations: ",self.countEv)
         return sol ,counters
 #    def integrate(self,T,rk,reUse=True,debugMode=False):
 #        tau = rk.tau

@@ -52,6 +52,7 @@ def calc_gtH(rk,grid,N,T):
         return s**(-1)*b
     IntegralOperator = Conv_Operator(sinv)
     gTH = np.real(-IntegralOperator.apply_RKconvol(curls,T,method="RadauIIA-"+str(m),show_progress=False))
+    print("MAX ||Hinc||", max(np.linalg.norm(gTH,axis = 0)))
     gTH = np.concatenate((np.zeros((dof,1)),gTH),axis = 1)
     gTE = np.concatenate((np.zeros((dof,1)),gTE),axis = 1)
     #rhs[0:dof,:]=np.real(gTH)-rhs[0:dof,:]
@@ -100,12 +101,12 @@ def compute_densities(alpha,N,gridfilename,T,rk,debug_mode=True):
         def a(self,x):
 #            return x
             #return 0*np.linalg.norm(x)**(1-self.alpha)*x
-            return np.linalg.norm(x)**(1-self.alpha)*x
+            return 0*np.linalg.norm(x)**(1-self.alpha)*x
         def Da(self,x):
         #    if np.linalg.norm(x)<10**(-15):
         #        x=10**(-15)*np.ones(3)
            # return np.eye(3)
-            return ((self.alpha-1)*np.linalg.norm(x)**(self.alpha-3)*np.outer(x,x)+np.linalg.norm(x)**(self.alpha-1)*np.eye(3))
+            return 0*((self.alpha-1)*np.linalg.norm(x)**(self.alpha-3)*np.outer(x,x)+np.linalg.norm(x)**(self.alpha-1)*np.eye(3))
           #  return -0.5*np.linalg.norm(x)**(-2.5)*np.outer(x,x)+np.linalg.norm(x)**(-0.5)*np.eye(3)
         def precomputing(self,s):
             NC_space=bempp.api.function_space(grid, "NC",0)
@@ -136,7 +137,7 @@ def compute_densities(alpha,N,gridfilename,T,rk,debug_mode=True):
             dof = int(np.round(len(coeff)/2))
             phiGridFun = bempp.api.GridFunction(RT_space,coefficients=coeff[:dof]) 
             gTHFun     = bempp.api.GridFunction(RT_space,coefficients = gtH[:,time_index])
-            agridFun   = applyNonlinearity(phiGridFun+gTHFun,self.a,gridfunList,domainDict)
+            agridFun   = applyNonlinearity(phiGridFun+0*gTHFun,self.a,gridfunList,domainDict)
             result     = np.zeros(2*dof) 
             result[:dof] = id_weak*agridFun.coefficients
             return result
@@ -145,7 +146,6 @@ def compute_densities(alpha,N,gridfilename,T,rk,debug_mode=True):
             def func_rhs(x,n,domain_index,result):
                 inc  = np.array([np.exp(-50*(x[2]-t+2)**2), 0. * x[2], 0. * x[2]])    
                 tang = np.cross(np.cross(inc, n),n)
-                curlU=np.array([ 0. * x[2],-100*(x[2]-t+2)*np.exp(-50*(x[2]-t+2)**2), 0. * x[2]])   
                 result[:] = tang
                 #return np.cross(curlU,n)
             RT_space=bempp.api.function_space(grid, "RT",0)
@@ -154,7 +154,6 @@ def compute_densities(alpha,N,gridfilename,T,rk,debug_mode=True):
             rhs = np.zeros(dof*2)
             #rhs[:dof] = gridfunrhs.coefficients
             rhs[:dof] = id_weak*gridfunrhs.coefficients
-            #print(np.linalg.norm(rhs))
             return rhs
     model = ScatModel(alpha = alpha)
     dof = RT_space.global_dof_count

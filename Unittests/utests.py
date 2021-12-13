@@ -31,6 +31,28 @@ class LinearScatModelSimple(NewtonIntegrator):
     def ex_sol(self,ts):
         return ts**3
 
+class LinearScatModelInt(NewtonIntegrator):
+    def precomputing(self,s):
+        return s**(-1)
+    def harmonic_forward(self,s,b,precomp = None):
+        return precomp*b
+    def righthandside(self,t,history = None):
+        return t**3
+    def nonlinearity(self,x,t,time_index):
+        return 0*x
+    def ex_sol(self,ts):
+        return 3*ts**2
+class LinearScatModelInt2(NewtonIntegrator):
+    def precomputing(self,s):
+        return s**(-2)
+    def harmonic_forward(self,s,b,precomp = None):
+        return precomp*b
+    def righthandside(self,t,history = None):
+        return 1.0/5*t**5
+    def nonlinearity(self,x,t,time_index):
+        return 0*x
+    def ex_sol(self,ts):
+        return 4*ts**3
 
 class NonlinearScatModel(NewtonIntegrator):
     def precomputing(self,s):
@@ -87,7 +109,41 @@ class TestCQMethods(unittest.TestCase):
         exSol        = modelL.ex_sol(np.linspace(0,T,N+1))
         err          = max(np.abs(sol[0,::m]-exSol))
         self.assertLess(np.abs(err),10**(-1))
+    def test_linear_RadauIIA_2SimpleInt(self):
+        modelL       = LinearScatModelInt()
+        m = 2
+        N = 20
+        T = 4
+        sol,counters = modelL.integrate(T,N,method = "RadauIIA-"+str(m))
+        exSol        = modelL.ex_sol(np.linspace(0,T,N+1))
+        err          = max(np.abs(sol[0,::m]-exSol))
+        self.assertLess(np.abs(err),10**(-1))
 
+    def test_linear_RadauIIA_3SimpleInt(self):
+        modelL       = LinearScatModelInt()
+        m = 3
+        N = 101
+        T = 4
+        sol,counters = modelL.integrate(T,N,method = "RadauIIA-"+str(m))
+        exSol        = modelL.ex_sol(np.linspace(0,T,N+1))
+        err          = max(np.abs(sol[0,::m]-exSol))
+        self.assertLess(np.abs(err),10**(-5))
+
+    def test_linear_RadauIIA_3SquaredInt(self):
+        modelL       = LinearScatModelInt2()
+        m = 3
+        N = 10000
+        T = 4
+        sol,counters = modelL.integrate(T,N,method = "RadauIIA-"+str(m))
+        exSol        = modelL.ex_sol(np.linspace(0,T,N+1))
+        import matplotlib
+        matplotlib.use('Agg')
+        import matplotlib.pyplot as plt
+        plt.plot(exSol,linestyle='dashed')
+        plt.plot(sol[0,::m])
+        plt.savefig('temp.png')
+        err          = max(np.abs(sol[0,::m]-exSol))
+        self.assertLess(np.abs(err),10**(-4))
 
     def test_linear_RadauIIA_2(self):
         modelL       = LinearScatModel()
