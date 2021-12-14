@@ -23,7 +23,7 @@ bempp.api.global_parameters.quadrature.medium.double_order =OrderQF-2
 bempp.api.global_parameters.quadrature.far.single_order =OrderQF-3
 bempp.api.global_parameters.quadrature.far.double_order =OrderQF-3
 bempp.api.global_parameters.quadrature.double_singular = OrderQF
-bempp.api.global_parameters.hmat.eps=10**-4
+bempp.api.global_parameters.hmat.eps=10**-5
 bempp.api.global_parameters.hmat.admissibility='strong'
 
 def calc_gtH(rk,grid,N,T):
@@ -159,6 +159,6 @@ def compute_densities(alpha,N,gridfilename,T,rk,debug_mode=True):
     dof = RT_space.global_dof_count
     print("GLOBAL DOF: ",dof)
     print("Finished RHS.")
-    sol ,counters  = model.integrate(T,N, method = rk.method_name,max_evals_saved=10000,debug_mode=debug_mode,same_rho = True)
+    sol ,counters  = model.integrate(T,N, method = rk.method_name,max_evals_saved=10000,debug_mode=debug_mode,same_rho = False)
     dof = RT_space.global_dof_count
     return sol

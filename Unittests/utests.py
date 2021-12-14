@@ -122,7 +122,7 @@ class TestCQMethods(unittest.TestCase):
     def test_linear_RadauIIA_3SimpleInt(self):
         modelL       = LinearScatModelInt()
         m = 3
-        N = 101
+        N = 1001
         T = 4
         sol,counters = modelL.integrate(T,N,method = "RadauIIA-"+str(m))
         exSol        = modelL.ex_sol(np.linspace(0,T,N+1))
@@ -132,7 +132,7 @@ class TestCQMethods(unittest.TestCase):
     def test_linear_RadauIIA_3SquaredInt(self):
         modelL       = LinearScatModelInt2()
         m = 3
-        N = 10000
+        N = 1000
         T = 4
         sol,counters = modelL.integrate(T,N,method = "RadauIIA-"+str(m))
         exSol        = modelL.ex_sol(np.linspace(0,T,N+1))

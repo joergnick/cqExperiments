@@ -11,13 +11,14 @@ class Conv_Operator():
     def get_integration_parameters(self,N,T):
         tol=self.tol
         dt=(T*1.0)/N
-        #L=int(np.round(self.factor_laplace_evaluations*N))
-        L=2*N
+        L=int(np.round(self.factor_laplace_evaluations*N))+1
+        #L=2*N
         #rho=tol**(1.0/(2*L))
         if self.external_rho:
             rho = self.external_rho
         else:
-            rho=tol**(1.0/(2*L))
+            #rho=tol**(1.0/(2*L))
+            rho=tol**(1.0/(1.41*L))
         return L,dt,tol,rho
 
     def char_functions(self,zeta,order):
@@ -32,13 +33,6 @@ class Conv_Operator():
                     return (1-zeta)+0.5*(1-zeta)**2+1.0/3.0*(1-zeta)**3
                 else:
                     print("Multistep order not availible")
-
-    def get_zeta_vect(self,N,T):
-        L,dt,tol,rho=self.get_integration_parameters(N,T)
-        import numpy as np
-        Unit_Roots=np.exp(-1j*2*np.pi*(np.linspace(0,L,L+1)/(L+1)))
-        Zeta_vect=self.delta( rho* Unit_Roots)/dt 
-        return Zeta_vect
 
     def get_frequencies(self,N,T):
         import numpy as np
@@ -74,7 +68,7 @@ class Conv_Operator():
             rhs=rhs_mat 
         return rhs,N
 
-    def apply_RKconvol(self,rhs,T,show_progress=True,method="RadauIIA-2",factor_laplace_evaluations=2,cutoff=10**(-8),prolonge_by = 0,external_rho = None):
+    def apply_RKconvol(self,rhs,T,show_progress=True,method="RadauIIA-2",factor_laplace_evaluations=2,cutoff=10**(-15),prolonge_by = 0,external_rho = None):
         if external_rho:
             self.external_rho = external_rho
         m      = RKMethod(method,1).m
@@ -123,11 +117,15 @@ class Conv_Operator():
         end=0
 
         rhsStages=1j*np.zeros((len(rhs_fft[:,0]),m))
+        invA_RK = np.linalg.inv(A_RK)
         for j in range(0,HalfL+1):
             s=s_vect[j]
             deltaMatrix=np.linalg.inv(A_RK+s*1.0/(1-s)*np.ones((m,1))*b_RK)
             deltaEigs,T =np.linalg.eig(deltaMatrix)
-        #   print("CONDITION T: ", np.linalg.cond(T))
+            #res = np.linalg.norm(deltaMatrix-T.dot(np.diag(deltaEigs)).dot(np.linalg.inv(T)))
+            #if np.linalg.cond(deltaMatrix)>1000:
+            #    print("s = "+str(s)+"CONDITION deltaMatrix: ", np.linalg.cond(deltaMatrix))
+            #    print(deltaEigs)
             deltaEigs=deltaEigs/dt
             Tinv=np.linalg.inv(T)
 #           print("NormT: ",np.linalg.norm(T))
@@ -141,7 +139,6 @@ class Conv_Operator():
                 for stageInd in range(m):
                     for sumInd in range(m):
                         rhsStages[:,stageInd]=rhsStages[:,stageInd]+Tinv[stageInd,sumInd]*rhs_fft[:,m*j+sumInd]
-
                     maxRHS=np.max(np.abs(rhsStages[:,stageInd]))
                     if maxRHS>cutoff:
                         relevantChange=True
@@ -176,6 +173,14 @@ class Conv_Operator():
             return extr.cut_back(phi_sol)
         else:
             return phi_sol
+    def get_zeta_vect(self,N,T):
+        L,dt,tol,rho=self.get_integration_parameters(N,T)
+        import numpy as np
+        Unit_Roots=np.exp(-1j*2*np.pi*(np.linspace(0,L,L+1)/(L+1)))
+        Zeta_vect=self.delta( rho* Unit_Roots)/dt 
+        return Zeta_vect
+
+
 
     def apply_convol(self,rhs,T,show_progress=False,method="BDF2",cutoff=10**(-8)):
         ## Step 1
