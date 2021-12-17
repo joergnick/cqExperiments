@@ -1,6 +1,7 @@
 from cqStepper import AbstractIntegrator
 import numpy as np
 from rkmethods import RKMethod
+import math
 class ImplicitEuler(AbstractIntegrator):
     def time_step(self,W0,j,rk,history,w_star_sol_j,tolsolver = 0):
         tau = rk.tau
@@ -19,10 +20,9 @@ class ImplicitEuler(AbstractIntegrator):
     def precomputing(self,s):
         return s**(-2)
 
-
 int_der = ImplicitEuler()
-Am = 1
-m  = 3
+Am = 9
+m  = 2
 T  = 4
 err = np.zeros(Am)
 Ns  = np.zeros(Am)
@@ -33,8 +33,6 @@ for j in range(Am):
     print(Ns)
     rk = RKMethod("RadauIIA-"+str(m),T*1.0/N)
     sol,counters = int_der.integrate(T,N,method = rk.method_name,factor_laplace_evaluations = 2)
-    print("sol: ",sol[0,1::m])
-    print("sol: ",sol[0,::m])
     err[j] = max(np.abs(sol[0,::m]-4*np.linspace(0,T,N+1)**3))
     print(err)
 import matplotlib
@@ -46,6 +44,7 @@ import matplotlib.pyplot as plt
 #plt.semilogy(np.abs(sol[0,::m]-4*np.linspace(0,T,N+1)**3))
 print(Ns)
 print(err)
+
 plt.loglog(Ns**(-1),Ns**(-2),linestyle='dashed')
 plt.loglog(Ns**(-1),err)
 

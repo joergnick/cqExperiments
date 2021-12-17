@@ -11,14 +11,15 @@ class Conv_Operator():
     def get_integration_parameters(self,N,T):
         tol=self.tol
         dt=(T*1.0)/N
-        L=int(np.round(self.factor_laplace_evaluations*N))+1
-        #L=2*N
+        self.factor_laplace_evaluations = 1
+        L=2*max(int(np.round(self.factor_laplace_evaluations*N)),1)
+        #L=3.0/2*N
         #rho=tol**(1.0/(2*L))
         if self.external_rho:
             rho = self.external_rho
         else:
             #rho=tol**(1.0/(2*L))
-            rho=tol**(1.0/(1.41*L))
+            rho=tol**(1.0/((2*L)))
         return L,dt,tol,rho
 
     def char_functions(self,zeta,order):
@@ -73,6 +74,14 @@ class Conv_Operator():
             self.external_rho = external_rho
         m      = RKMethod(method,1).m
         [rhs,N]=self.format_rhs(rhs,m)
+
+#        if N>10:
+#            L,dt,tol,rho=self.get_integration_parameters(N,T)
+#            print("N= ",N)
+#            print(rho)
+#            print(rhs)
+#            raise ValueError("Hi")
+
         tau = T*1.0/N ## tau stays the same after prolongation
         rk   = RKMethod(method,tau) ## rk also stays the same, as tau is equal.
         prolonged_flag = (prolonge_by>0)
@@ -102,7 +111,17 @@ class Conv_Operator():
             normsRHS[j]=np.max(np.abs(rhs_fft[:,j]))
             if normsRHS[j]>cutoff:
                 counter=counter+1
+        #import matplotlib
+        #matplotlib.use('Agg')
+        #import matplotlib.pyplot as plt
+        #n_columns = len(rhs[0,:])
+        #plt.semilogy(np.linalg.norm(rhs_fft,axis = 0))
 
+        #print("Amount of Systems needed: "+ str(counter))
+        ##plt.semilogy(np.linalg.norm(rho**(np.linspace(0,n_columns-1,n_columns))*rhs,axis = 0))
+        #plt.savefig('temp.png')
+        #print(np.linalg.norm(rhs_fft,axis = 0))
+        #print("Amount of Systems needed: "+ str(counter))
         HalfL= int(np.ceil(float(L)/2.0))
         if show_progress:
             print("Amount of Systems needed: "+ str(counter))
@@ -122,6 +141,8 @@ class Conv_Operator():
             s=s_vect[j]
             deltaMatrix=np.linalg.inv(A_RK+s*1.0/(1-s)*np.ones((m,1))*b_RK)
             deltaEigs,T =np.linalg.eig(deltaMatrix)
+            if np.linalg.cond(T)>20:
+                print(np.linalg.cond(T))
             #res = np.linalg.norm(deltaMatrix-T.dot(np.diag(deltaEigs)).dot(np.linalg.inv(T)))
             #if np.linalg.cond(deltaMatrix)>1000:
             #    print("s = "+str(s)+"CONDITION deltaMatrix: ", np.linalg.cond(deltaMatrix))
