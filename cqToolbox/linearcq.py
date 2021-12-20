@@ -19,8 +19,10 @@ class Conv_Operator():
             #print(1+np.log(N))
             #L=max(int(np.round(self.factor_laplace_evaluations*N)),6000)
             #L=max(int(np.round(self.factor_laplace_evaluations*N*(np.log(N)))),4)
-            L=int(np.round(N*(2+np.log(N))))
-                
+            #L=int(np.round(N*(2+0.1*np.log(N))))
+            L=3*int(N)
+            #if N>1000:
+            #    print(L*1.0/N)
             #L=int(np.round(2*N*(1+np.log(N))+10))
             #if L>6000:
             #    print("L= ",L)
