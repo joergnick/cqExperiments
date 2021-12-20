@@ -16,14 +16,14 @@ from rkmethods import RKMethod
 from data_generators import compute_densities
 start = time.time()
 T = 6
-m = 1
+m = 2
 am_space = 1
 am_time  = 1
 alpha = 1
 for space_index in range(am_space):
     for time_index in range(am_time):
         h   = 2**(-space_index*1.0/2)
-        N   = 4097*2**time_index
+        N   = 1025*2**time_index
         #STILL WORKS until at least 85% : N   = 600*2**time_index
         tau = T*1.0/N
         gridfilename='data/grids/sphereh'+str(np.round(h,3))+'.npy'

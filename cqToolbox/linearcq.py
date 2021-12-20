@@ -18,8 +18,8 @@ class Conv_Operator():
         if self.external_rho:
             rho = self.external_rho
         else:
-            #rho=tol**(1.0/(2*L))
-            rho=tol**(1.0/((2*L)))
+            rho=tol**(1.0/(2*L))
+            #rho=tol**(1.0/((3.0/2*L)))
         return L,dt,tol,rho
 
     def char_functions(self,zeta,order):
