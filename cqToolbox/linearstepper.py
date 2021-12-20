@@ -21,7 +21,7 @@ class ImplicitEuler(AbstractIntegrator):
         return s**(-2)
 
 int_der = ImplicitEuler()
-Am = 8
+Am = 12
 m  = 2
 T  = 1
 err = np.zeros(Am)
@@ -31,7 +31,7 @@ for j in range(Am):
     N   = 4*2**j+1
     Ns[j] = N
     rk = RKMethod("RadauIIA-"+str(m),T*1.0/N)
-    sol,counters = int_der.integrate(T,N,method = rk.method_name,factor_laplace_evaluations = 2)
+    sol,counters = int_der.integrate(T,N,method = rk.method_name,factor_laplace_evaluations = 2,max_evals_saved = 100000)
     err[j] = max(np.abs(sol[0,::m]-4*np.linspace(0,T,N+1)**3))
     print(Ns)
     print(err)
@@ -42,8 +42,8 @@ plt.plot(sol[0,::m])
 plt.plot(4*np.linspace(0,T,N+1)**3,linestyle='dashed',color='red')
 #plt.semilogy(np.abs(sol[0,::]-4*rk.get_time_points(T)**3))
 #plt.semilogy(np.abs(sol[0,::m]-4*np.linspace(0,T,N+1)**3))
-print(Ns)
-print(err)
+#print(Ns)
+#print(err)
 
 #plt.loglog(Ns**(-1),Ns**(-2),linestyle='dashed')
 #plt.loglog(Ns**(-1),err)

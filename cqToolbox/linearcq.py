@@ -1,8 +1,10 @@
 import numpy as np
 from rkmethods import Extrapolator,RKMethod
 class Conv_Operator():
-    tol=10**-15
+    tol=10**-20
+    external_N   = -1
     external_rho = None
+    external_L = None
     factor_laplace_evaluations= -1
     def __init__(self,apply_elliptic_operator,order=2):
         self.order=order
@@ -11,14 +13,26 @@ class Conv_Operator():
     def get_integration_parameters(self,N,T):
         tol=self.tol
         dt=(T*1.0)/N
-        self.factor_laplace_evaluations = 1
-        L=2*max(int(np.round(self.factor_laplace_evaluations*N)),1)
+        if self.external_L:
+            L = self.external_L
+        else:
+            #print(1+np.log(N))
+            #L=max(int(np.round(self.factor_laplace_evaluations*N)),6000)
+            #L=max(int(np.round(self.factor_laplace_evaluations*N*(np.log(N)))),4)
+            L=int(np.round(N*(2+np.log(N))))
+                
+            #L=int(np.round(2*N*(1+np.log(N))+10))
+            #if L>6000:
+            #    print("L= ",L)
+            #L = 2*2049
+            #L = 2*self.external_N
         #L=3.0/2*N
         #rho=tol**(1.0/(2*L))
         if self.external_rho:
             rho = self.external_rho
         else:
-            rho=tol**(1.0/(2*L))
+            #rho=tol**(1.0/(2*L))
+            rho=tol**(1.0/(4*N))
             #rho=tol**(1.0/((3.0/2*L)))
         return L,dt,tol,rho
 
@@ -69,9 +83,11 @@ class Conv_Operator():
             rhs=rhs_mat 
         return rhs,N
 
-    def apply_RKconvol(self,rhs,T,show_progress=True,method="RadauIIA-2",factor_laplace_evaluations=2,cutoff=10**(-15),prolonge_by = 0,external_rho = None):
+    def apply_RKconvol(self,rhs,T,show_progress=True,method="RadauIIA-2",factor_laplace_evaluations=2,cutoff=10**(-15),prolonge_by = 0,external_rho = None,external_L = None):
         if external_rho:
             self.external_rho = external_rho
+        if external_L:
+            self.external_L = external_L
         m      = RKMethod(method,1).m
         [rhs,N]=self.format_rhs(rhs,m)
 
