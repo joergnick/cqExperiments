@@ -4,8 +4,8 @@ sys.path.append('../cqToolbox')
 sys.path.append('data')
 sys.path.append('../data')
 sys.path.append('..')
-import warnings
-warnings.filterwarnings('error')
+#import warnings
+#warnings.filterwarnings('error')
 import numpy as np
 import time 
 import os.path
@@ -24,7 +24,7 @@ alpha = 1
 for space_index in range(am_space):
     for time_index in range(am_time):
         h   = 2**(-space_index*1.0/2)
-        N   = 300*2**time_index
+        N   = 255*2**time_index
         #STILL WORKS until at least 85% : N   = 600*2**time_index
         tau = T*1.0/N
         gridfilename='data/grids/sphereh'+str(np.round(h,3))+'.npy'

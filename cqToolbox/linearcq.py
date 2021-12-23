@@ -1,7 +1,7 @@
 import numpy as np
 from rkmethods import Extrapolator,RKMethod
 class Conv_Operator():
-    tol=10**-15
+    tol=10**-11
     #tol=10**-20
     external_N   = -1
     external_rho = None
@@ -27,11 +27,11 @@ class Conv_Operator():
             #    print("L= ",L)
             #L = 2*2049
             #L = 2*self.external_N
-            #if self.external_N<0:
-            #    L = 2*N
-            #    self.external_N = N
-            #L= 2*self.external_N
-            L=3*int(N)
+            if self.external_N<0:
+                self.external_N = N
+            #L= 3*self.external_N
+
+            L=4*int(N)
             ###################### BEST WORKING PARAMETERS KNOWN: 
             #L=4*int(N)
         #L=3.0/2*N
@@ -39,10 +39,10 @@ class Conv_Operator():
         if self.external_rho:
             rho = self.external_rho
         else:
-            rho=tol**(1.0/(3*N))
+            rho=tol**(1.0/(4*N))
             #rho=tol**(1.0/((3.0/2*L)))
             ###################### BEST WORKING PARAMETERS KNOWN: 
-            #rho=tol**(1.0/(2*self.external_N))
+            #rho=tol**(1.0/(3*self.external_N))
         return L,dt,tol,rho
 
     def char_functions(self,zeta,order):
