@@ -1,7 +1,8 @@
 import numpy as np
 from rkmethods import Extrapolator,RKMethod
 class Conv_Operator():
-    tol=10**-20
+    tol=10**-15
+    #tol=10**-20
     external_N   = -1
     external_rho = None
     external_L = None
@@ -16,11 +17,9 @@ class Conv_Operator():
         if self.external_L:
             L = self.external_L
         else:
-            #print(1+np.log(N))
             #L=max(int(np.round(self.factor_laplace_evaluations*N)),6000)
             #L=max(int(np.round(self.factor_laplace_evaluations*N*(np.log(N)))),4)
             #L=int(np.round(N*(2+0.1*np.log(N))))
-            L=3*int(N)
             #if N>1000:
             #    print(L*1.0/N)
             #L=int(np.round(2*N*(1+np.log(N))+10))
@@ -28,14 +27,22 @@ class Conv_Operator():
             #    print("L= ",L)
             #L = 2*2049
             #L = 2*self.external_N
+            #if self.external_N<0:
+            #    L = 2*N
+            #    self.external_N = N
+            #L= 2*self.external_N
+            L=3*int(N)
+            ###################### BEST WORKING PARAMETERS KNOWN: 
+            #L=4*int(N)
         #L=3.0/2*N
         #rho=tol**(1.0/(2*L))
         if self.external_rho:
             rho = self.external_rho
         else:
-            #rho=tol**(1.0/(2*L))
-            rho=tol**(1.0/(4*N))
+            rho=tol**(1.0/(3*N))
             #rho=tol**(1.0/((3.0/2*L)))
+            ###################### BEST WORKING PARAMETERS KNOWN: 
+            #rho=tol**(1.0/(2*self.external_N))
         return L,dt,tol,rho
 
     def char_functions(self,zeta,order):

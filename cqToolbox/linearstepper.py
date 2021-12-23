@@ -2,6 +2,7 @@ from cqStepper import AbstractIntegrator
 import numpy as np
 from rkmethods import RKMethod
 import math
+import random
 class ImplicitEuler(AbstractIntegrator):
     def time_step(self,W0,j,rk,history,w_star_sol_j,tolsolver = 0):
         tau = rk.tau
@@ -18,10 +19,10 @@ class ImplicitEuler(AbstractIntegrator):
     def harmonic_forward(self,s,b,precomp = None):
         return precomp*b
     def precomputing(self,s):
-        return s**(-2)
+        return s**(-2)*(1+10**(-10)*random.uniform(-1,1))
 
 int_der = ImplicitEuler()
-Am = 13
+Am = 12
 m  = 2
 T  = 1
 err = np.zeros(Am)

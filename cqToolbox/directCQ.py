@@ -46,11 +46,11 @@ def laplace_evals(s):
     return s**(-2)
 cq = DirectCQ(laplace_evals)
 T = 1
-Am = 1
+Am = 10
 errs = np.zeros(Am)
 Ns = np.zeros(Am)
 for j in range(Am):
-    N = 2**(14+j)+1
+    N = 2**(2+j)+1
     Ns[j] = N
     g = 1.0/5*np.linspace(0,T,N+1)**5
     u = cq.time_stepping(T,g)

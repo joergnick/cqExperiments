@@ -92,7 +92,7 @@ class NewtonIntegrator(AbstractIntegrator):
         #print("||res|| = "+str(np.linalg.norm(res)))
         return x
 
-    def newton_iteration(self,j,rk,rhs,W0,x0,history,tolsolver = 10**(-7),coeff = 1,debug_mode=False,last_residual=None):
+    def newton_iteration(self,j,rk,rhs,W0,x0,history,tolsolver = 10**(-8),coeff = 1,debug_mode=False,last_residual=None):
         t = j*rk.tau
         m = rk.m
         x0_pure = x0
@@ -135,7 +135,7 @@ class NewtonIntegrator(AbstractIntegrator):
         newton_operator = LinearOperator((m*dof,m*dof),newton_lambda)
         counterObj = gmres_counter()
         #print("Residual: ",np.linalg.norm(rhs_long))
-        dx_long,info = gmres(newton_operator,rhs_long,maxiter = 1000,callback = counterObj,tol=10**(-15))
+        dx_long,info = gmres(newton_operator,rhs_long,maxiter = 1000,callback = counterObj,tol=10**(-13))
         #print("Residual after GMRES: ",np.linalg.norm(rhs_long-newton_func(dx_long))," COUNT GMRES: ",counterObj.niter)
         if info != 0:
             print("GMRES Info not zero, Info: ", info)
@@ -156,7 +156,7 @@ class NewtonIntegrator(AbstractIntegrator):
         
         nonlinear_residual = W0x1+ax1 - rhs
         #if (last_residual is not None) and (np.linalg.norm(nonlinear_residual-last_residual)/np.linalg.norm(last_residual))<10**(-3):
-        if (last_residual is not None) and (np.linalg.norm(nonlinear_residual-last_residual))<10**(-3):
+        if (last_residual is not None) and (np.linalg.norm(nonlinear_residual-last_residual))<10**(-9):
             #print("Early finish, residual: "+str(np.linalg.norm(nonlinear_residual)))
             return np.real(x1), 0,nonlinear_residual
         if debug_mode:

@@ -77,7 +77,7 @@ def create_rhs(grid,dx,N,T,m):
     if (m==3):
         curls=IntegralOperator.apply_RKconvol(curls,T,method="RadauIIA-3",show_progress=False)
         ZptNeuTrace=TimeImpedance.apply_RKconvol(curls,T,method="RadauIIA-3",show_progress=False)
-    rhs[0:dof,:]=np.real(ZptNeuTrace)-rhs[0:dof,:]
+    rhs[0:dof,:]=0*np.real(ZptNeuTrace)-rhs[0:dof,:]
     return rhs
 
 def harmonic_calderon(s,b,grid):
@@ -85,7 +85,7 @@ def harmonic_calderon(s,b,grid):
     #normb=np.linalg.norm(b[0])+np.linalg.norm(b[1])+np.linalg.norm(b[2])
     normb=np.max(np.abs(b))
     bound=np.abs(s)**4*np.exp(-s.real)*normb
-    OrderQF = 8
+    OrderQF = 9
     
     bempp.api.global_parameters.quadrature.near.max_rel_dist = 2
     bempp.api.global_parameters.quadrature.near.single_order =OrderQF-1
@@ -96,7 +96,7 @@ def harmonic_calderon(s,b,grid):
     bempp.api.global_parameters.quadrature.far.single_order =OrderQF-3
     bempp.api.global_parameters.quadrature.far.double_order =OrderQF-3
     bempp.api.global_parameters.quadrature.double_singular = OrderQF
-    bempp.api.global_parameters.hmat.eps=10**-4
+    bempp.api.global_parameters.hmat.eps=10**-8
     bempp.api.global_parameters.hmat.admissibility='strong'
 ###    Define Spaces
     NC_space=bempp.api.function_space(grid, "NC",0)
@@ -118,14 +118,14 @@ def harmonic_calderon(s,b,grid):
     b[0:dof]=id_discrete*b[0:dof]
 
     blocks = np.array([[None,None], [None,None]])
-    blocks[0,0] = -elec.weak_form()+identity2.weak_form()
+    blocks[0,0] = -elec.weak_form()+0*identity2.weak_form()
     blocks[0,1] =  magn.weak_form()-1.0/2*identity.weak_form()
     blocks[1,0] = -magn.weak_form()-1.0/2*identity.weak_form()
     blocks[1,1] = -elec.weak_form()
     blocks = bempp.api.BlockedDiscreteOperator(blocks)
     from scipy.sparse.linalg import gmres
     print("Start GMRES : ")
-    lambda_data,info = gmres(blocks, b,tol=10**-5,maxiter=300)
+    lambda_data,info = gmres(blocks, b,tol=10**-13,maxiter=1000)
     print("INFO :", info)
     phigrid=bempp.api.GridFunction(RT_space,coefficients=lambda_data[0:dof],dual_space=RT_space)
     psigrid=bempp.api.GridFunction(RT_space,coefficients=lambda_data[dof:2*dof],dual_space=RT_space)
@@ -150,10 +150,8 @@ def scattering_solution(gridfilename,dx,N,T,m):
     def ellipticSystem(s,b):
         return harmonic_calderon(s,b,grid)
     ScatOperator=Conv_Operator(ellipticSystem)
-    if (m==2):
-        num_solStages=ScatOperator.apply_RKconvol(rhs,T,cutoff=10**(-5),method="RadauIIA-2")
-    if (m==3):
-        num_solStages=ScatOperator.apply_RKconvol(rhs,T,cutoff=10**(-5),method="RadauIIA-3")
+    methodstring = "RadauIIA-"+str(m)
+    num_solStages=ScatOperator.apply_RKconvol(rhs,T,cutoff=10**(-8),method=methodstring,show_progress = False)
     num_sol=np.zeros((len(num_solStages[:,0]),N+1)) 
     num_sol[:,1:N+1]=np.real(num_solStages[:,m-1:N*m:m])
     return num_sol
@@ -161,44 +159,44 @@ import time
 
 #sol = scattering_solution(1,30,4,2)
 
-T=6
-#N_ref=2**4
-N_ref=1024
-tt_ref=np.linspace(0,T,N_ref+1)
-dx_ref=np.sqrt(2)**(0)
-#dx_ref=np.sqrt(2)**(-9)
-m=2
-
-import matplotlib.pyplot as plt
-start=time.time()
-gridfilename = 'data/grids/sphereh1.0.npy'
-sol_ref=scattering_solution(gridfilename,dx_ref,N_ref,T,m)
-print(np.linalg.norm(sol_ref,axis = 0))
-#np.save("data/sol_ref_absorbing_delta0p1_N2h11_dxsqrt2m9RK5.npy",sol_ref)
-#Am_space=8
-#Am_time=7
-#tau_s=np.zeros(Am_time)
-#h_s=np.zeros(Am_space)
-#errors=np.zeros((Am_space,Am_time))
+#T=6
+##N_ref=2**4
+#N_ref=1024
+#tt_ref=np.linspace(0,T,N_ref+1)
+#dx_ref=np.sqrt(2)**(0)
+##dx_ref=np.sqrt(2)**(-9)
 #m=2
-#for ixSpace in range(Am_space):
-#    for ixTime in range(Am_time):
-#        N=8*2**(ixTime)
-#        tau_s[ixTime]=T*1.0/N
-#        tt=np.linspace(0,T,N+1)
-#        dx=np.sqrt(2)**(-ixSpace)
-#        h_s[ixSpace]=dx
-########### Rescaling reference solution:        
-#        speed=N_ref/N
-#        resc_ref=np.zeros((3,N+1))
-#    #   resc_ref=sol_ref
-#        for j in range(N+1):
-#            resc_ref[:,j]      = sol_ref[:,j*speed]
-#        num_sol  = scattering_solution(dx,N,T,m)
-#        errors[ixSpace,ixTime]=np.max(np.abs(resc_ref-num_sol))
-#        print(errors)
-#        import scipy.io
-#        scipy.io.savemat('data/Err_data_delta01.mat', dict( ERR=errors,h_s=h_s,tau_s=tau_s))
-#        #scipy.io.savemat('data/Err_data_delta0p1_long.mat', dict( ERR=errors,h_s=h_s,tau_s=tau_s))
-#end=time.time()
-#print("Script Runtime: "+str((end-start)/60) +" Min")
+#
+#import matplotlib.pyplot as plt
+#start=time.time()
+#gridfilename = 'data/grids/sphereh1.0.npy'
+#sol_ref=scattering_solution(gridfilename,dx_ref,N_ref,T,m)
+#print(np.linalg.norm(sol_ref,axis = 0))
+##np.save("data/sol_ref_absorbing_delta0p1_N2h11_dxsqrt2m9RK5.npy",sol_ref)
+##Am_space=8
+##Am_time=7
+##tau_s=np.zeros(Am_time)
+##h_s=np.zeros(Am_space)
+##errors=np.zeros((Am_space,Am_time))
+##m=2
+##for ixSpace in range(Am_space):
+##    for ixTime in range(Am_time):
+##        N=8*2**(ixTime)
+##        tau_s[ixTime]=T*1.0/N
+##        tt=np.linspace(0,T,N+1)
+##        dx=np.sqrt(2)**(-ixSpace)
+##        h_s[ixSpace]=dx
+############ Rescaling reference solution:        
+##        speed=N_ref/N
+##        resc_ref=np.zeros((3,N+1))
+##    #   resc_ref=sol_ref
+##        for j in range(N+1):
+##            resc_ref[:,j]      = sol_ref[:,j*speed]
+##        num_sol  = scattering_solution(dx,N,T,m)
+##        errors[ixSpace,ixTime]=np.max(np.abs(resc_ref-num_sol))
+##        print(errors)
+##        import scipy.io
+##        scipy.io.savemat('data/Err_data_delta01.mat', dict( ERR=errors,h_s=h_s,tau_s=tau_s))
+##        #scipy.io.savemat('data/Err_data_delta0p1_long.mat', dict( ERR=errors,h_s=h_s,tau_s=tau_s))
+##end=time.time()
+##print("Script Runtime: "+str((end-start)/60) +" Min")
