@@ -7,8 +7,8 @@ sys.path.append('data')
 #sys.path.append('../data')
 import scipy.io
 #mat_contents=scipy.io.loadmat("data/grids/TorusDOF340.mat")
-#h=1.0
-h=0.5
+h=1.0
+#h=0.5
 gridfilename='data/grids/sphere_python3_h'+str(np.round(h,3))+'.npy'
 mat_contents = np.load(gridfilename,allow_pickle=True).item()
 Nodes        = mat_contents['Nodes']

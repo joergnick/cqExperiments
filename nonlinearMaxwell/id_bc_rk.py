@@ -18,7 +18,7 @@ def create_timepoints(c,N,T):
     return T*time_points
 
 def create_rhs(grid,dx,N,T,m):
-    OrderQF = 9
+    OrderQF = 12
     bempp.api.global_parameters.quadrature.near.max_rel_dist = 2
     bempp.api.global_parameters.quadrature.near.single_order =OrderQF-1
     bempp.api.global_parameters.quadrature.near.double_order = OrderQF-1
@@ -28,7 +28,7 @@ def create_rhs(grid,dx,N,T,m):
     bempp.api.global_parameters.quadrature.far.single_order =OrderQF-3
     bempp.api.global_parameters.quadrature.far.double_order =OrderQF-3
     bempp.api.global_parameters.quadrature.double_singular = OrderQF
-    bempp.api.global_parameters.hmat.eps=10**-4
+    bempp.api.global_parameters.hmat.eps=10**-8
     bempp.api.global_parameters.hmat.admissibility='strong'
 
     if (m==2):
@@ -85,7 +85,7 @@ def harmonic_calderon(s,b,grid):
     #normb=np.linalg.norm(b[0])+np.linalg.norm(b[1])+np.linalg.norm(b[2])
     normb=np.max(np.abs(b))
     bound=np.abs(s)**4*np.exp(-s.real)*normb
-    OrderQF = 10
+    OrderQF = 12
     
     bempp.api.global_parameters.quadrature.near.max_rel_dist = 2
     bempp.api.global_parameters.quadrature.near.single_order =OrderQF-1
@@ -124,15 +124,15 @@ def harmonic_calderon(s,b,grid):
     blocks[1,1] = -elec.weak_form()
     blocks = bempp.api.BlockedDiscreteOperator(blocks)
     from scipy.sparse.linalg import gmres
-    print("Start GMRES : ")
+    #print("Start GMRES : ")
     lambda_data,info = gmres(blocks, b,tol=10**-13,maxiter=1000)
-    print("INFO :", info)
+    #print("INFO :", info)
     phigrid=bempp.api.GridFunction(RT_space,coefficients=lambda_data[0:dof],dual_space=RT_space)
     psigrid=bempp.api.GridFunction(RT_space,coefficients=lambda_data[dof:2*dof],dual_space=RT_space)
 
     slp_pot = bempp.api.operators.potential.maxwell.electric_field(RT_space, points, s*1j)
     dlp_pot = bempp.api.operators.potential.maxwell.magnetic_field(RT_space, points, s*1j)
-    print("Evaluate field : ")  
+    #print("Evaluate field : ")  
     scattered_field_data = -slp_pot * phigrid+dlp_pot*psigrid
     if np.isnan(scattered_field_data).any():
         print("NAN Warning, s = ", s)

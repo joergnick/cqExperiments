@@ -116,7 +116,7 @@ class TestCQMethods(unittest.TestCase):
     def test_linear_RadauIIA_1Simple(self):
         modelL       = LinearScatModelSimple()
         m = 1
-        N = 30
+        N = 1000
         T = 1
         sol,counters = modelL.integrate(T,N,method = "RadauIIA-"+str(m))
         exSol        = modelL.ex_sol(np.linspace(0,T,N+1))
@@ -125,7 +125,7 @@ class TestCQMethods(unittest.TestCase):
     def test_scissor(self):
         modelS = ScissorModel()
         m = 3
-        N = 100
+        N = 2000
         T = 4
         sol,counters = modelS.integrate(T,N,method = "RadauIIA-"+str(m))
         exSol        = modelS.ex_sol(np.linspace(0,T,N+1))
@@ -161,7 +161,7 @@ class TestCQMethods(unittest.TestCase):
     def test_linear_RadauIIA_3SquaredInt(self):
         modelL       = LinearScatModelInt2()
         m = 3
-        N = 200
+        N = 2000
         T = 4
         sol,counters = modelL.integrate(T,N,method = "RadauIIA-"+str(m))
         exSol        = modelL.ex_sol(np.linspace(0,T,N+1))
