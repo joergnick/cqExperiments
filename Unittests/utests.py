@@ -136,7 +136,7 @@ class TestCQMethods(unittest.TestCase):
 #        plt.plot(exSol[1,:],linestyle='dashed')
 #        plt.savefig('temp.png')
         err          = np.max(np.max(np.abs(sol[:,::m]-exSol)))
-        self.assertLess(np.abs(err),10**(-8))
+        self.assertLess(np.abs(err),10**(-6))
 
     def test_linear_RadauIIA_2SimpleInt(self):
         modelL       = LinearScatModelInt()
@@ -280,7 +280,7 @@ class TestCQMethods(unittest.TestCase):
             def ex_sol(self,ts):
                 return np.array([ts**3,ts**4])
         modelNI = NonlinearScatModel2Components()
-        sol,counters = modelNI.integrate(T,N,tolsolver=10**(-6),method = "RadauIIA-"+str(m))
+        sol,counters = modelNI.integrate(T,N,tolsolver=10**(-10),method = "RadauIIA-"+str(m))
         exSol        = modelNI.ex_sol(np.linspace(0,T,N+1))
         err          = np.max(np.max(np.abs(sol[:,::m]-exSol)))
         self.assertLess(np.abs(err),10**(-6))

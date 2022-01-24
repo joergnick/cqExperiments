@@ -1,7 +1,10 @@
+import sys
+sys.path.append('..')
+
 import numpy as np
 import math
 from linearcq import Conv_Operator
-from conv_op import ConvOperatoralt
+#from conv_op import ConvOperatoralt
 
 def create_timepoints(method,N,T):
 	if (method=="RadauIIA-2"):
@@ -24,13 +27,13 @@ def freq_der(s,b):
 	return s**(-1)*b
 
 ScatOperator=Conv_Operator(freq_der)
-Scatalt = ConvOperatoralt(freq_der)
+#Scatalt = ConvOperatoralt(freq_der)
 
 Am = 9
 taus = np.zeros(Am)
 errRK = np.zeros(Am)
 errBDF = np.zeros(Am)
-erraltBDF = np.zeros(Am)
+#erraltBDF = np.zeros(Am)
 for j in range(Am):
 	N=4*2**j
 	taus[j] = T/N
@@ -41,7 +44,7 @@ for j in range(Am):
 	#### BDF  solution
 	rhs = np.linspace(0,T,N+1)**6
 	solBDF = ScatOperator.apply_convol(rhs,T,cutoff=10**(-16),show_progress=False)
-	solBDFalt = Scatalt.apply_convol(rhs,T,cutoff=10**(-16),show_progress=False)
+	#solBDFalt = Scatalt.apply_convol(rhs,T,cutoff=10**(-16),show_progress=False)
 
 	errBDF[j] = max(np.abs(solBDF[0,:]-ex_sol))
 	#erraltBDF[j] = max(np.abs((solBDFalt-ex_sol)))

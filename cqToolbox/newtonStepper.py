@@ -63,13 +63,13 @@ class NewtonIntegrator(AbstractIntegrator):
         for i in range(rk.m):
             rhs[:,i] = -w_star_sol_j[:,i] + self.righthandside(j*rk.tau+rk.c[i]*rk.tau,history=history)
             if j >=1:
-                x0[:,i] = self.extrapol(history[:,i+1:j*rk.m+i+1:rk.m],0)
+                x0[:,i] = self.extrapol(history[:,i+1:j*rk.m+i+1:rk.m],3)
             else:
                 x0[:,i] = np.zeros(len(w_star_sol_j[:,0]))
 
         #print("Begin Newton, ||x0|| = "+str(np.linalg.norm(x0))+" ||rhs|| = "+str(np.linalg.norm(rhs)))
         counter = 0
-        thresh = 3
+        thresh = 1
         x = x0
         info = 1
         res = None
@@ -91,19 +91,21 @@ class NewtonIntegrator(AbstractIntegrator):
             counter = counter+1
             #print("NEWTON ITERATION COUNTER: ",counter, " info: ",info)
         #print("||res|| = "+str(np.linalg.norm(res)))
-        print("AMOUNT NEWTON ITERATIONS = "+str(counter))
+        #print("AMOUNT NEWTON ITERATIONS = "+str(counter))
         return x
 
-    def newton_iteration(self,j,rk,rhs,W0,x0,history,tolsolver = 10**(-8),coeff = 1,debug_mode=False,last_residual=None):
+    def newton_iteration(self,j,rk,rhs,W0,x0,history,tolsolver = 10**(-5),coeff = 1,debug_mode=False,last_residual=None):
         t = j*rk.tau
         m = rk.m
         x0_pure = x0
         dof = len(rhs)
-        for stage_ind in range(m):
-            for dof_index in range(dof):
-                if np.abs(x0[dof_index,stage_ind])<10**(-30):
-                    x0[dof_index,stage_ind] = 10**(-30)
+        #for stage_ind in range(m):
+        #    for dof_index in range(dof):
+        #        if np.abs(x0[dof_index,stage_ind])<10**(-30):
+        #            x0[dof_index,stage_ind] = 10**(-30)
         jacob_list = [self.calc_jacobian(x0[:,k],t+rk.tau*rk.c[k],j*m+k+1) for k in range(m)]
+        #print(type(jacob_list[0]))
+        #print("||J|| = ",max([np.linalg.norm(ja) for ja in jacob_list]))
         stage_rhs = rk.diagonalize(x0+1j*np.zeros((dof,m)))
         ## Calculating right-hand side
         for stage_ind in range(m):
@@ -130,6 +132,8 @@ class NewtonIntegrator(AbstractIntegrator):
                 Bs_mat[:,m_index]   = self.harmonic_forward(rk.delta_eigs[m_index],x_diag[:,m_index],precomp = W0[m_index])
             res_mat  = rk.reverse_diagonalize(Bs_mat) + grad_mat
             new_res =  res_mat.T.ravel()
+            #print("||IM(res)|| = ",np.linalg.norm(np.imag(new_res)))
+            #return new_res
             return np.real(new_res)
 
         newton_lambda = lambda x: newton_func(x)
@@ -137,7 +141,7 @@ class NewtonIntegrator(AbstractIntegrator):
         newton_operator = LinearOperator((m*dof,m*dof),newton_lambda)
         counterObj = gmres_counter()
         #print("Residual: ",np.linalg.norm(rhs_long))
-        dx_long,info = gmres(newton_operator,rhs_long,maxiter = 1000,callback = counterObj,tol=10**(-14))
+        dx_long,info = gmres(newton_operator,rhs_long,maxiter = 1000,callback = counterObj,tol=10**(-8))
         #print("Residual after GMRES: ",np.linalg.norm(rhs_long-newton_func(dx_long))," COUNT GMRES: ",counterObj.niter)
         if info != 0:
             print("GMRES Info not zero, Info: ", info)
@@ -157,11 +161,11 @@ class NewtonIntegrator(AbstractIntegrator):
         W0x1 = np.real(rk.reverse_diagonalize(W0x1)) 
         
         nonlinear_residual = W0x1+ax1 - rhs
-        #### Terminating if ||dx|| was small
-        if coeff*np.linalg.norm(dx)/np.sqrt(dof)<tolsolver:
-            return x0,0,nonlinear_residual
+        ##### Terminating if ||dx|| was small
+        #if coeff*np.linalg.norm(dx)/np.sqrt(dof)<tolsolver:
+        #    return x0,0,nonlinear_residual
         #### Terminating if change in residual was small:
-        if (last_residual is not None) and (np.linalg.norm(nonlinear_residual-last_residual))<10**(-9):
+        if (last_residual is not None) and (np.linalg.norm(nonlinear_residual-last_residual))<10**(-14):
             #print("Early finish, residual: "+str(np.linalg.norm(nonlinear_residual)))
             return np.real(x1), 0,nonlinear_residual
         if debug_mode:

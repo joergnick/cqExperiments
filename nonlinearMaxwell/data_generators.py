@@ -13,7 +13,7 @@ from linearcq import Conv_Operator
 from customOperators import precompMM,sparseWeightedMM,applyNonlinearity
 from newtonStepper import NewtonIntegrator
 
-OrderQF = 10
+OrderQF = 14
 bempp.api.global_parameters.quadrature.near.max_rel_dist = 2
 bempp.api.global_parameters.quadrature.near.single_order =OrderQF-1
 bempp.api.global_parameters.quadrature.near.double_order = OrderQF-1
@@ -23,7 +23,7 @@ bempp.api.global_parameters.quadrature.medium.double_order =OrderQF-2
 bempp.api.global_parameters.quadrature.far.single_order =OrderQF-3
 bempp.api.global_parameters.quadrature.far.double_order =OrderQF-3
 bempp.api.global_parameters.quadrature.double_singular = OrderQF
-bempp.api.global_parameters.hmat.eps=10**-14
+bempp.api.global_parameters.hmat.eps=10**-10
 bempp.api.global_parameters.hmat.admissibility='strong'
 
 def calc_gtH(rk,grid,N,T):
@@ -148,7 +148,6 @@ def compute_densities(alpha,N,gridfilename,T,rk,debug_mode=True):
                 tang = np.cross(np.cross(inc, n),n)
                 result[:] = tang
                 #return np.cross(curlU,n)
-            RT_space=bempp.api.function_space(grid, "RT",0)
             gridfunrhs = bempp.api.GridFunction(RT_space,fun = func_rhs,dual_space = RT_space)
             dof = RT_space.global_dof_count
             rhs = np.zeros(dof*2)
@@ -159,6 +158,6 @@ def compute_densities(alpha,N,gridfilename,T,rk,debug_mode=True):
     dof = RT_space.global_dof_count
     print("GLOBAL DOF: ",dof)
     print("Finished RHS.")
-    sol ,counters  = model.integrate(T,N, method = rk.method_name,max_evals_saved=10000,debug_mode=debug_mode,same_rho = False)
+    sol ,counters  = model.integrate(T,N, method = rk.method_name,max_evals_saved=100000,debug_mode=debug_mode,same_rho = False)
     dof = RT_space.global_dof_count
     return sol

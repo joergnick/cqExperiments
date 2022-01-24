@@ -23,7 +23,7 @@ class AbstractIntegrator:
 
         ## Methods provided by class
     def forward_wrapper(self,s,b):
-        ## Frequency was already seen and evaluation has been saved:            
+        ## Frequency was already seen and evaluation has been saved:           
         if s in self.freqObj:
             self.freqUse[s] = self.freqUse[s]+1
             return self.harmonic_forward(s,b,precomp=self.freqObj[s])
@@ -47,7 +47,7 @@ class AbstractIntegrator:
             it = it+1
         return lengths
 
-    def integrate(self,T,N,method = "RadauIIA-2",tolsolver = 10**(-5),max_evals_saved=100,factor_laplace_evaluations = 2,debug_mode=False,same_rho = False,same_L = False):
+    def integrate(self,T,N,method = "RadauIIA-2",tolsolver = 10**(-10),max_evals_saved=100000,factor_laplace_evaluations = 2,debug_mode=False,same_rho = False,same_L = False):
         self.tdForward.external_N = N 
         self.max_evals_saved   = max_evals_saved
         self.count_saved_evals = 0
@@ -81,7 +81,7 @@ class AbstractIntegrator:
             sol[:,j*m+1:(j+1)*m+1] = self.time_step(W0,j,rk,sol[:,:rk.m*(j)+1],conv_hist[:,j*m+1:(j+1)*m+1],tolsolver=tolsolver)
             end_ts   = time.time() 
             if debug_mode:
-                print("Computed new step, relative progress: "+str(j*1.0/N)+". Time taken: "+str(np.round((end_ts-start_ts)*1.0/60.0))+"Min. ||x(t_j)|| = "+str(np.linalg.norm(sol[:,j*m+1:(j+1)*m+1])))
+                print("Computed new step, relative progress: "+str(j*1.0/N)+". Time taken: "+str(np.round((end_ts-start_ts)*1.0/60.0,decimals = 3))+" Min. ||x(t_j)|| = "+str(np.linalg.norm(sol[:,j*m+1:(j+1)*m+1])))
             ## Calculating Local History:
             currLen = lengths[j]
             localHist = np.concatenate((sol[:,m*(j+1)+1-m*currLen:m*(j+1)+1],np.zeros((dof,m*currLen))),axis=1)
@@ -93,8 +93,8 @@ class AbstractIntegrator:
             ## Updating Global History: 
             currLenCut = min(currLen,N-j-1)
             conv_hist[:,(j+1)*m+1:(j+1)*m+1+currLenCut*m] += localconvHist[:,currLen*m:currLen*m+currLenCut*m]
-        if debug_mode: 
-            print("N: ",N," m: ",rk.m," 2*m*N ",2*m*N, " Amount evaluations: ",self.countEv)
+        #if debug_mode: 
+            #print("N: ",N," m: ",rk.m," 2*m*N ",2*m*N, " Amount evaluations: ",self.countEv)
         print("N: ",N," m: ",rk.m," 2*m*N ",2*m*N, " Amount evaluations: ",self.countEv)
         return sol ,counters
 #    def integrate(self,T,rk,reUse=True,debugMode=False):

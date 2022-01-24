@@ -18,7 +18,7 @@ def create_timepoints(c,N,T):
     return T*time_points
 
 def create_rhs(grid,dx,N,T,m):
-    OrderQF = 12
+    OrderQF = 10
     bempp.api.global_parameters.quadrature.near.max_rel_dist = 2
     bempp.api.global_parameters.quadrature.near.single_order =OrderQF-1
     bempp.api.global_parameters.quadrature.near.double_order = OrderQF-1
@@ -30,7 +30,8 @@ def create_rhs(grid,dx,N,T,m):
     bempp.api.global_parameters.quadrature.double_singular = OrderQF
     bempp.api.global_parameters.hmat.eps=10**-8
     bempp.api.global_parameters.hmat.admissibility='strong'
-
+    if (m==1):
+        c_RK = np.array([1])
     if (m==2):
         c_RK=np.array([1.0/3,1])
     if (m==3):
@@ -71,12 +72,8 @@ def create_rhs(grid,dx,N,T,m):
         return b
         #return 0.1*s**(0.5)*b
     TimeImpedance=Conv_Operator(HarmonicImpedance)  
-    if (m==2):
-        curls=IntegralOperator.apply_RKconvol(curls,T,method="RadauIIA-2",show_progress=False)
-        ZptNeuTrace=TimeImpedance.apply_RKconvol(curls,T,method="RadauIIA-2",show_progress=False)
-    if (m==3):
-        curls=IntegralOperator.apply_RKconvol(curls,T,method="RadauIIA-3",show_progress=False)
-        ZptNeuTrace=TimeImpedance.apply_RKconvol(curls,T,method="RadauIIA-3",show_progress=False)
+    curls=IntegralOperator.apply_RKconvol(curls,T,method="RadauIIA-"+str(m),show_progress=False)
+    ZptNeuTrace=TimeImpedance.apply_RKconvol(curls,T,method="RadauIIA-"+str(m),show_progress=False)
     rhs[0:dof,:]=0*np.real(ZptNeuTrace)-rhs[0:dof,:]
     return rhs
 
@@ -85,7 +82,7 @@ def harmonic_calderon(s,b,grid):
     #normb=np.linalg.norm(b[0])+np.linalg.norm(b[1])+np.linalg.norm(b[2])
     normb=np.max(np.abs(b))
     bound=np.abs(s)**4*np.exp(-s.real)*normb
-    OrderQF = 12
+    OrderQF = 10
     
     bempp.api.global_parameters.quadrature.near.max_rel_dist = 2
     bempp.api.global_parameters.quadrature.near.single_order =OrderQF-1
@@ -151,7 +148,7 @@ def scattering_solution(gridfilename,dx,N,T,m):
         return harmonic_calderon(s,b,grid)
     ScatOperator=Conv_Operator(ellipticSystem)
     methodstring = "RadauIIA-"+str(m)
-    num_solStages=ScatOperator.apply_RKconvol(rhs,T,cutoff=10**(-9),method=methodstring,show_progress = False)
+    num_solStages=ScatOperator.apply_RKconvol(rhs,T,cutoff=10**(-7),method=methodstring,show_progress = False)
     num_sol=np.zeros((len(num_solStages[:,0]),N+1)) 
     num_sol[:,1:N+1]=np.real(num_solStages[:,m-1:N*m:m])
     return num_sol
