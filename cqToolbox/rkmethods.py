@@ -14,13 +14,23 @@ class RKMethod():
             self.A=np.array([[5.0/12,-1.0/12],
                            [3.0/4,1.0/4]])
             self.c=np.array([1.0/3,1])    
-            self.b=np.array([[3.0/4,1.0/4]])  
+            self.b=np.array([[3.0/4,1.0/4]])
         elif (method == "RadauIIA-3"):
             self.A=np.array([[11.0/45-7*math.sqrt(6)/360, 37.0/225-169.0*math.sqrt(6)/1800 , -2.0/225+math.sqrt(6)/75],
                            [37.0/225+169.0*math.sqrt(6)/1800,11.0/45+7*math.sqrt(6)/360,-2.0/225-math.sqrt(6)/75],
                            [4.0/9-math.sqrt(6)/36,4.0/9+math.sqrt(6)/36,1.0/9]])
             self.c=np.array([2.0/5-math.sqrt(6)/10,2.0/5+math.sqrt(6)/10,1])
             self.b=np.array([[4.0/9-math.sqrt(6)/36,4.0/9+math.sqrt(6)/36,1.0/9]])
+        elif (method == "RadauIIA-5"):
+            m = 5
+            self.c = np.array([0.5710419611451768219312e-01,0.2768430136381238276800e+00,0.5835904323689168200567e+00,0.8602401356562194478479e+00,1.0])
+            self.A = self.construct_A(self.c)
+            self.b = np.array([self.A[m-1,:]])
+        elif (method == "RadauIIA-7"):
+            m = 7
+            self.c = np.array([0.2931642715978489197205e-01,0.1480785996684842918500,0.3369846902811542990971,0.5586715187715501320814,0.7692338620300545009169,0.9269456713197411148519,1.0])
+            self.A = self.construct_A(self.c)
+            self.b = np.array([self.A[m-1,:]])
         else:
             raise ValueError("Given method "+method+" not implemented.")
         self.method_name = method
@@ -29,6 +39,17 @@ class RKMethod():
         self.delta_zero = np.linalg.inv(self.A)/tau
         self.delta_eigs,self.Tdiag  = np.linalg.eig(self.delta_zero)
         self.Tinv = np.linalg.inv(self.Tdiag)
+
+    def construct_A(self,c):
+        m  = len(c)
+        CPm = np.ones((m,m))
+        CQm = np.zeros((m,m))
+        for j in range(m-1):
+            CPm[:,j+1] = c**(j+1)
+        for j in range(m):
+            CQm[:,j] = c**(j+1)/(1.0*(j+1)) 
+        return CQm.dot(np.linalg.inv(CPm))
+
     def diagonalize(self,x):
        # if len(x.shape)==1:
        #     if len(x) % self.m !=0:

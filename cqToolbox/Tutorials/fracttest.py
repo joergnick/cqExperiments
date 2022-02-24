@@ -1,10 +1,11 @@
 import sys
-sys.path.append('..')
-
+#sys.path.append('..')
+sys.path.append('cqToolbox')
 import numpy as np
 import math
 from linearcq import Conv_Operator
 from rkmethods import RKMethod
+#from conv_op import ConvOperatoralt
 
 def create_timepoints(method,N,T):
     rk = RKMethod(method,1)
@@ -25,56 +26,55 @@ def create_timepoints(method,N,T):
     return T*time_points
 
 ## Creating right-hand side
-T=1
+T=20
 ## Frequency - domain operator defined
+
+sigma = 0
 def freq_int(s,b):
     #return s**1*np.exp(-1*s)*b
     #return s**(-0.5)*b
-    return s**(-3)*b
-def freq_der(s,b):
-    return s*b
+    s = s+sigma
+    #return s**(-1)*b
+    return s**(-1)*b
 ScatOperator=Conv_Operator(freq_int)
-Deriv       =Conv_Operator(freq_der)
 Am = 15
-m = 5
+m = 7
 taus = np.zeros(Am)
 errRK = np.zeros(Am)
-errRK2 = np.zeros(Am)
-errRK3 = np.zeros(Am)
 for j in range(Am):
     N=int(np.round(4*1.5**j))
     taus[j] = T*1.0/N
-    tt = np.linspace(0,T,N+1)
-    ex_sol = tt**10
+    tt=np.linspace(0,T,N+1)
+    #ex_sol = 1.0/21*tt**21
+    ex_sol = np.array([0.5*math.sqrt(np.pi)*(math.erf(10)-math.erf(10-t)+math.erf(12)-math.erf(12-t)) for t in tt])
+    #ex_sol = 0.776469257929*tt**(12.1)
+    #ex_sol = 0.280029125779*tt**(12.5)
+    #ex_sol = 0.806824245138*tt**(8.1)
+    #ex_sol = 32.0/35.0*np.sqrt(np.pi)**(-1)*tt**(3.5)
     #### RK  solution
     time_points=create_timepoints("RadauIIA-"+str(m),N,T)
-    rhs = 10*9*8*time_points**7
-    ex_stages = time_points**10
+    rhs=np.exp(-sigma*time_points)*(np.exp(-(time_points-10)**2)+np.exp(-(time_points-12)**2))
+    #rhs=np.exp(-sigma*time_points)*time_points**20
     num_solStages = ScatOperator.apply_RKconvol(rhs,T,cutoff=10**(-15),show_progress=False,method="RadauIIA-"+str(m))
-    err_Stages = num_solStages-ex_stages
-    num_solStages2 = Deriv.apply_RKconvol(err_Stages,T,cutoff=10**(-15),show_progress=False,method="RadauIIA-"+str(m))
     solRK=np.zeros(N+1)
-    solRK2=np.zeros(N+1)
-    solRK[1:N+1]=num_solStages[0,m-1:N*m:m]
-    solRK2[1:N+1]=num_solStages2[0,m-1:N*m:m]
-    #errRK[j] = max(np.abs(err_Stages[0,:]))
-    errRK[j] = max(np.abs(solRK-ex_sol))
-    errRK2[j] = max(np.abs(solRK2))
+    solRK[1:N+1]=np.real(num_solStages[0,m-1:N*m:m])
+    solRK = np.exp(sigma*tt)*solRK
+    errRK[j] = np.sqrt(taus[j]*sum((np.abs(solRK-ex_sol))**2))
+
+print(errRK)
 import matplotlib.pyplot as plt
-#plt.loglog(taus,110*taus**2,linestyle='dashed')
-plt.loglog(taus,errRK)
-plt.loglog(taus,errRK2)
-#plt.loglog(taus,10*taus**3,linestyle='dashed')
-#plt.loglog(taus,taus**(3),linestyle='dashed')
-#plt.loglog(taus,taus**(5),linestyle='dashed')
-plt.loglog(taus,taus**(m+3),linestyle='dashed')
-plt.loglog(taus,taus**(m),linestyle='dashed')
-plt.show()
+####plt.loglog(taus,110*taus**2,linestyle='dashed')
+#plt.loglog(taus,errRK,marker='o')
+##plt.loglog(taus,10*taus**3,linestyle='dashed')
+#plt.loglog(taus,0.000000001*taus**(min(m+1+1,2*m-1)),linestyle='dashed')
+#plt.loglog(taus,0.00000000001*taus**(2*m-1),linestyle='dashed')
+#plt.show()
 
-
-#plt.plot(tt,sol_ref)
+#
+#plt.plot(tt,solRK)
 #plt.plot(tt,32.0/35*np.sqrt(np.pi)**(-1)*tt**3.5, linestyle='dashed')
-#plt.semilogy(tt,np.abs(sol_ref-32.0/(35*np.sqrt(np.pi))*tt**(2.5)))
+#plt.show()
+##plt.semilogy(tt,np.abs(sol_ref-32.0/(35*np.sqrt(np.pi))*tt**(2.5)))
 #### Multistep:
 #
 ##plt.plot(np.linspace(0,T,N+1),solBDF)

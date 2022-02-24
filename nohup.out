@@ -1,0 +1,26 @@
+QMutex: destroying locked mutex
+QMutex: destroying locked mutex
+QMutex: destroying locked mutex
+setNativeLocks failed: Resource temporarily unavailable
+QMutex: destroying locked mutex
+QMutex: destroying locked mutex
+QMutex: destroying locked mutex
+QMutex: destroying locked mutex
+QMutex: destroying locked mutex
+setNativeLocks failed: Input/output error
+level change 0
+level change 1
+level change 2
+level change 3
+level change 4
+level change 5
+level change 6
+level change 0
+level change 1
+level change 2
+level change 3
+level change 4
+level change 5
+level change 6
+QMutex: destroying locked mutex
+QMutex: destroying locked mutex

@@ -18,6 +18,7 @@ def create_timepoints(c,N,T):
     return T*time_points
 
 def create_rhs(grid,dx,N,T,m):
+    print("T = ",T)
     OrderQF = 10
     bempp.api.global_parameters.quadrature.near.max_rel_dist = 2
     bempp.api.global_parameters.quadrature.near.single_order =OrderQF-1
@@ -48,8 +49,9 @@ def create_rhs(grid,dx,N,T,m):
     rhs=np.zeros((dof+dof,N*m))
     curls=np.zeros((dof,N*m))
     time_points=create_timepoints(c_RK,N,T)
+    tshift = 0.45
     for j in range(m*N):
-        t=time_points[0,j]
+        t=time_points[0,j]+tshift
         def incident_field(x):
             return np.array([np.exp(-50*(x[2]-t+2)**2), 0. * x[2], 0. * x[2]])
         def tangential_trace(x, n, domain_index, result):
@@ -115,25 +117,25 @@ def harmonic_calderon(s,b,grid):
     b[0:dof]=id_discrete*b[0:dof]
 
     blocks = np.array([[None,None], [None,None]])
-    blocks[0,0] = -elec.weak_form()+0*identity2.weak_form()
+    blocks[0,0] = -elec.weak_form()
     blocks[0,1] =  magn.weak_form()-1.0/2*identity.weak_form()
     blocks[1,0] = -magn.weak_form()-1.0/2*identity.weak_form()
     blocks[1,1] = -elec.weak_form()
     blocks = bempp.api.BlockedDiscreteOperator(blocks)
     from scipy.sparse.linalg import gmres
     #print("Start GMRES : ")
-    lambda_data,info = gmres(blocks, b,tol=10**-13,maxiter=1000)
-    #print("INFO :", info)
-    phigrid=bempp.api.GridFunction(RT_space,coefficients=lambda_data[0:dof],dual_space=RT_space)
-    psigrid=bempp.api.GridFunction(RT_space,coefficients=lambda_data[dof:2*dof],dual_space=RT_space)
-
-    slp_pot = bempp.api.operators.potential.maxwell.electric_field(RT_space, points, s*1j)
-    dlp_pot = bempp.api.operators.potential.maxwell.magnetic_field(RT_space, points, s*1j)
-    #print("Evaluate field : ")  
-    scattered_field_data = -slp_pot * phigrid+dlp_pot*psigrid
-    if np.isnan(scattered_field_data).any():
-        print("NAN Warning, s = ", s)
-        scattered_field_data=np.zeros(np.shape(scattered_field_data))
+    lambda_data,info = gmres(blocks, b,tol=10**-8,maxiter=1000)
+#    #print("INFO :", info)
+#    phigrid=bempp.api.GridFunction(RT_space,coefficients=lambda_data[0:dof],dual_space=RT_space)
+#    psigrid=bempp.api.GridFunction(RT_space,coefficients=lambda_data[dof:2*dof],dual_space=RT_space)
+#
+#    slp_pot = bempp.api.operators.potential.maxwell.electric_field(RT_space, points, s*1j)
+#    dlp_pot = bempp.api.operators.potential.maxwell.magnetic_field(RT_space, points, s*1j)
+#    #print("Evaluate field : ")  
+#    scattered_field_data = -slp_pot * phigrid+dlp_pot*psigrid
+#    if np.isnan(scattered_field_data).any():
+#        print("NAN Warning, s = ", s)
+#        scattered_field_data=np.zeros(np.shape(scattered_field_data))
     return lambda_data
 
 def scattering_solution(gridfilename,dx,N,T,m):
@@ -142,7 +144,8 @@ def scattering_solution(gridfilename,dx,N,T,m):
     Nodes        = mat_contents['Nodes']
     Elements     = mat_contents['Elements']
 
-    grid=bempp.api.grid_from_element_data(Nodes,Elements)
+   # grid=bempp.api.grid_from_element_data(Nodes,Elements)
+    grid=bempp.api.shapes.cube(h=1)
     rhs=create_rhs(grid,dx,N,T,m)
     def ellipticSystem(s,b):
         return harmonic_calderon(s,b,grid)

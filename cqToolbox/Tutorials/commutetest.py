@@ -30,13 +30,13 @@ T=1
 def freq_int(s,b):
     #return s**1*np.exp(-1*s)*b
     #return s**(-0.5)*b
-    return s**(-3)*b
+    return s**(1)*b
 def freq_der(s,b):
     return s*b
 ScatOperator=Conv_Operator(freq_int)
 Deriv       =Conv_Operator(freq_der)
 Am = 15
-m = 5
+m = 3
 taus = np.zeros(Am)
 errRK = np.zeros(Am)
 errRK2 = np.zeros(Am)
@@ -45,11 +45,11 @@ for j in range(Am):
     N=int(np.round(4*1.5**j))
     taus[j] = T*1.0/N
     tt = np.linspace(0,T,N+1)
-    ex_sol = tt**10
+    ex_sol = 7*tt**6
     #### RK  solution
     time_points=create_timepoints("RadauIIA-"+str(m),N,T)
-    rhs = 10*9*8*time_points**7
-    ex_stages = time_points**10
+    rhs = time_points**7
+    ex_stages = 7*time_points**6
     num_solStages = ScatOperator.apply_RKconvol(rhs,T,cutoff=10**(-15),show_progress=False,method="RadauIIA-"+str(m))
     err_Stages = num_solStages-ex_stages
     num_solStages2 = Deriv.apply_RKconvol(err_Stages,T,cutoff=10**(-15),show_progress=False,method="RadauIIA-"+str(m))
@@ -57,18 +57,18 @@ for j in range(Am):
     solRK2=np.zeros(N+1)
     solRK[1:N+1]=num_solStages[0,m-1:N*m:m]
     solRK2[1:N+1]=num_solStages2[0,m-1:N*m:m]
-    #errRK[j] = max(np.abs(err_Stages[0,:]))
     errRK[j] = max(np.abs(solRK-ex_sol))
+    #errRK[j] = max(np.abs(err_Stages[0,::m]))
     errRK2[j] = max(np.abs(solRK2))
 import matplotlib.pyplot as plt
 #plt.loglog(taus,110*taus**2,linestyle='dashed')
-plt.loglog(taus,errRK)
-plt.loglog(taus,errRK2)
+plt.loglog(taus,errRK,marker='o')
+plt.loglog(taus,errRK2,marker='o')
 #plt.loglog(taus,10*taus**3,linestyle='dashed')
 #plt.loglog(taus,taus**(3),linestyle='dashed')
 #plt.loglog(taus,taus**(5),linestyle='dashed')
-plt.loglog(taus,taus**(m+3),linestyle='dashed')
 plt.loglog(taus,taus**(m),linestyle='dashed')
+plt.loglog(taus,taus**(m-1),linestyle='dashed')
 plt.show()
 
 

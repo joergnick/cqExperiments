@@ -168,6 +168,17 @@ class TestCQMethods(unittest.TestCase):
         err          = max(np.abs(sol[0,::m]-exSol))
         self.assertLess(np.abs(err),10**(-2))
 
+    def test_linear_RadauIIA_3SquaredIntmhigh(self):
+        modelL       = LinearScatModelInt2()
+        m = 7
+        N = 8000
+        T = 4
+        sol,counters = modelL.integrate(T,N,method = "RadauIIA-"+str(m))
+        exSol        = modelL.ex_sol(np.linspace(0,T,N+1))
+        err          = max(np.abs(sol[0,::m]-exSol))
+        self.assertLess(np.abs(err),10**(-15))
+
+
     def test_linear_RadauIIA_2(self):
         modelL       = LinearScatModel()
         m = 2

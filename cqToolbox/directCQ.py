@@ -46,21 +46,23 @@ def laplace_evals(s):
     return s**(-2)
 cq = DirectCQ(laplace_evals)
 T = 1
-Am = 10
+Am = 1
 errs = np.zeros(Am)
 Ns = np.zeros(Am)
 for j in range(Am):
-    N = 2**(2+j)+1
+    N = 2*2**(j)
     Ns[j] = N
     g = 1.0/5*np.linspace(0,T,N+1)**5
     u = cq.time_stepping(T,g)
+    w = cq.calc_weights(N,T)
+    print("weights = ",w)
     errs[j] = np.linalg.norm(u-4*np.linspace(0,T,N+1)**3)
     print(Ns)
     print(errs)
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-plt.plot(u)
-plt.plot(4*np.linspace(0,T,N+1)**3,linestyle='dashed',color = 'red')
-
-plt.savefig('temp.png')
+#import matplotlib
+#matplotlib.use('Agg')
+#import matplotlib.pyplot as plt
+#plt.plot(u)
+#plt.plot(4*np.linspace(0,T,N+1)**3,linestyle='dashed',color = 'red')
+#
+#plt.savefig('temp.png')

@@ -63,9 +63,12 @@ class AbstractIntegrator:
         ## Actual solving:
         W0 = []
         for j in range(m):
-            W0.append(self.precomputing(rk.delta_eigs[j]))
-        conv_hist = np.zeros((dof,m*N+1))
-        sol = np.zeros((dof,m*N+1))
+            try:
+                W0.append(self.precomputing(rk.delta_eigs[j],is_W0 = True))
+            except:
+                W0.append(self.precomputing(rk.delta_eigs[j]))
+        conv_hist = 1j*np.zeros((dof,m*N+1))
+        sol = 1j*np.zeros((dof,m*N+1))
         counters = np.zeros(N)
 
         external_rho = None
@@ -78,7 +81,8 @@ class AbstractIntegrator:
         for j in range(0,N):
             ## Calculating solution at timepoint tj
             start_ts = time.time()
-            sol[:,j*m+1:(j+1)*m+1] = self.time_step(W0,j,rk,sol[:,:rk.m*(j)+1],conv_hist[:,j*m+1:(j+1)*m+1],tolsolver=tolsolver)
+            lconv = conv_hist[:,j*m+1:(j+1)*m+1]
+            sol[:,j*m+1:(j+1)*m+1] = (self.time_step(W0,j,rk,sol[:,:rk.m*(j)+1],lconv,tolsolver=tolsolver))
             end_ts   = time.time() 
             if debug_mode:
                 print("Computed new step, relative progress: "+str(j*1.0/N)+". Time taken: "+str(np.round((end_ts-start_ts)*1.0/60.0,decimals = 3))+" Min. ||x(t_j)|| = "+str(np.linalg.norm(sol[:,j*m+1:(j+1)*m+1])))
@@ -86,7 +90,9 @@ class AbstractIntegrator:
             currLen = lengths[j]
             localHist = np.concatenate((sol[:,m*(j+1)+1-m*currLen:m*(j+1)+1],np.zeros((dof,m*currLen))),axis=1)
             if len(localHist[0,:])>=1:
-                localconvHist = np.real(self.tdForward.apply_RKconvol(localHist,(len(localHist[0,:]))*tau/m,method = method,factor_laplace_evaluations=factor_laplace_evaluations,external_rho=external_rho,external_L = external_L,prolonge_by=0,show_progress=False))
+                localconvHist = (self.tdForward.apply_RKconvol(localHist,(len(localHist[0,:]))*tau/m,method = method,factor_laplace_evaluations=factor_laplace_evaluations,external_rho=external_rho,external_L = external_L,prolonge_by=0,show_progress=False))
+                #print("SHAPE LOCALCONVHIST = ",localconvHist.shape)
+                #localconvHist = np.real(self.tdForward.apply_RKconvol(localHist,(len(localHist[0,:]))*tau/m,method = method,factor_laplace_evaluations=factor_laplace_evaluations,external_rho=external_rho,external_L = external_L,prolonge_by=0,show_progress=False))
                 #localconvHist = np.real(self.tdForward.apply_RKconvol(localHist,(len(localHist[0,:]))*tau/m,method = method,factor_laplace_evaluations=factor_laplace_evaluations,prolonge_by=0,show_progress=False))
             else:
                 break
@@ -96,7 +102,8 @@ class AbstractIntegrator:
         #if debug_mode: 
             #print("N: ",N," m: ",rk.m," 2*m*N ",2*m*N, " Amount evaluations: ",self.countEv)
         print("N: ",N," m: ",rk.m," 2*m*N ",2*m*N, " Amount evaluations: ",self.countEv)
-        return sol ,counters
+        return np.real(sol) ,counters
+
 #    def integrate(self,T,rk,reUse=True,debugMode=False):
 #        tau = rk.tau
 #        m   = rk.m

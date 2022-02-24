@@ -32,18 +32,21 @@ class Conv_Operator():
                 self.external_N = N
             #L= 2*self.external_N
 
-            L=max(3*int(N),1)
+            L=max(4*int(N),1)
             ###################### BEST WORKING PARAMETERS KNOWN: 
             #L=4*int(N)
         #L=3.0/2*N
         #rho=tol**(1.0/(2*L))
         if self.external_rho:
             rho = self.external_rho
+            print("WARNING, EXTERNAL RHO WAS SET.")
         else:
             #rho=tol**(1.0/(3*N))
             #rho=tol**(1.0/((3.0/2*L)))
             ###################### BEST WORKING PARAMETERS KNOWN: 
             rho=tol**(1.0/(L))
+            #rho=tol**(1.0/(L))
+            #rho=tol**(1.0/(2*N))
             #rho=tol**(1.0/(3*N))
             #rho=tol**(1.0/(2*self.external_N))
         return L,dt,tol,rho
@@ -70,20 +73,22 @@ class Conv_Operator():
     def get_method_characteristics(self,method):
         import numpy as np
         import math
-        if (method == "RadauIIA-2"):        
-            c_RK=np.array([1.0/3,1])    
-            A_RK=np.array([[5.0/12,-1.0/12],[3.0/4,1.0/4]])
-            b_RK=np.array([[3.0/4,1.0/4]])  
-        elif (method == "RadauIIA-3"):
-            A_RK=np.array([[11.0/45-7*math.sqrt(6)/360, 37.0/225-169.0*math.sqrt(6)/1800 , -2.0/225+math.sqrt(6)/75],[37.0/225+169.0*math.sqrt(6)/1800,11.0/45+7*math.sqrt(6)/360,-2.0/225-math.sqrt(6)/75],[4.0/9-math.sqrt(6)/36,4.0/9+math.sqrt(6)/36,1.0/9]])
-            c_RK=np.array([2.0/5-math.sqrt(6)/10,2.0/5+math.sqrt(6)/10,1])
-            b_RK=np.array([4.0/9-math.sqrt(6)/36,4.0/9+math.sqrt(6)/36,1.0/9])
-        elif (method == "BDF-1") or (method== "RadauIIA-1") or (method=="Implicit Euler"):
-            A_RK= np.array([[1]])
-            c_RK=np.array([1])
-            b_RK=np.array([1])
-        m=len(A_RK[0,:])
-        return A_RK,b_RK,c_RK,m 
+        rk = RKMethod(method,1)
+        return rk.A,rk.b,rk.c,rk.m
+#        if (method == "RadauIIA-2"):        
+#            c_RK=np.array([1.0/3,1])    
+#            A_RK=np.array([[5.0/12,-1.0/12],[3.0/4,1.0/4]])
+#            b_RK=np.array([[3.0/4,1.0/4]])  
+#        elif (method == "RadauIIA-3"):
+#            A_RK=np.array([[11.0/45-7*math.sqrt(6)/360, 37.0/225-169.0*math.sqrt(6)/1800 , -2.0/225+math.sqrt(6)/75],[37.0/225+169.0*math.sqrt(6)/1800,11.0/45+7*math.sqrt(6)/360,-2.0/225-math.sqrt(6)/75],[4.0/9-math.sqrt(6)/36,4.0/9+math.sqrt(6)/36,1.0/9]])
+#            c_RK=np.array([2.0/5-math.sqrt(6)/10,2.0/5+math.sqrt(6)/10,1])
+#            b_RK=np.array([4.0/9-math.sqrt(6)/36,4.0/9+math.sqrt(6)/36,1.0/9])
+#        elif (method == "BDF-1") or (method== "RadauIIA-1") or (method=="Implicit Euler"):
+#            A_RK= np.array([[1]])
+#            c_RK=np.array([1])
+#            b_RK=np.array([1])
+#        m=len(A_RK[0,:])
+#        return A_RK,b_RK,c_RK,m 
         
     def format_rhs(self,rhs,m):
         try:
@@ -91,6 +96,10 @@ class Conv_Operator():
         except:
             N=int(round((len(rhs))/m))
             rhs_mat=np.zeros((1,m*N))
+            if (len(rhs)==m*N+1):
+                ## Assume first value is zero:
+                print("Assume first value is zero value, rhs[0] = ",rhs[0])
+                rhs = rhs[1:]
             rhs_mat[0,:]=rhs
             rhs=rhs_mat 
         return rhs,N
@@ -169,8 +178,8 @@ class Conv_Operator():
             s=s_vect[j]
             deltaMatrix=np.linalg.inv(A_RK+s*1.0/(1-s)*np.ones((m,1))*b_RK)
             deltaEigs,T =np.linalg.eig(deltaMatrix)
-            if np.linalg.cond(T)>20:
-                print(np.linalg.cond(T))
+            if np.linalg.cond(T)>200:
+                print("CONDITION LARGE", np.linalg.cond(T))
             #res = np.linalg.norm(deltaMatrix-T.dot(np.diag(deltaEigs)).dot(np.linalg.inv(T)))
             #if np.linalg.cond(deltaMatrix)>1000:
             #    print("s = "+str(s)+"CONDITION deltaMatrix: ", np.linalg.cond(deltaMatrix))

@@ -13,7 +13,7 @@ from linearcq import Conv_Operator
 from customOperators import precompMM,sparseWeightedMM,applyNonlinearity
 from newtonStepper import NewtonIntegrator
 
-OrderQF = 14
+OrderQF = 10
 bempp.api.global_parameters.quadrature.near.max_rel_dist = 2
 bempp.api.global_parameters.quadrature.near.single_order =OrderQF-1
 bempp.api.global_parameters.quadrature.near.double_order = OrderQF-1
@@ -23,7 +23,7 @@ bempp.api.global_parameters.quadrature.medium.double_order =OrderQF-2
 bempp.api.global_parameters.quadrature.far.single_order =OrderQF-3
 bempp.api.global_parameters.quadrature.far.double_order =OrderQF-3
 bempp.api.global_parameters.quadrature.double_singular = OrderQF
-bempp.api.global_parameters.hmat.eps=10**-10
+bempp.api.global_parameters.hmat.eps=10**-5
 bempp.api.global_parameters.hmat.admissibility='strong'
 
 def calc_gtH(rk,grid,N,T):
@@ -146,13 +146,16 @@ def compute_densities(alpha,N,gridfilename,T,rk,debug_mode=True):
             def func_rhs(x,n,domain_index,result):
                 inc  = np.array([np.exp(-50*(x[2]-t+2)**2), 0. * x[2], 0. * x[2]])    
                 tang = np.cross(np.cross(inc, n),n)
+                if np.linalg.norm(tang)>10**(-6):
+                    print(np.linalg.norm(tang))
                 result[:] = tang
-                #return np.cross(curlU,n)
+                
             gridfunrhs = bempp.api.GridFunction(RT_space,fun = func_rhs,dual_space = RT_space)
             dof = RT_space.global_dof_count
             rhs = np.zeros(dof*2)
             #rhs[:dof] = gridfunrhs.coefficients
             rhs[:dof] = id_weak*gridfunrhs.coefficients
+            print("||rhs|| = ",np.linalg.norm(rhs)," ||gridfun|| = ",np.linalg.norm(gridfunrhs.coefficients))
             return rhs
     model = ScatModel(alpha = alpha)
     dof = RT_space.global_dof_count
