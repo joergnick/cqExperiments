@@ -12,7 +12,7 @@ from customOperators import precompMM,sparseWeightedMM,applyNonlinearity
 import numpy as np
 from rkmethods import RKMethod
 import bempp.api
-OrderQF = 8
+OrderQF = 9
 bempp.api.global_parameters.quadrature.near.max_rel_dist = 2
 bempp.api.global_parameters.quadrature.near.single_order =OrderQF-1
 bempp.api.global_parameters.quadrature.near.double_order = OrderQF-1
@@ -53,8 +53,10 @@ def compute_linear_densities(N,gridfilename,T,rk,debug_mode=True):
     grid=bempp.api.grid_from_element_data(Nodes,Elements)
     ###############################################
     grid=bempp.api.shapes.cube(h=1)
-    RT_space=bempp.api.function_space(grid, "RT",0)
-    NC_space=bempp.api.function_space(grid, "NC",0)
+    #RT_space=bempp.api.function_space(grid, "RT",0)
+    RT_space=bempp.api.function_space(grid, "BC",0)
+    #NC_space=bempp.api.function_space(grid, "NC",0)
+    NC_space=bempp.api.function_space(grid, "RBC",0)
     id_op=bempp.api.operators.boundary.sparse.identity(RT_space, RT_space, RT_space)
     id_op2=-bempp.api.operators.boundary.sparse.identity(RT_space, RT_space, NC_space)
     id_weak = id_op.weak_form()
@@ -70,7 +72,7 @@ def compute_linear_densities(N,gridfilename,T,rk,debug_mode=True):
             rhs = rk.diagonalize(rhs)
             sol = 0*rhs
             for i in range(rk.m):
-                sol[:,i],info = gmres(W0[i],rhs[:,i],tol = 10**(-15),maxiter = 1000)
+                sol[:,i],info = gmres(W0[i],rhs[:,i],tol = 10**(-7),maxiter = 1000)
                 if info>0:
                     print("WARNING,INFO >0.")
             sol = rk.reverse_diagonalize(sol)

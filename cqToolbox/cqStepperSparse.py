@@ -4,8 +4,8 @@ from scipy.sparse.linalg import gmres
 from scipy.optimize import newton_krylov
 import numpy as np
 from linearcq import Conv_Operator
-from rkmethods import RKMethod
-class AbstractIntegratorDirect:
+from rkmethods import Extrapolator,RKMethod
+class AbstractIntegratorSparse:
     def __init__(self):
         self.tdForward = Conv_Operator(self.forward_wrapper)
         self.freqObj = dict()
@@ -59,26 +59,40 @@ class AbstractIntegratorDirect:
                 W0.append(self.precomputing(rk.delta_eigs[j]))
         conv_hist = np.zeros((dof,m*N+1))
         sol = np.zeros((dof,1+(m*N)))
+        prolonged_history = np.zeros((dof,(m*N)))
         counters = np.zeros(N)
-
         lconv = np.zeros((dof,m))
+        extr = Extrapolator()
         for j in range(0,N):
             ## Calculating solution at timepoint tj
+            print("Timepoint : ",j)
             start_ts = time.time()
             sol[:,j*m+1:(j+1)*m+1] = self.time_step(W0,j,rk,sol[:,:rk.m*(j)+1],lconv,tolsolver=tolsolver)
+            if j==N-1:
+                break
             end_ts   = time.time() 
             if debug_mode:
                 print("Computed new step, relative progress: "+str(j*1.0/N)+". Time taken: "+str(np.round((end_ts-start_ts)*1.0/60.0,decimals = 3))+" Min. ||x(t_j)|| = "+str(np.linalg.norm(sol[:,j*m+1:(j+1)*m+1])))
             ## Calculating Local History:
-            #localHist = np.concatenate((sol[:,0:m*(j+1)+1],np.zeros((dof,m*currLen))),axis=1)
-            #history = sol[:,0:m*(j+1)+1]
             history = sol[:,1:]
+            prolonge_by = 1000
+            if (N>=1): 
+                n_end = min(m*N, m*(j+1)+prolonge_by)
+                prolonged_history[:,:n_end]  = extr.prolonge_towards_0(history[:,:m*(j+1)],prolonge_by,rk,decay_speed=4)[:,:n_end]
+            if j<50:
+                cutoff = 10**(-15)
+            else:
+                cutoff = 10**(-15)
+            show_progress = False
+            if j % 100 == 0:
+                show_progress = True
+            globalconvHist = np.real(self.tdForward.apply_RKconvol(prolonged_history,T,cutoff = cutoff,method = method,factor_laplace_evaluations=factor_laplace_evaluations,prolonge_by=0,show_progress=show_progress))
+            W0un = rk.diagonalize(prolonged_history[:,m*(j+1):m*(j+2)]) 
+            for stage_ind in range(m):
+                W0un[:,stage_ind] = self.harmonic_forward(rk.delta_eigs[stage_ind],W0un[:,stage_ind],precomp = W0[stage_ind])
+            W0un = np.real(rk.reverse_diagonalize(W0un))
 
-            #if N>1:
-            #    Nloc = int(2**(1+np.ceil(np.log2(j+1))))
-            #    history = sol[:,1:Nloc]
-            globalconvHist = np.real(self.tdForward.apply_RKconvol(history,T,cutoff = 10**(-5),method = method,factor_laplace_evaluations=factor_laplace_evaluations,prolonge_by=0,show_progress=False))
-            lconv = globalconvHist[:,m*(j+1):m*(j+2)]
+            lconv = globalconvHist[:,m*(j+1):m*(j+2)]-W0un
             #lconv = globalconvHist[:,m*(j+1)+1:m*(j+2)+1]
                 #localconvHist = np.real(self.tdForward.apply_RKconvol(localHist,(len(localHist[0,:]))*tau/m,method = method,factor_laplace_evaluations=factor_laplace_evaluations,prolonge_by=0,show_progress=False))
             ## Updating Global History: 

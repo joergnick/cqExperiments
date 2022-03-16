@@ -29,7 +29,7 @@ def create_rhs(grid,dx,N,T,m):
     bempp.api.global_parameters.quadrature.far.single_order =OrderQF-3
     bempp.api.global_parameters.quadrature.far.double_order =OrderQF-3
     bempp.api.global_parameters.quadrature.double_singular = OrderQF
-    bempp.api.global_parameters.hmat.eps=10**-8
+    bempp.api.global_parameters.hmat.eps=10**-5
     bempp.api.global_parameters.hmat.admissibility='strong'
     if (m==1):
         c_RK = np.array([1])
@@ -41,7 +41,9 @@ def create_rhs(grid,dx,N,T,m):
     from bempp.api.operators.boundary import maxwell
     from bempp.api.operators.boundary import sparse
     
+    #NC_space = bempp.api.function_space(grid,"RBC",0)
     NC_space = bempp.api.function_space(grid,"NC",0)
+    #RT_space = bempp.api.function_space(grid,"BC",0)
     RT_space = bempp.api.function_space(grid,"RT",0)
 
     dof=RT_space.global_dof_count
@@ -49,7 +51,7 @@ def create_rhs(grid,dx,N,T,m):
     rhs=np.zeros((dof+dof,N*m))
     curls=np.zeros((dof,N*m))
     time_points=create_timepoints(c_RK,N,T)
-    tshift = 0.45
+    tshift = 0.0
     for j in range(m*N):
         t=time_points[0,j]+tshift
         def incident_field(x):
@@ -76,7 +78,7 @@ def create_rhs(grid,dx,N,T,m):
     TimeImpedance=Conv_Operator(HarmonicImpedance)  
     curls=IntegralOperator.apply_RKconvol(curls,T,method="RadauIIA-"+str(m),show_progress=False)
     ZptNeuTrace=TimeImpedance.apply_RKconvol(curls,T,method="RadauIIA-"+str(m),show_progress=False)
-    rhs[0:dof,:]=0*np.real(ZptNeuTrace)-rhs[0:dof,:]
+    rhs[0:dof,:]=np.real(ZptNeuTrace)-rhs[0:dof,:]
     return rhs
 
 def harmonic_calderon(s,b,grid):
@@ -95,11 +97,13 @@ def harmonic_calderon(s,b,grid):
     bempp.api.global_parameters.quadrature.far.single_order =OrderQF-3
     bempp.api.global_parameters.quadrature.far.double_order =OrderQF-3
     bempp.api.global_parameters.quadrature.double_singular = OrderQF
-    bempp.api.global_parameters.hmat.eps=10**-8
+    bempp.api.global_parameters.hmat.eps=10**-5
     bempp.api.global_parameters.hmat.admissibility='strong'
 ###    Define Spaces
     NC_space=bempp.api.function_space(grid, "NC",0)
+    #NC_space=bempp.api.function_space(grid, "RBC",0)
     RT_space=bempp.api.function_space(grid, "RT",0)
+    #RT_space=bempp.api.function_space(grid, "BC",0)
         
     elec = -bempp.api.operators.boundary.maxwell.electric_field(RT_space, RT_space, NC_space,1j*s)
     magn = -bempp.api.operators.boundary.maxwell.magnetic_field(RT_space, RT_space, NC_space, 1j*s)
@@ -117,7 +121,7 @@ def harmonic_calderon(s,b,grid):
     b[0:dof]=id_discrete*b[0:dof]
 
     blocks = np.array([[None,None], [None,None]])
-    blocks[0,0] = -elec.weak_form()
+    blocks[0,0] = -elec.weak_form()+identity2.weak_form()
     blocks[0,1] =  magn.weak_form()-1.0/2*identity.weak_form()
     blocks[1,0] = -magn.weak_form()-1.0/2*identity.weak_form()
     blocks[1,1] = -elec.weak_form()
@@ -144,18 +148,17 @@ def scattering_solution(gridfilename,dx,N,T,m):
     Nodes        = mat_contents['Nodes']
     Elements     = mat_contents['Elements']
 
-   # grid=bempp.api.grid_from_element_data(Nodes,Elements)
+    #grid=bempp.api.grid_from_element_data(Nodes,Elements)
     grid=bempp.api.shapes.cube(h=1)
     rhs=create_rhs(grid,dx,N,T,m)
     def ellipticSystem(s,b):
         return harmonic_calderon(s,b,grid)
     ScatOperator=Conv_Operator(ellipticSystem)
     methodstring = "RadauIIA-"+str(m)
-    num_solStages=ScatOperator.apply_RKconvol(rhs,T,cutoff=10**(-7),method=methodstring,show_progress = False)
+    num_solStages=ScatOperator.apply_RKconvol(rhs,T,cutoff=10**(-8),method=methodstring,show_progress = False)
     num_sol=np.zeros((len(num_solStages[:,0]),N+1)) 
     num_sol[:,1:N+1]=np.real(num_solStages[:,m-1:N*m:m])
     return num_sol
-import time
 
 #sol = scattering_solution(1,30,4,2)
 

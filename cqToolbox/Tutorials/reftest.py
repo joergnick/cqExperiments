@@ -1,5 +1,6 @@
 import sys
-sys.path.append('..')
+sys.path.append('cqToolbox')
+sys.path.append('../cqToolbox')
 
 import numpy as np
 import math
@@ -51,7 +52,7 @@ def rhs_func(t):
 
 ScatOperator=Conv_Operator(freq_int)
 Am = 8
-m = 7
+m = 2
 
 ###### Calculate reference solution
 N=int(np.round(8*2**(Am+2)))
@@ -85,19 +86,19 @@ for j in range(Am):
     solRK[1:N+1]=num_solStages[0,m-1:N*m:m]
     solRK = np.exp(sigma*tt)*solRK
     errRK[j] = np.sqrt(taus[j]*sum((np.abs(solRK[0:N+1]-solref[0:Nref+1:speed]))**2))
-
-#print(solRK[-1])
-import matplotlib.pyplot as plt
-####plt.loglog(taus,110*taus**2,linestyle='dashed')
-plt.loglog(taus,errRK,marker='o')
-#plt.loglog(taus,10*taus**3,linestyle='dashed')
-refline1 = errRK[0]*taus**(min(m+1-param,2*m-1))/(taus[0]**(min(m+1-param,2*m-1)))
-plt.loglog(taus,refline1,linestyle='dashed')
-#refline2 = errRK[0]*taus**(2*m-1)/(taus[0]**(2*m-1))
-#plt.loglog(taus,refline2,linestyle='dashed')
-#plt.ylim([10**(-15),10**(-2)])
-plt.show()
-
+print(errRK)
+##print(solRK[-1])
+#import matplotlib.pyplot as plt
+#####plt.loglog(taus,110*taus**2,linestyle='dashed')
+#plt.loglog(taus,errRK,marker='o')
+##plt.loglog(taus,10*taus**3,linestyle='dashed')
+#refline1 = errRK[0]*taus**(min(m+1-param,2*m-1))/(taus[0]**(min(m+1-param,2*m-1)))
+#plt.loglog(taus,refline1,linestyle='dashed')
+##refline2 = errRK[0]*taus**(2*m-1)/(taus[0]**(2*m-1))
+##plt.loglog(taus,refline2,linestyle='dashed')
+##plt.ylim([10**(-15),10**(-2)])
+#plt.show()
+#
 
 #plt.plot(tt,solRK)
 #plt.plot(tt,32.0/35*np.sqrt(np.pi)**(-1)*tt**3.5, linestyle='dashed')

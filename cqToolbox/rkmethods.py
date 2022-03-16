@@ -93,7 +93,11 @@ class Extrapolator():
     def clamp_evals(self,x,speed=8):
         from scipy.special import comb
         x= x-x[0]
-        x = x/x[-1]
+        if np.abs(x[-1])<10**(-14):
+            x=10**(20)*x
+            print("ODD STUFF AHEAD.")
+        else:
+            x = x/x[-1]
         x = 1-x
         result = np.zeros(len(x))
         for n in range(0,speed+1):
@@ -102,25 +106,32 @@ class Extrapolator():
         return result
 
     def prolonge_towards_0(self,u,n_additional,rk,decay_speed=4):
+        "Input dimensions are assumed to be a multiple of m."
         if n_additional == 0:
             return u
         dof = len(u[:,0])
+        u_with_zeros = np.concatenate((np.zeros((dof,5)),u),axis = 1)
         additional_entries = np.zeros((dof,n_additional*rk.m))
         additional_times = np.array([])
         for j in range(n_additional):
             additional_times = np.append(additional_times,rk.tau*(j+2)+rk.tau*rk.c)
 
-        interpolation_times = np.array([0])
+        interpolation_times = np.array([])
         interpolation_times = np.append(interpolation_times,rk.tau*rk.c)
         interpolation_times = np.append(interpolation_times,rk.tau+rk.tau*rk.c)
+        interpolation_times = np.append(interpolation_times,2*rk.tau+rk.tau*rk.c)
+        interpolation_times = np.append(interpolation_times,3*rk.tau+rk.tau*rk.c)
+        interpolation_times = np.append(interpolation_times,4*rk.tau+rk.tau*rk.c)
+        interpolation_times = np.append(interpolation_times,5*rk.tau+rk.tau*rk.c)
        # interpolation_times = interpolation_times[:min(len(interpolation_times),len(u[0,:]))]
         clamp_vals = self.clamp_evals(additional_times,speed=decay_speed)
         from scipy import interpolate
-        len_u = len(u[0,:])
+
+        index_min = min(len(interpolation_times),len(u_with_zeros[0,:]))
         for j in range(dof):
             #ipp = interpolate.interp1d(interpolation_times,u[j,-len(interpolation_times):],fill_value='extrapolate')
             #additional_entries[j,:] = ipp(additional_times)*clamp_vals
-            ipp = interpolate.UnivariateSpline(interpolation_times,u[j,-len(interpolation_times):],k=1)
+            ipp = interpolate.UnivariateSpline(interpolation_times[-index_min:],u_with_zeros[j,-index_min:],k=5)
             additional_entries[j,:] = ipp(additional_times)*clamp_vals
         self.prolonged = len(additional_entries[0,:])
         return np.concatenate((u,additional_entries),axis = 1)

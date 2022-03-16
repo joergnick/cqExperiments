@@ -116,7 +116,7 @@ class TestCQMethods(unittest.TestCase):
     def test_linear_RadauIIA_1Simple(self):
         modelL       = LinearScatModelSimple()
         m = 1
-        N = 1000
+        N = 100
         T = 1
         sol,counters = modelL.integrate(T,N,method = "RadauIIA-"+str(m))
         exSol        = modelL.ex_sol(np.linspace(0,T,N+1))
@@ -125,7 +125,7 @@ class TestCQMethods(unittest.TestCase):
     def test_scissor(self):
         modelS = ScissorModel()
         m = 3
-        N = 2000
+        N = 21
         T = 4
         sol,counters = modelS.integrate(T,N,method = "RadauIIA-"+str(m))
         exSol        = modelS.ex_sol(np.linspace(0,T,N+1))
@@ -151,7 +151,7 @@ class TestCQMethods(unittest.TestCase):
     def test_linear_RadauIIA_3SimpleInt(self):
         modelL       = LinearScatModelInt()
         m = 3
-        N = 1001
+        N = 10
         T = 4
         sol,counters = modelL.integrate(T,N,method = "RadauIIA-"+str(m))
         exSol        = modelL.ex_sol(np.linspace(0,T,N+1))
@@ -161,22 +161,22 @@ class TestCQMethods(unittest.TestCase):
     def test_linear_RadauIIA_3SquaredInt(self):
         modelL       = LinearScatModelInt2()
         m = 3
-        N = 2000
+        N = 60
         T = 4
         sol,counters = modelL.integrate(T,N,method = "RadauIIA-"+str(m))
         exSol        = modelL.ex_sol(np.linspace(0,T,N+1))
         err          = max(np.abs(sol[0,::m]-exSol))
-        self.assertLess(np.abs(err),10**(-2))
+        self.assertLess(np.abs(err),10**(-1))
 
     def test_linear_RadauIIA_3SquaredIntmhigh(self):
         modelL       = LinearScatModelInt2()
         m = 7
-        N = 8000
+        N = 47
         T = 4
         sol,counters = modelL.integrate(T,N,method = "RadauIIA-"+str(m))
         exSol        = modelL.ex_sol(np.linspace(0,T,N+1))
         err          = max(np.abs(sol[0,::m]-exSol))
-        self.assertLess(np.abs(err),10**(-15))
+        self.assertLess(np.abs(err),10**(-4))
 
 
     def test_linear_RadauIIA_2(self):
@@ -246,9 +246,9 @@ class TestCQMethods(unittest.TestCase):
         sol,counters = modelN.integrate(T,N,tolsolver=10**(-8),method = "RadauIIA-"+str(m))
         exSol        = modelN.ex_sol(np.linspace(0,T,N+1))
         err          = np.max(np.max(np.abs(sol[:,::m]-exSol)))
-        self.assertLess(np.abs(err),10**(-6))
+        self.assertLess(np.abs(err),10**(-4))
     def test_nonlinear_inhom_RadauIIA_2(self):
-        N       = 300
+        N       = 100
         T       = 2
         m       = 2
         tau     = T*1.0/N
@@ -270,9 +270,9 @@ class TestCQMethods(unittest.TestCase):
         sol,counters = modelNI.integrate(T,N,tolsolver=10**(-10),method = "RadauIIA-"+str(m))
         exSol        = modelNI.ex_sol(np.linspace(0,T,N+1))
         err          = np.max(np.max(np.abs(sol[:,::m]-exSol)))
-        self.assertLess(np.abs(err),10**(-7))
+        self.assertLess(np.abs(err),10**(-4))
     def test_nonlinear_inhom_RadauIIA_3(self):
-        N       = 41
+        N       = 60
         T       = 1.5
         m       = 3
         tau     = T*1.0/N

@@ -1,5 +1,8 @@
 import numpy as np
 from rkmethods import Extrapolator,RKMethod
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 class Conv_Operator():
     tol=10**-15
     #tol=10**-20
@@ -32,7 +35,7 @@ class Conv_Operator():
                 self.external_N = N
             #L= 2*self.external_N
 
-            L=max(4*int(N),1)
+            L=max(3*int(N),1)
             ###################### BEST WORKING PARAMETERS KNOWN: 
             #L=4*int(N)
         #L=3.0/2*N
@@ -44,7 +47,8 @@ class Conv_Operator():
             #rho=tol**(1.0/(3*N))
             #rho=tol**(1.0/((3.0/2*L)))
             ###################### BEST WORKING PARAMETERS KNOWN: 
-            rho=tol**(1.0/(L))
+            rho=tol**(1.0/(2*N))
+            #rho=tol**(1.0/(L))
             #rho=tol**(1.0/(L))
             #rho=tol**(1.0/(2*N))
             #rho=tol**(1.0/(3*N))
@@ -91,6 +95,13 @@ class Conv_Operator():
 #        return A_RK,b_RK,c_RK,m 
         
     def format_rhs(self,rhs,m):
+        #try:
+        #    rhs_mat = np.zeros((1,len(rhs[:])))
+        #    rhs_mat[0,:] = rhs
+        #    print("hi")
+        #except:
+        #    rhs_mat = rhs
+        #N=int(round((len(rhs_mat[0,:]))//m))
         try:
             N=int(round((len(rhs[0,:]))//m))
         except:
@@ -148,6 +159,32 @@ class Conv_Operator():
             normsRHS[j]=np.max(np.abs(rhs_fft[:,j]))
             if normsRHS[j]>cutoff:
                 counter=counter+1
+        if normsRHS[0]>10**20:
+            plt.semilogy(normsRHS)
+            plt.savefig('temp.png')
+            raise ValueError("Fourier coefficients have exploded.")
+        #print("Amount of Systems needed: "+ str(counter))
+#        if counter == 3000:
+#        if show_progress:
+#        #    print("NORMS RHS = ",rhs)
+#        #    print("NORMS Fouriercoefficients = ",normsRHS)
+#            #plt.plot(rhs[0,:])
+#            plt.semilogy(normsRHS)
+#            ##plt.show()
+#            plt.savefig('temp.png')
+#           # raise ValueError
+
+
+       # if counter >700:
+       #     print("NORMS RHS = ",rhs)
+       #     print("NORMS Fouriercoefficients = ",normsRHS)
+       #     import matplotlib
+       #     matplotlib.use('Agg')
+       #     import matplotlib.pyplot as plt
+       #     plt.plot(rhs[0,:])
+       #     plt.savefig('temp.png')
+       #     raise ValueError
+
         #import matplotlib
         #matplotlib.use('Agg')
         #import matplotlib.pyplot as plt
@@ -162,12 +199,18 @@ class Conv_Operator():
         HalfL= int(np.ceil(float(L)/2.0))
         if show_progress:
             print("Amount of Systems needed: "+ str(counter))
-       # import matplotlib.pyplot as plt
-       # #plt.plot(np.linalg.norm(rhs,axis=0),linestyle='dashed')
-       # plt.semilogy(normsRHS)
-       # plt.show()
-       # raise ValueError("You wanted it that way :-E")
-        #Timing the elliptic systems
+        #first_minimum = 0
+        #while normsRHS[first_minimum]>normsRHS[first_minimum+1]:
+        #    first_minimum += 1
+        #first_minimum += 20
+        ##print("first_minimum = ",first_minimum)
+        #first_minimum = 2000
+       ## import matplotlib.pyplot as plt
+       ## #plt.plot(np.linalg.norm(rhs,axis=0),linestyle='dashed')
+       ## plt.semilogy(normsRHS)
+       ## plt.show()
+       ## raise ValueError("You wanted it that way :-E")
+        ##Timing the elliptic systems
         import time
         start=0
         end=0
@@ -198,7 +241,9 @@ class Conv_Operator():
                     for sumInd in range(m):
                         rhsStages[:,stageInd]=rhsStages[:,stageInd]+Tinv[stageInd,sumInd]*rhs_fft[:,m*j+sumInd]
                     maxRHS=np.max(np.abs(rhsStages[:,stageInd]))
-                    if maxRHS>cutoff:
+                    #if (maxRHS>cutoff or j<20 ) and (j<400):
+                    #if j<= first_minimum:
+                    if maxRHS>cutoff :
                         relevantChange=True
                         lhsStages[:,stageInd]=self.apply_elliptic_operator(deltaEigs[stageInd],rhsStages[:,stageInd])       
             else:
