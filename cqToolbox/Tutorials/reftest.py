@@ -9,22 +9,10 @@ from rkmethods import RKMethod
 #from conv_op import ConvOperatoralt
 
 def create_timepoints(method,N,T):
-    rk = RKMethod(method,1)
+    rk = RKMethod(method,T*1.0/N)
     m = rk.m
-    #if (method=="RadauIIA-1"):
-    #    m = 1
-    #    c_RK=np.array([1])
-    #if (method=="RadauIIA-2"):
-    #    m = 2
-    #    c_RK=np.array([1.0/3,1])
-    #if (method=="RadauIIA-3"):
-    #    m = 3
-    #    c_RK=np.array([2.0/5-math.sqrt(6)/10,2.0/5+math.sqrt(6)/10,1])
-    c_RK = rk.c
-    time_points=np.zeros((1,m*N))
-    for j in range(m):
-        time_points[0,j:m*N:m]=c_RK[j]*1.0/N*np.ones((1,N))+np.linspace(0,1-1.0/N,N)
-    return T*time_points
+    return rk.get_time_points(T)
+
 
 ## Creating right-hand side
 T=20
@@ -52,7 +40,7 @@ def rhs_func(t):
 
 ScatOperator=Conv_Operator(freq_int)
 Am = 8
-m = 2
+m = 7
 
 ###### Calculate reference solution
 N=int(np.round(8*2**(Am+2)))
@@ -65,7 +53,7 @@ rhs= np.exp(-sigma*time_points)*rhs_func(time_points)
 #rhs=np.exp(-sigma*time_points)*time_points**20
 num_solStages = ScatOperator.apply_RKconvol(rhs,T,cutoff=10**(-15),show_progress=False,method="RadauIIA-"+str(m))
 solref=np.zeros(N+1)
-solref[1:N+1]=num_solStages[0,m-1:N*m:m]
+solref[1:N+1]=np.real(num_solStages[0,m-1:N*m:m])
 solref = np.exp(sigma*tt)*solref
 Nref = N 
 
@@ -83,7 +71,7 @@ for j in range(Am):
     #rhs=np.exp(-sigma*time_points)*time_points**20
     num_solStages = ScatOperator.apply_RKconvol(rhs,T,cutoff=10**(-15),show_progress=False,method="RadauIIA-"+str(m))
     solRK=np.zeros(N+1)
-    solRK[1:N+1]=num_solStages[0,m-1:N*m:m]
+    solRK[1:N+1]=np.real(num_solStages[0,m-1:N*m:m])
     solRK = np.exp(sigma*tt)*solRK
     errRK[j] = np.sqrt(taus[j]*sum((np.abs(solRK[0:N+1]-solref[0:Nref+1:speed]))**2))
 print(errRK)

@@ -23,11 +23,24 @@ from scipy.sparse.linalg import aslinearoperator
 #RT_space = bempp.api.function_space(grid,"RT",0)
 
 bempp.api.global_parameters.hmat.eps=10**-7
-def precompMM(space):
+def evaluate_on_elements(gridfun,grid):
+    """Calculate the support of a element centers."""
+    local_coordinates = np.array([[1./3,0.05,0.95,0.05],[1./3,0.05,0.05,0.95]])
+    index_set = grid.leaf_view.index_set()
+    values = np.zeros((gridfun.component_count, grid.leaf_view.entity_count(0)),
+            dtype=gridfun.dtype)
+    for element in grid.leaf_view.entity_iterator(0):
+        index = index_set.entity_index(element)
+        local_values = np.max(np.abs((gridfun.evaluate(element, local_coordinates))))
+        values[:, index] = local_values.flat
+    return values[0,:]
+
+def precompMM(space, neighbour_layers = 1):
     nontrivialEntries = []
     dof = space.global_dof_count
     import numpy as np
     coeffs = np.zeros(dof)
+    grid = space.grid
     element_list =  list(space.grid.leaf_view.entity_iterator(0))
     gridfunList = []
     domainList = [[] for _ in element_list]
@@ -36,11 +49,11 @@ def precompMM(space):
         coeffs[j] = 1
         gridfun = bempp.api.GridFunction(space,coefficients = coeffs)
         gridfunList.append(gridfun)
-        indices = np.nonzero(np.sum(gridfun.evaluate_on_element_centers()**2,axis = 0))
-        domainList[indices[0][0]].append(j)
-        domainList[indices[0][1]].append(j)
-        domainDict[element_list[indices[0][0]]].append(j)
-        domainDict[element_list[indices[0][1]]].append(j)
+        #indices = np.nonzero(np.sum(gridfun.evaluate_on_element_centers()**2,axis = 0))
+        indices = np.nonzero(evaluate_on_elements(gridfun,grid))
+        for ind_ in range(len(indices[0])):
+            domainList[indices[0][ind_]].append(j)
+            domainDict[element_list[indices[0][ind_]]].append(j)
         coeffs[j] = 0
     identity = bempp.api.operators.boundary.sparse.identity(space,space,space)
     id_weak = identity.weak_form()

@@ -41,10 +41,10 @@ def create_rhs(grid,dx,N,T,m):
     from bempp.api.operators.boundary import maxwell
     from bempp.api.operators.boundary import sparse
     
-    #NC_space = bempp.api.function_space(grid,"RBC",0)
-    NC_space = bempp.api.function_space(grid,"NC",0)
-    #RT_space = bempp.api.function_space(grid,"BC",0)
-    RT_space = bempp.api.function_space(grid,"RT",0)
+    NC_space = bempp.api.function_space(grid,"RBC",0)
+    #NC_space = bempp.api.function_space(grid,"NC",0)
+    RT_space = bempp.api.function_space(grid,"BC",0)
+    #RT_space = bempp.api.function_space(grid,"RT",0)
 
     dof=RT_space.global_dof_count
     print(" DOF: ", dof)
@@ -100,10 +100,10 @@ def harmonic_calderon(s,b,grid):
     bempp.api.global_parameters.hmat.eps=10**-5
     bempp.api.global_parameters.hmat.admissibility='strong'
 ###    Define Spaces
-    NC_space=bempp.api.function_space(grid, "NC",0)
-    #NC_space=bempp.api.function_space(grid, "RBC",0)
-    RT_space=bempp.api.function_space(grid, "RT",0)
-    #RT_space=bempp.api.function_space(grid, "BC",0)
+    #NC_space=bempp.api.function_space(grid, "NC",0)
+    NC_space=bempp.api.function_space(grid, "RBC",0)
+    #RT_space=bempp.api.function_space(grid, "RT",0)
+    RT_space=bempp.api.function_space(grid, "BC",0)
         
     elec = -bempp.api.operators.boundary.maxwell.electric_field(RT_space, RT_space, NC_space,1j*s)
     magn = -bempp.api.operators.boundary.maxwell.magnetic_field(RT_space, RT_space, NC_space, 1j*s)

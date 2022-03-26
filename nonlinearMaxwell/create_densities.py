@@ -21,11 +21,11 @@ from data_generators import compute_densities
 T = 6
 m = 2
 diffs = np.load('data/diffs.npy')
-diffsAbstract = np.load('data/diffsAbstract.npy')
-#print(diffs)
+#diffsAbstract = np.load('data/diffsAbstract.npy')
+print(diffs)
 #print("Abstract = ",diffsAbstract)
 am_space = 1
-am_time  = 1
+am_time  = 4
 alpha = 1
 diffs = np.zeros(am_time)
 norms_direct = np.zeros(am_time)
@@ -33,7 +33,7 @@ diffs_direct = np.zeros(am_time)
 for space_index in range(am_space):
     for time_index in range(am_time):
         h   = 2**(-(space_index+0)*1.0/2)
-        N   = int(np.round(800*2**time_index))
+        N   = int(np.round(2000*2**time_index))
         #### MAX DIFFERENCE IS 0.012 for N:
         #N   = 255*2**time_index
         #STILL WORKS until at least 85% : N   = 600*2**time_index
@@ -70,9 +70,9 @@ for space_index in range(am_space):
         norm_newt =sum(np.linalg.norm(sol_newt[:,::m],axis = 0))
 
 
-        #diffs[time_index] = sum(np.linalg.norm(sol_newt[:,::m]-sol_direct[:,::m],axis = 0))
+        diffs[time_index] = sum(np.linalg.norm(sol_newt[:,::m]-sol_lin[:,::],axis = 0))
         #print("Max N = ",N," MAX DIFFERENCE : ",diffs)
-        #print("DIFFS = ",diffs)
+        print("DIFFS = ",diffs)
         # print("Max N = ",N," MAX DIFFERENCE DIRECT: ",diffs_direct)
         print("Max N = ",N," NORM FORWARD SOLUTION: ",norm_lin)
         #print("Max N = ",N," NORM DIRECT SOLUTION: ",norm_dir)
