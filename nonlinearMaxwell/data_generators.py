@@ -13,7 +13,7 @@ from linearcq import Conv_Operator
 from customOperators import precompMM,sparseWeightedMM,applyNonlinearity,sparseMM
 from newtonStepper import NewtonIntegrator
 
-OrderQF = 11
+OrderQF = 10
 bempp.api.global_parameters.quadrature.near.max_rel_dist = 2
 bempp.api.global_parameters.quadrature.near.single_order =OrderQF-1
 bempp.api.global_parameters.quadrature.near.double_order = OrderQF-1
@@ -23,13 +23,14 @@ bempp.api.global_parameters.quadrature.medium.double_order =OrderQF-2
 bempp.api.global_parameters.quadrature.far.single_order =OrderQF-3
 bempp.api.global_parameters.quadrature.far.double_order =OrderQF-3
 bempp.api.global_parameters.quadrature.double_singular = OrderQF
-bempp.api.global_parameters.hmat.eps=10**-7
+bempp.api.global_parameters.hmat.eps=10**-8
 bempp.api.global_parameters.hmat.admissibility='strong'
-
+space_string = "RT"
+nrspace_string = "NC"
 def calc_gtH(rk,grid,N,T):
     m = len(rk.c)
     tau = T*1.0/N
-    RT_space=bempp.api.function_space(grid, "BC",0)
+    RT_space=bempp.api.function_space(grid, space_string,0)
     #RT_space=bempp.api.function_space(grid, "RT",0)
     dof = RT_space.global_dof_count
     gTE = np.zeros((dof,m*N))
@@ -87,7 +88,7 @@ def compute_densities(alpha,N,gridfilename,T,rk,debug_mode=True):
 
     grid=bempp.api.grid_from_element_data(Nodes,Elements)
     #grid = bempp.api.shapes.cube(h=1)
-    RT_space=bempp.api.function_space(grid, "BC",0)
+    RT_space=bempp.api.function_space(grid, space_string,0)
     #RT_space=bempp.api.function_space(grid, "RT",0)
     
     gridfunList,neighborlist,domainDict = precompMM(RT_space)
@@ -100,12 +101,12 @@ def compute_densities(alpha,N,gridfilename,T,rk,debug_mode=True):
         def __init__(self,alpha=1.0):
             NewtonIntegrator.__init__(self)
             if (alpha<=0) or (alpha>1):
+                print("Parameter alpha has been set to: "+str(alpha)+".")
                 raise ValueError("The parameter alpha must be in the interval (0,1].")
             self.alpha = alpha
         def a(self,x):
-            #return x
             #return 0*np.linalg.norm(x)**(1-self.alpha)*x
-            return np.linalg.norm(x)**(1-self.alpha)*x
+            return np.linalg.norm(x)**(self.alpha-1)*x
         def Da(self,x):
         #    if np.linalg.norm(x)<10**(-15):
         #        x=10**(-15)*np.ones(3)
@@ -114,9 +115,9 @@ def compute_densities(alpha,N,gridfilename,T,rk,debug_mode=True):
           #  return -0.5*np.linalg.norm(x)**(-2.5)*np.outer(x,x)+np.linalg.norm(x)**(-0.5)*np.eye(3)
         def precomputing(self,s):
             #NC_space=bempp.api.function_space(grid, "NC",0)
-            NC_space=bempp.api.function_space(grid, "RBC",0)
+            NC_space=bempp.api.function_space(grid, nrspace_string,0)
             #RT_space=bempp.api.function_space(grid, "RT",0)
-            RT_space=bempp.api.function_space(grid, "BC",0)
+            RT_space=bempp.api.function_space(grid, space_string,0)
             elec = -bempp.api.operators.boundary.maxwell.electric_field(RT_space, RT_space, NC_space,1j*s)
             magn = -bempp.api.operators.boundary.maxwell.magnetic_field(RT_space, RT_space, NC_space, 1j*s)
             identity= -bempp.api.operators.boundary.sparse.identity(RT_space, RT_space, NC_space)

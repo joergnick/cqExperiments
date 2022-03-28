@@ -66,24 +66,24 @@ class NewtonIntegrator(AbstractIntegrator):
             if j >=1:
                 if np.linalg.norm(np.imag(self.extrapol(history[:,i+1:j*rk.m+i+1:rk.m],3)))>10**(-6):
                     print("Warning, imaginary part of history nonzero.")
-                x0[:,i] = np.real(self.extrapol(history[:,i+1:j*rk.m+i+1:rk.m],3))
+                x0[:,i] = np.real(self.extrapol(np.real(history[:,i+1:j*rk.m+i+1:rk.m]),5))
             else:
                 x0[:,i] = np.zeros(len(w_star_sol_j[:,0]))
-
         #print("Begin Newton, ||x0|| = "+str(np.linalg.norm(x0))+" ||rhs|| = "+str(np.linalg.norm(rhs)))
         counter = 0
-        thresh = 3
+        thresh = 5
         x = x0
         info = 1
         res = None
+        jlist = None
         while info >0:
             if counter <=thresh:
                 scal = 1 
             else:
                 #break
                 scal = 0.5
-            x,info,res = self.newton_iteration(j,rk,rhs,W0,x,history,tolsolver = tolsolver,coeff=scal**(counter-thresh),last_residual=res)
-            if info < 10**(-6):
+            x,info,res,jlist = self.newton_iteration(j,rk,rhs,W0,x,history,tolsolver = tolsolver,coeff=scal**(counter-thresh),last_residual=res,jacob_list = jlist)
+            if info < 10**(-5):
                 info = 0
             if self.debug_mode:
                 print("INFO AFTER {} STEP: ".format(counter),info)
@@ -94,12 +94,12 @@ class NewtonIntegrator(AbstractIntegrator):
                 counter = thresh
                 info = 1
             counter = counter+1
-            #print("NEWTON ITERATION COUNTER: ",counter, " info: ",info)
+            print("NEWTON ITERATION COUNTER: ",counter, " info: ",info)
         #print("||res|| = "+str(np.linalg.norm(res)))
-        #print("AMOUNT NEWTON ITERATIONS = "+str(counter))
+        print("AMOUNT NEWTON ITERATIONS = "+str(counter)+" ||x_pred|| = "+str(np.linalg.norm(x0))+ " ||x|| = "+str(np.linalg.norm(x)))
         return x
 
-    def newton_iteration(self,j,rk,rhs,W0,x0,history,tolsolver = 10**(-5),coeff = 1,debug_mode=False,last_residual=None):
+    def newton_iteration(self,j,rk,rhs,W0,x0,history,tolsolver = 10**(-5),coeff = 1,debug_mode=False,last_residual=None,jacob_list = None):
         t = j*rk.tau
         m = rk.m
         x0_pure = x0
@@ -108,7 +108,9 @@ class NewtonIntegrator(AbstractIntegrator):
         #    for dof_index in range(dof):
         #        if np.abs(x0[dof_index,stage_ind])<10**(-30):
         #            x0[dof_index,stage_ind] = 10**(-30)
-        jacob_list = [self.calc_jacobian(x0[:,k],t+rk.tau*rk.c[k],j*m+k+1) for k in range(m)]
+        if jacob_list is None:
+            jacob_list = [self.calc_jacobian(x0[:,k],t+rk.tau*rk.c[k],j*m+k+1) for k in range(m)]
+        #jacob_list = [self.calc_jacobian(x0[:,k],t+rk.tau*rk.c[k],j*m+k+1) for k in range(m)]
         #print(type(jacob_list[0]))
         #print("||J|| = ",max([np.linalg.norm(ja) for ja in jacob_list]))
         stage_rhs = rk.diagonalize(x0+1j*np.zeros((dof,m)))
@@ -146,10 +148,10 @@ class NewtonIntegrator(AbstractIntegrator):
         newton_operator = LinearOperator((m*dof,m*dof),newton_lambda)
         counterObj = gmres_counter()
         #print("Residual: ",np.linalg.norm(rhs_long))
-        dx_long,info = gmres(newton_operator,rhs_long,maxiter = 1000,callback = counterObj,tol=10**(-15))
-        #print("Residual after GMRES: ",np.linalg.norm(rhs_long-newton_func(dx_long))," COUNT GMRES: ",counterObj.niter)
-        if info != 0:
-            print("GMRES Info not zero, Info: ", info)
+        dx_long,info = gmres(newton_operator,rhs_long,maxiter = 100,restart = None,callback = counterObj,tol=10**(-6))
+        print("Residual after GMRES: ",np.linalg.norm(rhs_long-newton_func(dx_long))," COUNT GMRES: ",counterObj.niter)
+        #if info != 0:
+        #    print("GMRES Info not zero, Info: ", info)
 
         dx = 1j*np.zeros((dof,m))
         for stageInd in range(m):
@@ -170,14 +172,14 @@ class NewtonIntegrator(AbstractIntegrator):
         #if coeff*np.linalg.norm(dx)/np.sqrt(dof)<tolsolver:
         #    return x0,0,nonlinear_residual
         #### Terminating if change in residual was small:
-        if (last_residual is not None) and (np.linalg.norm(nonlinear_residual-last_residual))<10**(-14):
+        if (last_residual is not None) and (np.linalg.norm(nonlinear_residual-last_residual))<10**(-11):
             #print("Early finish, residual: "+str(np.linalg.norm(nonlinear_residual)))
-            return np.real(x1), 0,nonlinear_residual
+            return np.real(x1), 0,nonlinear_residual,jacob_list
         if debug_mode:
             print("Newton step completed, residual : "+str(np.linalg.norm(nonlinear_residual)))
         #print("||dx|| = ",np.linalg.norm(dx))
         info = coeff*np.linalg.norm(dx)/dof
-        return np.real(x1),info,nonlinear_residual
+        return np.real(x1),info,nonlinear_residual,jacob_list
 
     def extrapol_coefficients(self,p):
         coeffs = np.ones(p+1)

@@ -202,7 +202,7 @@ class TestCQMethods(unittest.TestCase):
     def test_nonlinear_RadauIIA_2(self):
         modelN       = NonlinearScatModel()
         m = 2
-        N = 11
+        N = 15
         T = 2
         sol,counters = modelN.integrate(T,N,method = "RadauIIA-"+str(m))
         exSol        = modelN.ex_sol(np.linspace(0,T,N+1))
