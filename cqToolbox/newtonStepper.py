@@ -83,6 +83,8 @@ class NewtonIntegrator(AbstractIntegrator):
                 #break
                 scal = 0.5
             x,info,res = self.newton_iteration(j,rk,rhs,W0,x,history,tolsolver = tolsolver,coeff=scal**(counter-thresh),last_residual=res)
+            if info < 10**(-6):
+                info = 0
             if self.debug_mode:
                 print("INFO AFTER {} STEP: ".format(counter),info)
             if np.linalg.norm(x)>10**3000:

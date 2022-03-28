@@ -25,15 +25,15 @@ diffs = np.load('data/diffs.npy')
 print(diffs)
 #print("Abstract = ",diffsAbstract)
 am_space = 1
-am_time  = 4
-alpha = 1
+am_time  = 5
+alpha = 0.5
 diffs = np.zeros(am_time)
 norms_direct = np.zeros(am_time)
 diffs_direct = np.zeros(am_time)
 for space_index in range(am_space):
     for time_index in range(am_time):
         h   = 2**(-(space_index+0)*1.0/2)
-        N   = int(np.round(2000*2**time_index))
+        N   = int(np.round(16*2**time_index))
         #### MAX DIFFERENCE IS 0.012 for N:
         #N   = 255*2**time_index
         #STILL WORKS until at least 85% : N   = 600*2**time_index
@@ -41,8 +41,8 @@ for space_index in range(am_space):
         gridfilename='data/grids/sphereh'+str(np.round(h,3))+'.npy'
         #gridfilename='data/grids/sphere_python3_h'+str(np.round(h,3))+'.npy'
         filename = 'data/density_sphere_h_'+str(np.round(h,3)) +'_N_'+str(N)+'_m_'+str(m)+ '.npy'
-        if os.path.isfile(filename):
-            print("File "+filename+" already computed, jumped.")
+        #if os.path.isfile(filename):
+        #    print("File "+filename+" already computed, jumped.")
         #    continue
         rk = RKMethod("RadauIIA-"+str(m),tau)
         #print("TIME STEPPING : ")
@@ -56,7 +56,7 @@ for space_index in range(am_space):
         #end = time.time()
         #print("Recursive computation finished, time: ",end-start)
         #start = time.time()
-        sol_lin = scattering_solution(gridfilename,h,N,T,m)
+        #sol_lin = scattering_solution(gridfilename,h,N,T,m)
         #end = time.time()
         #print("Forward computation finished, time: ",end-start)
         sol_newt = compute_densities(alpha,N,gridfilename,T,rk)
@@ -65,16 +65,16 @@ for space_index in range(am_space):
         #diffs_direct[time_index] = max(np.linalg.norm(sol_lin-sol_direct[:,::m],axis = 0))
         #norms_direct[time_index] = max(np.linalg.norm(sol_direct[:,::],axis = 0))
         #norms_direct[time_index] = max(np.linalg.norm(sol[:,::],axis = 0))
-        norm_lin =sum(np.linalg.norm(sol_lin[:,::],axis = 0))
+        #norm_lin =sum(np.linalg.norm(sol_lin[:,::],axis = 0))
         #norm_dir =sum(np.linalg.norm(sol_direct[:,::m],axis = 0))
         norm_newt =sum(np.linalg.norm(sol_newt[:,::m],axis = 0))
 
 
-        diffs[time_index] = sum(np.linalg.norm(sol_newt[:,::m]-sol_lin[:,::],axis = 0))
+        #diffs[time_index] = sum(np.linalg.norm(sol_newt[:,::m]-sol_lin[:,::],axis = 0))
         #print("Max N = ",N," MAX DIFFERENCE : ",diffs)
-        print("DIFFS = ",diffs)
+        #print("DIFFS = ",diffs)
         # print("Max N = ",N," MAX DIFFERENCE DIRECT: ",diffs_direct)
-        print("Max N = ",N," NORM FORWARD SOLUTION: ",norm_lin)
+        #print("Max N = ",N," NORM FORWARD SOLUTION: ",norm_lin)
         #print("Max N = ",N," NORM DIRECT SOLUTION: ",norm_dir)
         print("Max N = ",N," NORM NEWTON SOLUTION: ",norm_newt)
         #print("Max N = ",N," MAX DIFFERENCE RECURSIVE: ",diffs)
@@ -84,14 +84,14 @@ for space_index in range(am_space):
         resDict["m"] = rk.m
         resDict["N"] = N
         np.save(filename,resDict)
-        np.save("data/diffs",diffs)
+        #np.save("data/diffs",diffs)
         #np.save("data/diffsAbstract",diffsAbstract)
-import matplotlib 
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-plt.semilogy(np.linalg.norm(sol_newt[:,::m],axis = 0),color='r')
-plt.semilogy(np.linalg.norm(sol_lin,axis = 0),color='b')
-plt.semilogy(np.linalg.norm(sol_lin-sol_newt[:,::m],axis = 0),linestyle='dashed')
-plt.savefig('temp.png')
-#np.save("data/diffs",diffs)
-#print("COMPLETE DURATION: "+str(end-start))
+        import matplotlib 
+        matplotlib.use('Agg')
+        import matplotlib.pyplot as plt
+        plt.semilogy(np.linalg.norm(sol_newt[:,::m],axis = 0),color='r')
+        #plt.semilogy(np.linalg.norm(sol_lin,axis = 0),color='b')
+        #plt.semilogy(np.linalg.norm(sol_lin-sol_newt[:,::m],axis = 0),linestyle='dashed')
+        plt.savefig('temp.png')
+        #np.save("data/diffs",diffs)
+        #print("COMPLETE DURATION: "+str(end-start))

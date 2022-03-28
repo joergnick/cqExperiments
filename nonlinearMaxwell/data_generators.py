@@ -86,7 +86,7 @@ def compute_densities(alpha,N,gridfilename,T,rk,debug_mode=True):
         raise ValueError("Filename of grid: "+gridfilename+" does not have .mat or .npy ending.")
 
     grid=bempp.api.grid_from_element_data(Nodes,Elements)
-    grid = bempp.api.shapes.cube(h=1)
+    #grid = bempp.api.shapes.cube(h=1)
     RT_space=bempp.api.function_space(grid, "BC",0)
     #RT_space=bempp.api.function_space(grid, "RT",0)
     
@@ -103,14 +103,14 @@ def compute_densities(alpha,N,gridfilename,T,rk,debug_mode=True):
                 raise ValueError("The parameter alpha must be in the interval (0,1].")
             self.alpha = alpha
         def a(self,x):
-            return x
+            #return x
             #return 0*np.linalg.norm(x)**(1-self.alpha)*x
-            #return np.linalg.norm(x)**(1-self.alpha)*x
+            return np.linalg.norm(x)**(1-self.alpha)*x
         def Da(self,x):
         #    if np.linalg.norm(x)<10**(-15):
         #        x=10**(-15)*np.ones(3)
-            return np.eye(3)
-           # return ((self.alpha-1)*np.linalg.norm(x)**(self.alpha-3)*np.outer(x,x)+np.linalg.norm(x)**(self.alpha-1)*np.eye(3))
+           # return np.eye(3)
+            return ((self.alpha-1)*np.linalg.norm(x)**(self.alpha-3)*np.outer(x,x)+np.linalg.norm(x)**(self.alpha-1)*np.eye(3))
           #  return -0.5*np.linalg.norm(x)**(-2.5)*np.outer(x,x)+np.linalg.norm(x)**(-0.5)*np.eye(3)
         def precomputing(self,s):
             #NC_space=bempp.api.function_space(grid, "NC",0)
@@ -132,9 +132,9 @@ def compute_densities(alpha,N,gridfilename,T,rk,debug_mode=True):
         def calc_jacobian(self,x,t,time_index):
             weightphiGF = bempp.api.GridFunction(RT_space,coefficients = x[:dof])
             weightIncGF = bempp.api.GridFunction(RT_space,coefficients = gtH[:,time_index])
-            #jacob = sparseWeightedMM(RT_space,weightphiGF+weightIncGF,self.Da,gridfunList,neighborlist,domainDict)
+            jacob = sparseWeightedMM(RT_space,weightphiGF+weightIncGF,self.Da,gridfunList,neighborlist,domainDict)
             #jacob = sparseMM(RT_space,gridfunList,neighborlist,domainDict)
-            return id_weak
+            return jacob
         def apply_jacobian(self,jacob,x):
             dof = int(np.round(len(x)/2))
             jx = 1j*np.zeros(2*dof)
