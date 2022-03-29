@@ -60,10 +60,8 @@ def calc_gtH(rk,grid,N,T):
     #rhs[0:dof,:]=np.real(gTH)-rhs[0:dof,:]
     return gTH,gTE
 
-
-
-
-def compute_densities(alpha,N,gridfilename,T,rk,debug_mode=True):
+def load_grid(gridfilename):
+    "Loads grids from filename, accounts for different indices and orientation of bempp (underlying gmsh) and distmesh."
     load_success = False
     if gridfilename[-3:] == 'mat':
         mat_contents=scipy.io.loadmat(gridfilename)
@@ -85,12 +83,17 @@ def compute_densities(alpha,N,gridfilename,T,rk,debug_mode=True):
         load_success = True
     if not load_success:
         raise ValueError("Filename of grid: "+gridfilename+" does not have .mat or .npy ending.")
-
     grid=bempp.api.grid_from_element_data(Nodes,Elements)
-    #grid = bempp.api.shapes.cube(h=1)
+    return grid
+ 
+
+
+def compute_densities(alpha,N,gridfilename,T,rk,debug_mode=True):
+    "Computes densities for scattering problem with nonlinear absorbing b.c. for given gridfilename and a plane wave as incoming wave."
+    grid = load_grid(gridfilename)
+   #grid = bempp.api.shapes.cube(h=1)
     RT_space=bempp.api.function_space(grid, space_string,0)
     #RT_space=bempp.api.function_space(grid, "RT",0)
-    
     gridfunList,neighborlist,domainDict = precompMM(RT_space)
     id_op=bempp.api.operators.boundary.sparse.identity(RT_space, RT_space, RT_space)
     id_weak = id_op.weak_form()
@@ -169,5 +172,34 @@ def compute_densities(alpha,N,gridfilename,T,rk,debug_mode=True):
     print("GLOBAL DOF: ",dof)
     print("Finished RHS.")
     sol ,counters  = model.integrate(T,N, method = rk.method_name,max_evals_saved=1000,debug_mode=debug_mode,same_rho = False)
-    dof = RT_space.global_dof_count
+    print("GLOBAL DOF: ",dof)
     return sol
+
+
+
+def evaluate_densities(filename,gridfilename):
+    "Evaluates the densities saved at the points by convolution quadrature with $m$-stages."
+    points=np.array([[0],[0],[2]])
+    grid = load_grid(gridfilename)
+    RT_space=bempp.api.function_space(grid, space_string,0) 
+    dof = RT_space.global_dof_count
+    resDict = np.load(filename).item()
+    rhs = resDict["sol"]
+    T   = resDict["T"]
+    m   = resDict["m"]
+    def th_potential_evaluation(s,b):
+        slp_pot = bempp.api.operators.potential.maxwell.electric_field(RT_space, points, s*1j)
+        dlp_pot = bempp.api.operators.potential.maxwell.magnetic_field(RT_space, points, s*1j)
+        phigrid=bempp.api.GridFunction(RT_space,coefficients=b[0:dof],dual_space=RT_space)
+        psigrid=bempp.api.GridFunction(RT_space,coefficients=b[dof:2*dof],dual_space=RT_space)
+        #print("Evaluate field : ")  
+        scattered_field_data = -slp_pot * phigrid+dlp_pot*psigrid
+        if np.isnan(scattered_field_data).any():
+            print("NAN Warning, s = ", s)
+            scattered_field_data=np.zeros(np.shape(scattered_field_data))
+        return scattered_field_data.reshape(3,1)[:,0]
+    td_potential = Conv_Operator(th_potential_evaluation) 
+    evaluated_data = td_potential.apply_RKconvol(rhs,T,cutoff = 10**(-4),method = "RadauIIA-"+str(m),show_progress= False)
+    sol_points = np.zeros((len(evaluated_data[:,0]),len(evaluated_data[0,::m])+1))
+    sol_points[:,1::] = evaluated_data[:,::m]
+    return sol_points,T

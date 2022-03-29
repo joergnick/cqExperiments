@@ -66,7 +66,7 @@ class NewtonIntegrator(AbstractIntegrator):
             if j >=1:
                 if np.linalg.norm(np.imag(self.extrapol(history[:,i+1:j*rk.m+i+1:rk.m],3)))>10**(-6):
                     print("Warning, imaginary part of history nonzero.")
-                x0[:,i] = np.real(self.extrapol(np.real(history[:,i+1:j*rk.m+i+1:rk.m]),5))
+                x0[:,i] = np.real(self.extrapol(np.real(history[:,i+1:j*rk.m+i+1:rk.m]),3))
             else:
                 x0[:,i] = np.zeros(len(w_star_sol_j[:,0]))
         #print("Begin Newton, ||x0|| = "+str(np.linalg.norm(x0))+" ||rhs|| = "+str(np.linalg.norm(rhs)))
@@ -149,7 +149,7 @@ class NewtonIntegrator(AbstractIntegrator):
         counterObj = gmres_counter()
         #print("Residual: ",np.linalg.norm(rhs_long))
         dx_long,info = gmres(newton_operator,rhs_long,maxiter = 100,restart = None,callback = counterObj,tol=10**(-6))
-        print("Residual after GMRES: ",np.linalg.norm(rhs_long-newton_func(dx_long))," COUNT GMRES: ",counterObj.niter)
+        #print("Residual after GMRES: ",np.linalg.norm(rhs_long-newton_func(dx_long))," COUNT GMRES: ",counterObj.niter)
         #if info != 0:
         #    print("GMRES Info not zero, Info: ", info)
 

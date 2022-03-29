@@ -67,7 +67,7 @@ def sparseWeightedMM(space,weightGF,Da,gridfunList,neighborlist,domainDict):
     dof = space.global_dof_count
     import numpy as np
     from bempp.api.integration import gauss_triangle_points_and_weights
-    accuracy_order = gridfunList[0].parameters.quadrature.far.single_order
+    accuracy_order = gridfunList[0].parameters.quadrature.far.single_order + 3
     points, weights = gauss_triangle_points_and_weights(accuracy_order)
     element_list = list(gridfunList[0].grid.leaf_view.entity_iterator(0))
     data = []
