@@ -3,8 +3,8 @@ import numpy as np
 
 from data_generators import evaluate_densities
 
-h_ref   = 2**(-(3+1)*1.0/2)
-N_ref   = 8*2**4
+h_ref   = 2**(-(2)*1.0/2)
+N_ref   = 128
 #### MAX DIFFERENCE IS 0.012 for N:
 m = 2
 gridfilename='data/grids/sphereh'+str(np.round(h_ref,3))+'.npy'
@@ -19,9 +19,9 @@ tau_s=np.zeros(Am_time)
 h_s=np.zeros(Am_space)
 errors=np.zeros((Am_space,Am_time))
 
-for space_index in range(Am_space-1,Am_space):
-    for time_index in range(Am_time-1,Am_time):
-        h   = 2**(-(space_index+1)*1.0/2)
+for space_index in range(Am_space):
+    for time_index in range(Am_time):
+        h   = 2**(-(space_index)*1.0/2)
         N   = int(np.round(8*2**time_index))
         gridfilename='data/grids/sphereh'+str(np.round(h,3))+'.npy'
         #gridfilename='data/grids/sphere_python3_h'+str(np.round(h,3))+'.npy'
