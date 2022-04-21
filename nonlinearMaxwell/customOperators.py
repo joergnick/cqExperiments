@@ -94,7 +94,7 @@ def applyNonlinearity(gridFun,nonlinearity,gridfunList,domainDict):
     dof = space.global_dof_count
     coeff = gridFun.coefficients
     from bempp.api.integration import gauss_triangle_points_and_weights
-    accuracy_order = gridFun.parameters.quadrature.far.single_order
+    accuracy_order = gridFun.parameters.quadrature.far.single_order +2
     points, weights = gauss_triangle_points_and_weights(accuracy_order)
     element_list = list(gridfunList[0].grid.leaf_view.entity_iterator(0))
     weightIntegrals = np.zeros(dof)

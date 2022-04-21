@@ -13,7 +13,7 @@ from linearcq import Conv_Operator
 from customOperators import precompMM,sparseWeightedMM,applyNonlinearity,sparseMM
 from newtonStepper import NewtonIntegrator
 
-OrderQF = 9
+OrderQF = 11
 bempp.api.global_parameters.quadrature.near.max_rel_dist = 2
 bempp.api.global_parameters.quadrature.near.single_order =OrderQF-1
 bempp.api.global_parameters.quadrature.near.double_order = OrderQF-1
@@ -23,7 +23,7 @@ bempp.api.global_parameters.quadrature.medium.double_order =OrderQF-2
 bempp.api.global_parameters.quadrature.far.single_order =OrderQF-3
 bempp.api.global_parameters.quadrature.far.double_order =OrderQF-3
 bempp.api.global_parameters.quadrature.double_singular = OrderQF
-bempp.api.global_parameters.hmat.eps=10**-7
+bempp.api.global_parameters.hmat.eps=10**-3
 bempp.api.global_parameters.hmat.admissibility='strong'
 space_string = "RT"
 nrspace_string = "NC"
@@ -93,6 +93,8 @@ def compute_densities(alpha,N,gridfilename,T,rk,debug_mode=True):
     grid = load_grid(gridfilename)
    #grid = bempp.api.shapes.cube(h=1)
     RT_space=bempp.api.function_space(grid, space_string,0)
+
+    print("GLOBAL DOF: ",RT_space.global_dof_count)
     #RT_space=bempp.api.function_space(grid, "RT",0)
     gridfunList,neighborlist,domainDict = precompMM(RT_space)
     id_op=bempp.api.operators.boundary.sparse.identity(RT_space, RT_space, RT_space)
@@ -171,7 +173,7 @@ def compute_densities(alpha,N,gridfilename,T,rk,debug_mode=True):
     dof = RT_space.global_dof_count
     print("GLOBAL DOF: ",dof)
     print("Finished RHS.")
-    sol ,counters  = model.integrate(T,N, method = rk.method_name,max_evals_saved=1000,debug_mode=debug_mode,same_rho = False)
+    sol ,counters  = model.integrate(T,N, method = rk.method_name,max_evals_saved=250,debug_mode=debug_mode,same_rho = False)
     print("GLOBAL DOF: ",dof)
     return sol
 
@@ -195,7 +197,7 @@ def evaluate_densities(filename,gridfilename):
         #print("Evaluate field : ")  
         scattered_field_data = -slp_pot * phigrid+dlp_pot*psigrid
         if np.isnan(scattered_field_data).any():
-            print("NAN Warning, s = ", s)
+            #print("NAN Warning, s = ", s)
             scattered_field_data=np.zeros(np.shape(scattered_field_data))
         return scattered_field_data.reshape(3,1)[:,0]
     td_potential = Conv_Operator(th_potential_evaluation) 

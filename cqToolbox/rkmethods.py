@@ -9,7 +9,7 @@ class RKMethod():
         if (method =="RadauIIA-1") or (method =="BDF-1") or (method == "Implicit Euler"):
             self.A=np.array([[1]])
             self.c=np.array([1])
-            self.b=np.array([1])
+            self.b=np.array([[1]])
         elif (method == "RadauIIA-2"):        
             self.A=np.array([[5.0/12,-1.0/12],
                            [3.0/4,1.0/4]])

@@ -18,7 +18,8 @@ def create_timepoints(method,N,T):
 T=20
 ## Frequency - domain operator defined
 
-sigma = 0.05
+sigma = 0.1
+#sigma = 0.05
 param = 2
 def freq_int(s,b):
     #return s**1*np.exp(-1*s)*b

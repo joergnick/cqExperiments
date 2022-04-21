@@ -3,8 +3,8 @@ import numpy as np
 
 from data_generators import evaluate_densities
 
-h_ref   = 2**(-(2)*1.0/2)
-N_ref   = 128
+h_ref   = 2**(-(1)*1.0/2)
+N_ref   = 16
 #### MAX DIFFERENCE IS 0.012 for N:
 m = 2
 gridfilename='data/grids/sphereh'+str(np.round(h_ref,3))+'.npy'
@@ -13,16 +13,16 @@ filename = 'data/density_sphere_h_'+str(np.round(h_ref,3)) +'_N_'+str(N_ref)+'_m
 sol_ref,T = evaluate_densities(filename,gridfilename)
 #sol_abs = np.linalg.norm(sol,axis = '0')
 tt_ref=np.linspace(0,T,N_ref+1)
-Am_space=2
-Am_time=5
+Am_space=1
+Am_time=6
 tau_s=np.zeros(Am_time)
 h_s=np.zeros(Am_space)
 errors=np.zeros((Am_space,Am_time))
 
 for space_index in range(Am_space):
     for time_index in range(Am_time):
-        h   = 2**(-(space_index)*1.0/2)
-        N   = int(np.round(8*2**time_index))
+        h   = 2**(-(space_index+0)*1.0/2)
+        N   = int(np.round(16*2**time_index))
         gridfilename='data/grids/sphereh'+str(np.round(h,3))+'.npy'
         #gridfilename='data/grids/sphere_python3_h'+str(np.round(h,3))+'.npy'
         filename = 'data/density_sphere_h_'+str(np.round(h,3)) +'_N_'+str(N)+'_m_'+str(m)+ '.npy'
@@ -30,6 +30,7 @@ for space_index in range(Am_space):
 
         tau = T*1.0/N
         speed=N_ref/N
+        print("speed = ",speed)
         resc_ref=np.zeros((3,N+1))
     #   resc_ref=sol_ref
         for j in range(N+1):
