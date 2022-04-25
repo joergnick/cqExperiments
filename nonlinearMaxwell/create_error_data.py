@@ -3,8 +3,8 @@ import numpy as np
 
 from data_generators import evaluate_densities
 
-h_ref   = 2**(-(1)*1.0/2)
-N_ref   = 16
+h_ref   = 2**(-(0)*1.0/2)
+N_ref   = 512
 #### MAX DIFFERENCE IS 0.012 for N:
 m = 2
 gridfilename='data/grids/sphereh'+str(np.round(h_ref,3))+'.npy'

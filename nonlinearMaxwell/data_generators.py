@@ -177,8 +177,12 @@ def compute_densities(alpha,N,gridfilename,T,rk,debug_mode=True):
     print("GLOBAL DOF: ",dof)
     return sol
 
-
-
+def extract_densities(filename):
+    resDict = np.load(filename).item()
+    sol = resDict["sol"]
+    T   = resDict["T"]
+    m   = resDict["m"]
+    return sol,T,m
 def evaluate_densities(filename,gridfilename):
     "Evaluates the densities saved at the points by convolution quadrature with $m$-stages."
     points=np.array([[0],[0],[2]])
