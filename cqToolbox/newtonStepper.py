@@ -64,9 +64,9 @@ class NewtonIntegrator(AbstractIntegrator):
         for i in range(rk.m):
             rhs[:,i] = np.real(-w_star_sol_j[:,i] + self.righthandside(j*rk.tau+rk.c[i]*rk.tau,history=history))
             if j >=1:
-                if np.linalg.norm(np.imag(self.extrapol(history[:,i+1:j*rk.m+i+1:rk.m],2)))>10**(-6):
+                if np.linalg.norm(np.imag(self.extrapol(history[:,i+1:j*rk.m+i+1:rk.m],1)))>10**(-6):
                     print("Warning, imaginary part of history nonzero.")
-                x0[:,i] = np.real(self.extrapol(np.real(history[:,i+1:j*rk.m+i+1:rk.m]),2))
+                x0[:,i] = np.real(self.extrapol(np.real(history[:,i+1:j*rk.m+i+1:rk.m]),1))
             else:
                 x0[:,i] = np.zeros(len(w_star_sol_j[:,0]))
         #print("Begin Newton, ||x0|| = "+str(np.linalg.norm(x0))+" ||rhs|| = "+str(np.linalg.norm(rhs)))
