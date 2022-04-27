@@ -105,6 +105,7 @@ def compute_densities(alpha,N,gridfilename,T,rk,debug_mode=True):
         debug_mode = False
         def __init__(self,alpha=1.0):
             NewtonIntegrator.__init__(self)
+            print("Parameter alpha has been set to: "+str(alpha)+".")
             if (alpha<=0) or (alpha>1):
                 print("Parameter alpha has been set to: "+str(alpha)+".")
                 raise ValueError("The parameter alpha must be in the interval (0,1].")
@@ -152,11 +153,12 @@ def compute_densities(alpha,N,gridfilename,T,rk,debug_mode=True):
             gTHFun     = bempp.api.GridFunction(RT_space,coefficients = gtH[:,time_index])
             agridFun   = applyNonlinearity(phiGridFun+gTHFun,self.a,gridfunList,domainDict)
             result     = np.zeros(2*dof) 
-            result[:dof] = id_weak*(phiGridFun+gTHFun).coefficients
-            #result[:dof] = id_weak*agridFun.coefficients
+            #result[:dof] = id_weak*(phiGridFun+gTHFun).coefficients
+            result[:dof] = id_weak*agridFun.coefficients
             return result
     
         def righthandside(self,t,history=None):
+            t = t+0.5
             def func_rhs(x,n,domain_index,result):
                 inc  = np.array([np.exp(-50*(x[2]-t+2)**2), 0. * x[2], 0. * x[2]])    
                 tang = np.cross(np.cross(inc, n),n)

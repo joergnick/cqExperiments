@@ -17,9 +17,9 @@ from linearcq import Conv_Operator
 from rkmethods import RKMethod
 from id_bc_rk import scattering_solution
 from data_generators import compute_densities
+T = 1
 #T = 6
-T = 6
-m = 5
+m = 7
 diffs = np.load('data/diffs.npy')
 #diffsAbstract = np.load('data/diffsAbstract.npy')
 print(diffs)
@@ -33,7 +33,7 @@ diffs_direct = np.zeros(am_time)
 for space_index in range(am_space):
     for time_index in range(am_time):
         h   = 2**(-(space_index)*1.0/2)
-        N   = int(np.round(64*2**time_index))
+        N   = int(np.round(80*2**time_index))
         #### MAX DIFFERENCE IS 0.012 for N:
         #N   = 255*2**time_index
         #STILL WORKS until at least 85% : N   = 600*2**time_index
