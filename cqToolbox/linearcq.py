@@ -31,10 +31,10 @@ class Conv_Operator():
             rho = self.external_rho
             print("WARNING, EXTERNAL RHO WAS SET.")
         else:
-            #rho=tol**(1.0/(3*N))
+            rho=tol**(1.0/(3*N))
             #rho=tol**(1.0/((3.0/2*L)))
             ###################### BEST WORKING PARAMETERS KNOWN: 
-            rho=tol**(1.0/(4*N))
+            #rho=tol**(1.0/(4*N))
             #rho=tol**(1.0/(L))
             #rho=tol**(1.0/(L))
             #rho=tol**(1.0/(2*N))

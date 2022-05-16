@@ -13,8 +13,10 @@ from linearcq import Conv_Operator
 from customOperators import precompMM,sparseWeightedMM,applyNonlinearity,sparseMM
 from newtonStepper import NewtonIntegrator
 
-OrderQF = 9
+OrderQF =11
+#print(bempp.api.global_parameters.quadrature.near.max_rel_dist)
 bempp.api.global_parameters.quadrature.near.max_rel_dist = 2
+
 bempp.api.global_parameters.quadrature.near.single_order =OrderQF-1
 bempp.api.global_parameters.quadrature.near.double_order = OrderQF-1
 bempp.api.global_parameters.quadrature.medium.max_rel_dist =4
@@ -23,10 +25,16 @@ bempp.api.global_parameters.quadrature.medium.double_order =OrderQF-2
 bempp.api.global_parameters.quadrature.far.single_order =OrderQF-3
 bempp.api.global_parameters.quadrature.far.double_order =OrderQF-3
 bempp.api.global_parameters.quadrature.double_singular = OrderQF
-bempp.api.global_parameters.hmat.eps=10**-11
+#bempp.api.global_parameters.assembly.boundary_operator_assembly_type = 'dense'
+#bempp.api.global_parameters.assembly.enable_interpolation_for_oscillatory_kernels = False
+#bempp.api.global_parameters.assembly.interpolation_points_per_wavelength = 5000
+bempp.api.global_parameters.hmat.eps=10**-5
 bempp.api.global_parameters.hmat.admissibility='strong'
 space_string = "RT"
 nrspace_string = "NC"
+
+tshift = 0.0
+variance = 20
 def calc_gtH(rk,grid,N,T):
     m = len(rk.c)
     tau = T*1.0/N
@@ -38,15 +46,16 @@ def calc_gtH(rk,grid,N,T):
     for j in range(N):
         for stageInd in range(m):
             t = tau*j+tau*rk.c[stageInd] 
+            t += tshift
             def func_rhs(x,n,domain_index,result):
-                Einc =  np.array([np.exp(-50*(x[2]-t+2)**2), 0. * x[2], 0. * x[2]])    
+                Einc =  np.array([np.exp(-variance*(x[2]-t+2)**2), 0. * x[2], 0. * x[2]])    
                 #tang = np.cross(n,np.cross(inc, n))
                 PT_Einc = np.cross(n,np.cross(Einc, n))
                 result[:] = PT_Einc
             gt_Einc_grid = bempp.api.GridFunction(RT_space,fun = func_rhs,dual_space = RT_space)
             gTE[:,j*rk.m+stageInd] = gt_Einc_grid.coefficients
             def func_curls(x,n,domain_index,result):
-                curlU=np.array([ 0. * x[2],-100*(x[2]-t+2)*np.exp(-50*(x[2]-t+2)**2), 0. * x[2]])
+                curlU=np.array([ 0. * x[2],-2*variance*(x[2]-t+2)*np.exp(-variance*(x[2]-t+2)**2), 0. * x[2]])
                 result[:] = np.cross(curlU,n)
             curlfun_inc = bempp.api.GridFunction(RT_space,fun = func_curls,dual_space = RT_space) 
             curls[:,j*rk.m+stageInd]  = curlfun_inc.coefficients
@@ -158,9 +167,9 @@ def compute_densities(alpha,N,gridfilename,T,rk,debug_mode=True):
             return result
     
         def righthandside(self,t,history=None):
-            t = t+0.5
+            t += tshift
             def func_rhs(x,n,domain_index,result):
-                inc  = np.array([np.exp(-50*(x[2]-t+2)**2), 0. * x[2], 0. * x[2]])    
+                inc  = np.array([np.exp(-variance*(x[2]-t+2)**2), 0. * x[2], 0. * x[2]])    
                 tang = np.cross(np.cross(inc, n),n)
                 result[:] = tang
                 
