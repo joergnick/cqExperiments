@@ -5,112 +5,54 @@ sys.path.append('cqToolbox')
 sys.path.append('../cqToolbox')
 sys.path.append('data')
 sys.path.append('../data')
-OrderQF = 8
-bempp.api.global_parameters.quadrature.near.max_rel_dist = 2
-bempp.api.global_parameters.quadrature.near.single_order =OrderQF-1
-bempp.api.global_parameters.quadrature.near.double_order = OrderQF-1
-bempp.api.global_parameters.quadrature.medium.max_rel_dist =4
-bempp.api.global_parameters.quadrature.medium.single_order =OrderQF-2
-bempp.api.global_parameters.quadrature.medium.double_order =OrderQF-2
-bempp.api.global_parameters.quadrature.far.single_order =OrderQF-3
-bempp.api.global_parameters.quadrature.far.double_order =OrderQF-3
-bempp.api.global_parameters.quadrature.double_singular = OrderQF
-bempp.api.global_parameters.hmat.eps=10**-3
-bempp.api.global_parameters.hmat.admissibility='strong'
-#grid = bempp.api.shapes.sphere(h=2**(0))
-import scipy.io
-gridfilename = 'data/grids/sphere_python3_h1.0.npy'
-load_success = False
-if gridfilename[-3:] == 'mat':
-    mat_contents=scipy.io.loadmat(gridfilename)
-    Nodes=np.array(mat_contents['Nodes']).T
-    rawElements=mat_contents['Elements']
-    ## Switching orientation
-    for j in range(len(rawElements)):
-        betw=rawElements[j][0]
-        rawElements[j][0]=rawElements[j][1]
-        rawElements[j][1]=betw
-    Elements=np.array(rawElements).T
-    ## Subtraction due to different conventions of distmesh and bempp, grid starts from 0 instead of 1
-    Elements=Elements-1
-    load_success = True
-if gridfilename[-3:] == 'npy':
-    mat_contents = np.load(gridfilename,allow_pickle=True).item()
-    Nodes        = mat_contents['Nodes']
-    Elements     = mat_contents['Elements']
-    load_success = True
-if not load_success:
-    raise ValueError("Filename of grid: "+gridfilename+" does not have .mat or .npy ending.")
-grid=bempp.api.grid_from_element_data(Nodes,Elements)
+from data_generators import load_grid,extract_densities
 
-RT_space = bempp.api.function_space(grid,"RT",0)
-dof = RT_space.global_dof_count
-#sol = np.load('data/solh1.0N64m2.npy')
-solDict = np.load('data/density_sphere_h_1.0_N_1024_m_2.npy',allow_pickle=True).item()
-#solDict = np.load('data/donutDOF340N200_v2.npy').item()
+gridfilename='data/grids/angle.npy'
+grid = load_grid(gridfilename)
+N = 128
+m = 3
+filename = 'data/density_angle_N_'+str(N)+'_m_'+str(m)+ '.npy'''
+sol,T,mcheck = extract_densities(filename)
 
-sol = solDict["sol"]
-######################################################################
-import matplotlib.pyplot as plt
-plt.plot(np.linalg.norm(sol,axis=0))
-plt.show()
-import matplotlib.pyplot as plt
-print(len(sol[:,0]),len(sol[0,:]))
-plt.plot([np.linalg.norm(sol[:,k]) for k in range(len(sol[0,:]))] )
-plt.show()
-raise ValueError("End of plot")
-#######################################################################
-print("Does sol contain Nan values? Answer: "+str(np.isnan(sol).any()))
-m = solDict["m"]
-T = solDict["T"]
-
-N = (len(sol[0,:])-1)/2
-print("N= ",N)
+## Sanity checks: 
+if np.isnan(sol).any():
+    raise ValueError(" Solution contains NaN values, terminating. ")
+if (len(sol[0,:])-1)/m != N:
+    raise ValueError("Difference in N, N = ",N," Ncheck = ", (len(sol[0,:])-1)/m, " Terminating.")
 dof = len(sol[:,0])/2
 print("DOF = ",dof)
-#gridphi = bempp.api.GridFunction(RT_space,coefficients = sol[:dof,100])
-#gridphi.plot()
-#import matplotlib.pyplot as plt
-#plt.imshow(sol[:dof,:])
-#plt.colorbar()
-#plt.show()
-#### Create Points
-#x_a=-0.75
-#x_b=0.75
-#y_a=-0.25
-#y_b=1.25
 
+#### Create Points
 x_a=-2
 x_b=2
 y_a=-2
 y_b=2
-n_grid_points= 400
+n_grid_points= 20
 nx = n_grid_points
 nz = n_grid_points
-############################################
 plot_grid = np.mgrid[y_a:y_b:1j*n_grid_points, x_a:x_b:1j*n_grid_points]
-#plot_grid = np.mgrid[-0.5:1:1j*n_grid_points, -1.5:1.5:1j*n_grid_points]
-#print(plot_grid)
-#points = np.vstack( ( plot_grid[0].ravel() , plot_grid[1].ravel() , 0.25*np.ones(plot_grid[0].size) ) )
 points = np.vstack( ( plot_grid[0].ravel()  , 0*np.ones(plot_grid[0].size) , plot_grid[1].ravel()) )
-radius = points[0,:]**2+points[1,:]**2+points[2,:]**2
+#radius = points[0,:]**2+points[1,:]**2+points[2,:]**2
+
+RT_space = bempp.api.function_space(grid, "RT",0)
 def kirchhoff_repr(s,lambda_data):
-    print("norm(density)=",np.linalg.norm(lambda_data))
-    if (np.linalg.norm(lambda_data)<10**(-3)) or (np.real(s)>50):
-        print("Jumped")
+    if (np.linalg.norm(lambda_data)<10**(-5)) or (np.real(s)>100):
+        print("Jumped, ||phi|| = ",np.linalg.norm(lambda_data), " s = ",s)
         return np.zeros(n_grid_points**2*3)
     phigrid=bempp.api.GridFunction(RT_space,coefficients=lambda_data[0:dof],dual_space=RT_space)
     psigrid=bempp.api.GridFunction(RT_space,coefficients=lambda_data[dof:2*dof],dual_space=RT_space)
-    print("s: ",s)
     slp_pot = bempp.api.operators.potential.maxwell.electric_field(RT_space, points, s*1j)
     dlp_pot = bempp.api.operators.potential.maxwell.magnetic_field(RT_space, points, s*1j)
     scattered_field_data = -slp_pot * phigrid+dlp_pot*psigrid
-    print("Is any field nan ? ",np.isnan(scattered_field_data).any())
-    scattered_field_data[np.isnan(scattered_field_data)] = 0 
+    if np.isnan(scattered_field_data).any():
+        print("nan-value detected, has been replaced by zero, s = "+str( s))
+        print("norm(density)=",np.linalg.norm(lambda_data))
+        scattered_field_data[np.isnan(scattered_field_data)] = 0 
     return scattered_field_data.reshape(n_grid_points**2*3,1)[:,0]
+
 from linearcq import Conv_Operator
 mSpt_Dpt = Conv_Operator(kirchhoff_repr)
-uscatStages = mSpt_Dpt.apply_RKconvol(sol,T,method = "RadauIIA-2",cutoff=10**(-3),prolonge_by=0,factor_laplace_evaluations=2)
+uscatStages = mSpt_Dpt.apply_RKconvol(sol,T,method = "RadauIIA-"+str(m),cutoff=10**(-4),prolonge_by=0,factor_laplace_evaluations=2)
 uscat = uscatStages[:,::2]
 #uscat = np.zeros((n_grid_points**2*3,N))
 uscat = np.concatenate((np.zeros((len(uscat[:,0]),1)),uscat),axis = 1)
@@ -148,4 +90,4 @@ for j in range(N+1):
 
 import scipy.io
 #scipy.io.savemat('data/DonutFieldDataDOF340N200.mat',dict(u_ges=u_ges,N=N,T=T,plot_grid=plot_grid,points=points))
-scipy.io.savemat('data/DonutFieldDataDOF896N200.mat',dict(u_ges=u_ges,N=N,T=T,plot_grid=plot_grid,points=points))
+scipy.io.savemat('data/AngleFieldsN8.mat',dict(u_ges=u_ges,N=N,T=T,plot_grid=plot_grid,points=points))
