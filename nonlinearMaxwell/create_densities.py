@@ -38,10 +38,10 @@ for space_index in range(am_space):
         #N   = 255*2**time_index
         #STILL WORKS until at least 85% : N   = 600*2**time_index
         tau = T*1.0/N
-        gridfilename='data/grids/angle.npy'
+        gridfilename='data/grids/angle_transformed.npy'
         #gridfilename='data/grids/sphereh'+str(np.round(h,3))+'.npy'
         #gridfilename='data/grids/sphere_python3_h'+str(np.round(h,3))+'.npy'
-        filename = 'data/density_angle_N_'+str(N)+'_m_'+str(m)+ '.npy'
+        filename = 'data/density_angle_transformed_N_'+str(N)+'_m_'+str(m)+ '.npy'
         #filename = 'data/density_sphere_h_'+str(np.round(h,3)) +'_N_'+str(N)+'_m_'+str(m)+ '.npy'
         if os.path.isfile(filename):
             print("File "+filename+" already computed, jumped.")

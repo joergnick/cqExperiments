@@ -4,8 +4,7 @@ set(groot, 'defaultAxesTickLabelInterpreter','latex');
 set(groot, 'defaultLegendInterpreter','latex');
 
 %load('../data/DonutFieldDataDOF896N200')
-N = 128;
-load('../data/AngleFieldsN128')
+load('../data/AngleFieldsN8')
 X_mesh(:,:)=plot_grid(1,:,:);
 Y_mesh(:,:)=plot_grid(2,:,:);
 n_grid=sqrt(length(u_ges(:,1))) ; 
@@ -20,7 +19,7 @@ n_grid=sqrt(length(u_ges(:,1)));
 % 
 %%%%%%%%%%%%%%%%%%%%
  %[u_ges ] = draw_scatterer( u_ges, scatterer);
- 
+ N = 8;
 % norms_u = zeros(1,200);
 % for j=1:N+1
 %     norms_u(j) = norm(abs(u_ges[:,j]));
@@ -62,7 +61,7 @@ n_grid=sqrt(length(u_ges(:,1)));
 frames = [1:N+1];
 %frames=[80,100,120,140,160,180];
 %  figure('Position',[200 -2000 400 800])
-  video_object = VideoWriter('testvideoN128_angle');
+  video_object = VideoWriter('testvideoN200_DOF896');
   video_object.Quality = 95;
   video_object.FrameRate = 20;
   open(video_object);
@@ -84,13 +83,15 @@ for n=1:N+1
 %        mymap(colIndex+1,:)=ones(1,3)-colIndex/(am_colors-1)*ones(1,3);
 %    end
 %    colormap(mymap);
-
+   "j"
+   j
+   "length"
+   length(u_ges(1,:))
    u_long=u_ges(:,j);
-   max(u_long)
+    
    for i=1:n_grid        
        u_sq(:,i)=u_long((i-1)*n_grid+1:i*n_grid);   
    end
-   
  
    startp=1;
    endp=n_grid;

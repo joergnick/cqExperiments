@@ -10,6 +10,7 @@ from data_generators import load_grid,extract_densities
 gridfilename='data/grids/angle.npy'
 grid = load_grid(gridfilename)
 N = 128
+#N = 128
 m = 3
 filename = 'data/density_angle_N_'+str(N)+'_m_'+str(m)+ '.npy'''
 sol,T,mcheck = extract_densities(filename)
@@ -27,7 +28,7 @@ x_a=-2
 x_b=2
 y_a=-2
 y_b=2
-n_grid_points= 20
+n_grid_points= 197
 nx = n_grid_points
 nz = n_grid_points
 plot_grid = np.mgrid[y_a:y_b:1j*n_grid_points, x_a:x_b:1j*n_grid_points]
@@ -39,6 +40,9 @@ def kirchhoff_repr(s,lambda_data):
     if (np.linalg.norm(lambda_data)<10**(-5)) or (np.real(s)>100):
         print("Jumped, ||phi|| = ",np.linalg.norm(lambda_data), " s = ",s)
         return np.zeros(n_grid_points**2*3)
+    if np.isnan(lambda_data).any():
+        print("NAN VALUE IN LAMBDA DATA! ")
+        print(lambda_data)
     phigrid=bempp.api.GridFunction(RT_space,coefficients=lambda_data[0:dof],dual_space=RT_space)
     psigrid=bempp.api.GridFunction(RT_space,coefficients=lambda_data[dof:2*dof],dual_space=RT_space)
     slp_pot = bempp.api.operators.potential.maxwell.electric_field(RT_space, points, s*1j)
@@ -64,7 +68,7 @@ for j in range(N+1):
     matplotlib.rcParams['figure.figsize'] = (10.0, 8.0) 
     t=j*T*1.0/N
     def incident_field(x):
-        return np.array([np.exp(-50*(x[2]-t+2)**2), 0. * x[2], 0. * x[2]])
+        return np.array([np.exp(-20*(x[2]-t+2)**2), 0. * x[2], 0. * x[2]])
     incident_field_data = incident_field(points)
     #scat_eval=np.zeros(nx*nz*3)
     #incident_field_data[radius<1]=np.nan
@@ -90,4 +94,4 @@ for j in range(N+1):
 
 import scipy.io
 #scipy.io.savemat('data/DonutFieldDataDOF340N200.mat',dict(u_ges=u_ges,N=N,T=T,plot_grid=plot_grid,points=points))
-scipy.io.savemat('data/AngleFieldsN8.mat',dict(u_ges=u_ges,N=N,T=T,plot_grid=plot_grid,points=points))
+scipy.io.savemat('data/AngleFieldsN'+str(N)+'.mat',dict(u_ges=u_ges,N=N,T=T,plot_grid=plot_grid,points=points))
