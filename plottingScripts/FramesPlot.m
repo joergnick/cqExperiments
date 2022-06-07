@@ -4,14 +4,15 @@ set(groot, 'defaultAxesTickLabelInterpreter','latex');
 set(groot, 'defaultLegendInterpreter','latex');
 
 %load('../data/DonutFieldDataDOF896N200')
-N = 128;
-load('../data/AngleFieldsN128')
+
+load('../data/AngleTransformedFieldsN128')
+N=64;
 X_mesh(:,:)=plot_grid(1,:,:);
 Y_mesh(:,:)=plot_grid(2,:,:);
 n_grid=sqrt(length(u_ges(:,1))) ; 
-n_grid
 
-[scatterer ] = create_torus(X_mesh,Y_mesh);
+
+[scatterer ] = create_cubes(X_mesh,Y_mesh);
 % figure(11)
  %spy(scatterer)
 u_sq=zeros(n_grid,n_grid);
@@ -19,7 +20,7 @@ n_grid=sqrt(length(u_ges(:,1)));
 %[scatterer] = create_scatterer(X_mesh,Y_mesh);
 % 
 %%%%%%%%%%%%%%%%%%%%
- %[u_ges ] = draw_scatterer( u_ges, scatterer);
+ [u_ges ] = draw_scatterer( u_ges, scatterer);
  
 % norms_u = zeros(1,200);
 % for j=1:N+1
@@ -64,7 +65,7 @@ frames = [1:N+1];
 %  figure('Position',[200 -2000 400 800])
   video_object = VideoWriter('testvideoN128_angle');
   video_object.Quality = 95;
-  video_object.FrameRate = 20;
+  video_object.FrameRate = 5;
   open(video_object);
   
   figure();
@@ -72,10 +73,12 @@ for n=1:N+1
    % figure(n);
    j=frames(n);
     
-   limit_colors=[0,2];
+   limit_colors=[0,1];
    limit_height=[0,2];
    limit_x=[-1.5,1.5];
-   limit_y=[-1.5,1.5];
+   limit_y=[-0.5,1.5];
+%    limit_x=[-1.5,1.5];
+%    limit_y=[-1.5,1.5];
    colormap(jet(256))
    width=0.213405797101449;
 %    am_colors=50;
@@ -86,7 +89,6 @@ for n=1:N+1
 %    colormap(mymap);
 
    u_long=u_ges(:,j);
-   max(u_long)
    for i=1:n_grid        
        u_sq(:,i)=u_long((i-1)*n_grid+1:i*n_grid);   
    end

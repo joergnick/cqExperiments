@@ -18,30 +18,32 @@ from rkmethods import RKMethod
 from id_bc_rk import scattering_solution
 from data_generators import compute_densities
 #T = 1
-T = 6
+T = 3
 m = 3
-diffs = np.load('data/diffs.npy')
 #diffsAbstract = np.load('data/diffsAbstract.npy')
-print(diffs)
 #print("Abstract = ",diffsAbstract)
 am_space = 1
-am_time  = 6
+am_time  = 1
 alpha = 0.5
 diffs = np.zeros(am_time)
 norms_direct = np.zeros(am_time)
 diffs_direct = np.zeros(am_time)
+import time
 for space_index in range(am_space):
     for time_index in range(am_time):
-        h   = 2**(-(space_index)*1.0/2)
-        N   = int(np.round(8*2**time_index))
+        h   = 2**(-(space_index+3)*1.0/2)
+        N   = int(np.round(16*2**time_index))
         #### MAX DIFFERENCE IS 0.012 for N:
         #N   = 255*2**time_index
         #STILL WORKS until at least 85% : N   = 600*2**time_index
         tau = T*1.0/N
-        gridfilename='data/grids/angle_transformed.npy'
-        #gridfilename='data/grids/sphereh'+str(np.round(h,3))+'.npy'
+        #gridfilename='data/grids/angle_oriented.npy'
+        gridfilename = 'data/grids/two_cubes_h_'+str(np.round(h,3))+'.npy'
+        #gridfilename='data/grids/cubeh'+str(np.round(h,3))+'.npy'
         #gridfilename='data/grids/sphere_python3_h'+str(np.round(h,3))+'.npy'
-        filename = 'data/density_angle_transformed_N_'+str(N)+'_m_'+str(m)+ '.npy'
+        #filename = 'data/density_angle_oriented_refined_N_'+str(N)+'_m_'+str(m)+ '.npy'
+        filename = 'data/density_two_cubes_h_'+str(np.round(h,3)) +'_N_'+str(N)+'_m_'+str(m)+ '.npy'
+        #filename = 'data/density_cube_h_'+str(np.round(h,3)) +'_N_'+str(N)+'_m_'+str(m)+ '.npy'
         #filename = 'data/density_sphere_h_'+str(np.round(h,3)) +'_N_'+str(N)+'_m_'+str(m)+ '.npy'
         if os.path.isfile(filename):
             print("File "+filename+" already computed, jumped.")
@@ -61,6 +63,7 @@ for space_index in range(am_space):
         #sol_lin = scattering_solution(gridfilename,h,N,T,m)
         #end = time.time()
         #print("Forward computation finished, time: ",end-start)
+        start = time.time()
         sol_newt = compute_densities(alpha,N,gridfilename,T,rk)
         #diffs[time_index] = max(np.linalg.norm(solAbstract[:,::m]-solLin,axis = 0))
         #diffs[time_index] = max(np.linalg.norm(solLin,axis = 0))
@@ -78,7 +81,8 @@ for space_index in range(am_space):
         # print("Max N = ",N," MAX DIFFERENCE DIRECT: ",diffs_direct)
         #print("Max N = ",N," NORM FORWARD SOLUTION: ",norm_lin)
         #print("Max N = ",N," NORM DIRECT SOLUTION: ",norm_dir)
-        print("Max N = ",N," NORM NEWTON SOLUTION: ",norm_newt)
+        end = time.time()
+        print("Max N = ",N," NORM NEWTON SOLUTION: ",norm_newt, " Length of computation: ", (end-start)/60.0)
         #print("Max N = ",N," MAX DIFFERENCE RECURSIVE: ",diffs)
         resDict = dict()
         resDict["sol"] = sol_newt

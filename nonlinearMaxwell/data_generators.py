@@ -13,7 +13,7 @@ from linearcq import Conv_Operator
 from customOperators import precompMM,sparseWeightedMM,applyNonlinearity,sparseMM
 from newtonStepper import NewtonIntegrator
 
-OrderQF =11
+OrderQF =9
 #print(bempp.api.global_parameters.quadrature.near.max_rel_dist)
 bempp.api.global_parameters.quadrature.near.max_rel_dist = 2
 
@@ -28,13 +28,13 @@ bempp.api.global_parameters.quadrature.double_singular = OrderQF
 #bempp.api.global_parameters.assembly.boundary_operator_assembly_type = 'dense'
 #bempp.api.global_parameters.assembly.enable_interpolation_for_oscillatory_kernels = False
 #bempp.api.global_parameters.assembly.interpolation_points_per_wavelength = 5000
-bempp.api.global_parameters.hmat.eps=10**-5
+bempp.api.global_parameters.hmat.eps=10**-4
 bempp.api.global_parameters.hmat.admissibility='strong'
 space_string = "RT"
 nrspace_string = "NC"
 
 tshift = 0.0
-variance = 20
+variance = 100
 def calc_gtH(rk,grid,N,T):
     m = len(rk.c)
     tau = T*1.0/N
@@ -48,14 +48,14 @@ def calc_gtH(rk,grid,N,T):
             t = tau*j+tau*rk.c[stageInd] 
             t += tshift
             def func_rhs(x,n,domain_index,result):
-                Einc =  np.array([np.exp(-variance*(x[2]-t+2)**2), 0. * x[2], 0. * x[2]])    
+                Einc =  np.array([np.exp(-variance*(x[2]+t-2)**2), 0. * x[2], 0. * x[2]])    
                 #tang = np.cross(n,np.cross(inc, n))
                 PT_Einc = np.cross(n,np.cross(Einc, n))
                 result[:] = PT_Einc
             gt_Einc_grid = bempp.api.GridFunction(RT_space,fun = func_rhs,dual_space = RT_space)
             gTE[:,j*rk.m+stageInd] = gt_Einc_grid.coefficients
             def func_curls(x,n,domain_index,result):
-                curlU=np.array([ 0. * x[2],-2*variance*(x[2]-t+2)*np.exp(-variance*(x[2]-t+2)**2), 0. * x[2]])
+                curlU=np.array([ 0. * x[2],-2*variance*(x[2]+t-2)*np.exp(-variance*(x[2]+t-2)**2), 0. * x[2]])
                 result[:] = np.cross(curlU,n)
             curlfun_inc = bempp.api.GridFunction(RT_space,fun = func_curls,dual_space = RT_space) 
             curls[:,j*rk.m+stageInd]  = curlfun_inc.coefficients
@@ -63,7 +63,7 @@ def calc_gtH(rk,grid,N,T):
         return s**(-1)*b
     IntegralOperator = Conv_Operator(sinv)
     gTH = np.real(-IntegralOperator.apply_RKconvol(curls,T,method="RadauIIA-"+str(m),show_progress=False))
-    print("MAX ||Hinc||", max(np.linalg.norm(gTH,axis = 0)))
+    #print("MAX ||Hinc||", max(np.linalg.norm(gTH,axis = 0)))
     gTH = np.concatenate((np.zeros((dof,1)),gTH),axis = 1)
     gTE = np.concatenate((np.zeros((dof,1)),gTE),axis = 1)
     #rhs[0:dof,:]=np.real(gTH)-rhs[0:dof,:]
@@ -97,13 +97,13 @@ def load_grid(gridfilename):
  
 
 
-def compute_densities(alpha,N,gridfilename,T,rk,debug_mode=True):
+def compute_densities(alpha,N,gridfilename,T,rk,debug_mode=False):
     "Computes densities for scattering problem with nonlinear absorbing b.c. for given gridfilename and a plane wave as incoming wave."
     grid = load_grid(gridfilename)
    #grid = bempp.api.shapes.cube(h=1)
     RT_space=bempp.api.function_space(grid, space_string,0)
 
-    print("GLOBAL DOF: ",RT_space.global_dof_count)
+    #print("GLOBAL DOF: ",RT_space.global_dof_count)
     #RT_space=bempp.api.function_space(grid, "RT",0)
     gridfunList,neighborlist,domainDict = precompMM(RT_space)
     id_op=bempp.api.operators.boundary.sparse.identity(RT_space, RT_space, RT_space)
@@ -114,7 +114,7 @@ def compute_densities(alpha,N,gridfilename,T,rk,debug_mode=True):
         debug_mode = False
         def __init__(self,alpha=1.0):
             NewtonIntegrator.__init__(self)
-            print("Parameter alpha has been set to: "+str(alpha)+".")
+            #print("Parameter alpha has been set to: "+str(alpha)+".")
             if (alpha<=0) or (alpha>1):
                 print("Parameter alpha has been set to: "+str(alpha)+".")
                 raise ValueError("The parameter alpha must be in the interval (0,1].")
@@ -169,7 +169,7 @@ def compute_densities(alpha,N,gridfilename,T,rk,debug_mode=True):
         def righthandside(self,t,history=None):
             t += tshift
             def func_rhs(x,n,domain_index,result):
-                inc  = np.array([np.exp(-variance*(x[2]-t+2)**2), 0. * x[2], 0. * x[2]])    
+                inc  = np.array([np.exp(-variance*(x[2]+t-2)**2), 0. * x[2], 0. * x[2]])    
                 tang = np.cross(np.cross(inc, n),n)
                 result[:] = tang
                 
@@ -178,13 +178,13 @@ def compute_densities(alpha,N,gridfilename,T,rk,debug_mode=True):
             rhs = np.zeros(dof*2)
             #rhs[:dof] = gridfunrhs.coefficients
             rhs[:dof] = id_weak*gridfunrhs.coefficients
-            print("||rhs|| = ",np.linalg.norm(rhs)," ||gridfun|| = ",np.linalg.norm(gridfunrhs.coefficients))
+            #print("||rhs|| = ",np.linalg.norm(rhs)," ||gridfun|| = ",np.linalg.norm(gridfunrhs.coefficients))
             return rhs
     model = ScatModel(alpha = alpha)
     dof = RT_space.global_dof_count
     print("GLOBAL DOF: ",dof)
     print("Finished RHS.")
-    sol ,counters  = model.integrate(T,N, method = rk.method_name,max_evals_saved=250,debug_mode=debug_mode,same_rho = False)
+    sol ,counters  = model.integrate(T,N, method = rk.method_name,max_evals_saved=8,debug_mode=debug_mode,same_rho = False)
     print("GLOBAL DOF: ",dof)
     return sol
 

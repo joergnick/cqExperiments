@@ -58,7 +58,7 @@ class NewtonIntegrator(AbstractIntegrator):
             jacoba[:,i] = (y_plus-y_minus)/(2*taugrad)
         return jacoba
 
-    def time_step(self,W0,j,rk,history,w_star_sol_j,tolsolver=10**(-7),debug_mode=True):
+    def time_step(self,W0,j,rk,history,w_star_sol_j,tolsolver=10**(-7),debug_mode=False):
         x0  = np.zeros(w_star_sol_j.shape)
         rhs = np.zeros(w_star_sol_j.shape)
         for i in range(rk.m):
@@ -94,9 +94,9 @@ class NewtonIntegrator(AbstractIntegrator):
                 counter = thresh
                 info = 1
             counter = counter+1
-            print("NEWTON ITERATION COUNTER: ",counter, " info: ",info)
         #print("||res|| = "+str(np.linalg.norm(res)))
-        print("AMOUNT NEWTON ITERATIONS = "+str(counter)+" ||x_pred|| = "+str(np.linalg.norm(x0))+ " ||x|| = "+str(np.linalg.norm(x)))
+        if self.debug_mode:
+            print("AMOUNT NEWTON ITERATIONS = "+str(counter)+" ||x_pred|| = "+str(np.linalg.norm(x0))+ " ||x|| = "+str(np.linalg.norm(x)))
         return x
 
     def newton_iteration(self,j,rk,rhs,W0,x0,history,tolsolver,coeff = 1,debug_mode=False,last_residual=None,jacob_list = None):
