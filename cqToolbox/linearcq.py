@@ -1,8 +1,5 @@
 import numpy as np
 from rkmethods import Extrapolator,RKMethod
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
 class Conv_Operator():
     tol=10**-15
     #tol=10**-20
@@ -125,8 +122,6 @@ class Conv_Operator():
             if normsRHS[j]>cutoff:
                 counter=counter+1
         if normsRHS[0]>10**200:
-            plt.semilogy(normsRHS)
-            plt.savefig('temp.png')
             raise ValueError("Fourier coefficients have exploded.")
 
 

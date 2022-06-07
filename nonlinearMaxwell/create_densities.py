@@ -32,7 +32,7 @@ import time
 for space_index in range(am_space):
     for time_index in range(am_time):
         h   = 2**(-(space_index+3)*1.0/2)
-        N   = int(np.round(16*2**time_index))
+        N   = int(np.round(8*2**time_index))
         #### MAX DIFFERENCE IS 0.012 for N:
         #N   = 255*2**time_index
         #STILL WORKS until at least 85% : N   = 600*2**time_index
@@ -42,7 +42,8 @@ for space_index in range(am_space):
         #gridfilename='data/grids/cubeh'+str(np.round(h,3))+'.npy'
         #gridfilename='data/grids/sphere_python3_h'+str(np.round(h,3))+'.npy'
         #filename = 'data/density_angle_oriented_refined_N_'+str(N)+'_m_'+str(m)+ '.npy'
-        filename = 'data/density_two_cubes_h_'+str(np.round(h,3)) +'_N_'+str(N)+'_m_'+str(m)+ '.npy'
+        filename = 'data/density_two_cubes_h_'+str(np.round(h,3)) +'_N_'+str(N)+'_m_'+str(m)+'_a_'+str(alpha)+ '.npy'
+        #filename = 'data/density_two_cubes_h_'+str(np.round(h,3)) +'_N_'+str(N)+'_m_'+str(m)+ '.npy'
         #filename = 'data/density_cube_h_'+str(np.round(h,3)) +'_N_'+str(N)+'_m_'+str(m)+ '.npy'
         #filename = 'data/density_sphere_h_'+str(np.round(h,3)) +'_N_'+str(N)+'_m_'+str(m)+ '.npy'
         if os.path.isfile(filename):
@@ -73,8 +74,6 @@ for space_index in range(am_space):
         #norm_lin =sum(np.linalg.norm(sol_lin[:,::],axis = 0))
         #norm_dir =sum(np.linalg.norm(sol_direct[:,::m],axis = 0))
         norm_newt =sum(np.linalg.norm(sol_newt[:,::m],axis = 0))
-
-
         #diffs[time_index] = sum(np.linalg.norm(sol_newt[:,::m]-sol_lin[:,::],axis = 0))
         #print("Max N = ",N," MAX DIFFERENCE : ",diffs)
         #print("DIFFS = ",diffs)
@@ -90,8 +89,6 @@ for space_index in range(am_space):
         resDict["m"] = rk.m
         resDict["N"] = N
         np.save(filename,resDict)
-        #np.save("data/diffs",diffs)
-        #np.save("data/diffsAbstract",diffsAbstract)
         import matplotlib 
         matplotlib.use('Agg')
         import matplotlib.pyplot as plt
@@ -101,3 +98,15 @@ for space_index in range(am_space):
         plt.savefig('temp.png')
         #np.save("data/diffs",diffs)
         #print("COMPLETE DURATION: "+str(end-start))
+
+h   = 2**(-(4)*1.0/2) 
+gridfilename = 'data/grids/two_cubes_h_'+str(np.round(h,3))+'.npy'
+N = 100
+tau = T*1.0/N
+rk = RKMethod("RadauIIA-"+str(m),tau)
+alpha = 0.25
+filename = 'data/density_two_cubes_h_'+str(np.round(h,3)) +'_N_'+str(N)+'_m_'+str(m)+'_a_'+str(alpha)+ '.npy'
+sol_newt = compute_densities(alpha,N,gridfilename,T,rk)
+alpha = 0.75
+filename = 'data/density_two_cubes_h_'+str(np.round(h,3)) +'_N_'+str(N)+'_m_'+str(m)+'_a_'+str(alpha)+ '.npy'
+sol_newt = compute_densities(alpha,N,gridfilename,T,rk)
