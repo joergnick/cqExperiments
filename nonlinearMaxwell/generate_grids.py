@@ -65,4 +65,4 @@ for space_ind in range(9):
     space = bempp.api.function_space(grid,'P',1)
     dspace = bempp.api.function_space(grid,'DP',0)
     n1 = bempp.api.GridFunction(space,fun = normal_x1,dual_space = dspace)
-    n1.plot()
+    #n1.plot()

@@ -19,11 +19,11 @@ from id_bc_rk import scattering_solution
 from data_generators import compute_densities
 #T = 1
 T = 3
-m = 3
+m = 2
 #diffsAbstract = np.load('data/diffsAbstract.npy')
 #print("Abstract = ",diffsAbstract)
-am_space = 1
-am_time  = 1
+am_space = 7
+am_time  = 6
 alpha = 0.5
 diffs = np.zeros(am_time)
 norms_direct = np.zeros(am_time)
@@ -31,7 +31,7 @@ diffs_direct = np.zeros(am_time)
 import time
 for space_index in range(am_space):
     for time_index in range(am_time):
-        h   = 2**(-(space_index+3)*1.0/2)
+        h   = 2**(-(space_index+0)*1.0/2)
         N   = int(np.round(8*2**time_index))
         #### MAX DIFFERENCE IS 0.012 for N:
         #N   = 255*2**time_index
@@ -45,10 +45,11 @@ for space_index in range(am_space):
         filename = 'data/density_two_cubes_h_'+str(np.round(h,3)) +'_N_'+str(N)+'_m_'+str(m)+'_a_'+str(alpha)+ '.npy'
         #filename = 'data/density_two_cubes_h_'+str(np.round(h,3)) +'_N_'+str(N)+'_m_'+str(m)+ '.npy'
         #filename = 'data/density_cube_h_'+str(np.round(h,3)) +'_N_'+str(N)+'_m_'+str(m)+ '.npy'
+
         #filename = 'data/density_sphere_h_'+str(np.round(h,3)) +'_N_'+str(N)+'_m_'+str(m)+ '.npy'
         if os.path.isfile(filename):
             print("File "+filename+" already computed, jumped.")
-            #continue
+            continue
         rk = RKMethod("RadauIIA-"+str(m),tau)
         #print("TIME STEPPING : ")
 
@@ -89,24 +90,24 @@ for space_index in range(am_space):
         resDict["m"] = rk.m
         resDict["N"] = N
         np.save(filename,resDict)
-        import matplotlib 
-        matplotlib.use('Agg')
-        import matplotlib.pyplot as plt
-        plt.semilogy(np.linalg.norm(sol_newt[:,::m],axis = 0),color='r')
-        #plt.semilogy(np.linalg.norm(sol_lin,axis = 0),color='b')
-        #plt.semilogy(np.linalg.norm(sol_lin-sol_newt[:,::m],axis = 0),linestyle='dashed')
-        plt.savefig('temp.png')
+        #import matplotlib 
+        #matplotlib.use('Agg')
+        #import matplotlib.pyplot as plt
+        #plt.semilogy(np.linalg.norm(sol_newt[:,::m],axis = 0),color='r')
+        ##plt.semilogy(np.linalg.norm(sol_lin,axis = 0),color='b')
+        ##plt.semilogy(np.linalg.norm(sol_lin-sol_newt[:,::m],axis = 0),linestyle='dashed')
+        #plt.savefig('temp.png')
         #np.save("data/diffs",diffs)
         #print("COMPLETE DURATION: "+str(end-start))
-
-h   = 2**(-(4)*1.0/2) 
-gridfilename = 'data/grids/two_cubes_h_'+str(np.round(h,3))+'.npy'
-N = 100
-tau = T*1.0/N
-rk = RKMethod("RadauIIA-"+str(m),tau)
-alpha = 0.25
-filename = 'data/density_two_cubes_h_'+str(np.round(h,3)) +'_N_'+str(N)+'_m_'+str(m)+'_a_'+str(alpha)+ '.npy'
-sol_newt = compute_densities(alpha,N,gridfilename,T,rk)
-alpha = 0.75
-filename = 'data/density_two_cubes_h_'+str(np.round(h,3)) +'_N_'+str(N)+'_m_'+str(m)+'_a_'+str(alpha)+ '.npy'
-sol_newt = compute_densities(alpha,N,gridfilename,T,rk)
+#
+#h   = 2**(-(5)*1.0/2) 
+#gridfilename = 'data/grids/two_cubes_h_'+str(np.round(h,3))+'.npy'
+#N = 100
+#tau = T*1.0/N
+#rk = RKMethod("RadauIIA-"+str(m),tau)
+#alpha = 0.25
+#filename = 'data/density_two_cubes_h_'+str(np.round(h,3)) +'_N_'+str(N)+'_m_'+str(m)+'_a_'+str(alpha)+ '.npy'
+#sol_newt = compute_densities(alpha,N,gridfilename,T,rk)
+#alpha = 0.75
+#filename = 'data/density_two_cubes_h_'+str(np.round(h,3)) +'_N_'+str(N)+'_m_'+str(m)+'_a_'+str(alpha)+ '.npy'
+#sol_newt = compute_densities(alpha,N,gridfilename,T,rk)

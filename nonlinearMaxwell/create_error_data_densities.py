@@ -48,7 +48,7 @@ filename = 'data/density_sphere_h_'+str(np.round(h_ref,3)) +'_N_'+str(N_ref)+'_m
 sol_ref,T,m = extract_densities(filename)
 sol_ref = IntegralOperator.apply_RKconvol(sol_ref,T,method="RadauIIA-"+str(m),show_progress=False)
 
-#sol_ref,T = evaluate_densities(filename,gridfilename)
+#sol_ref,T,dof = evaluate_densities(filename,gridfilename)
 #sol_abs = np.linalg.norm(sol,axis = '0')
 tt_ref=np.linspace(0,T,N_ref+1)
 Am_space=1
