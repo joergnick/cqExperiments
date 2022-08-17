@@ -1,4 +1,9 @@
-
+import sys
+sys.path.append('cqToolbox')
+sys.path.append('../cqToolbox')
+sys.path.append('data')
+sys.path.append('../data')
+sys.path.append('..')
 import numpy as np
 
 from data_generators import evaluate_densities
@@ -65,4 +70,4 @@ res["errors"]=errors
 res["T"] = T
 res["hs"]= hs
 res["taus"]= taus
-scipy.io.savemat("error_m_2.mat",res)
+scipy.io.savemat("data/error_m_2.mat",res)

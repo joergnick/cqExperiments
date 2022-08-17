@@ -99,13 +99,60 @@ for space_index in range(am_space):
         #plt.savefig('temp.png')
         #np.save("data/diffs",diffs)
         #print("COMPLETE DURATION: "+str(end-start))
-#
+
+m=3
+
+h   = 2**(-(7)*1.0/2)
+N   = 256
+tau = T*1.0/N
+gridfilename = 'data/grids/two_cubes_h_'+str(np.round(h,3))+'.npy'
+filename = 'data/density_two_cubes_h_'+str(np.round(h,3)) +'_N_'+str(N)+'_m_'+str(m)+'_a_'+str(alpha)+ '.npy'
+rk = RKMethod("RadauIIA-"+str(m),tau)
+sol_newt = compute_densities(alpha,N,gridfilename,T,rk)
+resDict = dict()
+resDict["sol"] = sol_newt
+resDict["T"] = T
+resDict["m"] = rk.m
+resDict["N"] = N
+np.save(filename,resDict)
+
+h   = 2**(-(5)*1.0/2)
+N   = 256
+tau = T*1.0/N
+gridfilename = 'data/grids/two_cubes_h_'+str(np.round(h,3))+'.npy'
+filename = 'data/density_two_cubes_h_'+str(np.round(h,3)) +'_N_'+str(N)+'_m_'+str(m)+'_a_'+str(alpha)+ '.npy'
+rk = RKMethod("RadauIIA-"+str(m),tau)
+sol_newt = compute_densities(alpha,N,gridfilename,T,rk)
+resDict = dict()
+resDict["sol"] = sol_newt
+resDict["T"] = T
+resDict["m"] = rk.m
+resDict["N"] = N
+np.save(filename,resDict)
+#import matplotlib 
+#matplotlib.use('Agg')
+#import matplotlib.pyplot as plt
+#plt.semilogy(np.linalg.norm(sol_newt[:,::m],axis = 0),color='r')
+##plt.semilogy(np.linalg.norm(sol_lin,axis = 0),color='b')
+##plt.semilogy(np.linalg.norm(sol_lin-sol_newt[:,::m],axis = 0),linestyle='dashed')
+#plt.savefig('temp.png')
+#np.save("data/diffs",diffs)
+#print("COMPLETE DURATION: "+str(end-start))
+
+
+
 #h   = 2**(-(5)*1.0/2) 
 #gridfilename = 'data/grids/two_cubes_h_'+str(np.round(h,3))+'.npy'
-#N = 100
+#N = 256
 #tau = T*1.0/N
 #rk = RKMethod("RadauIIA-"+str(m),tau)
-#alpha = 0.25
+#filename = 'data/density_two_cubes_h_'+str(np.round(h,3)) +'_N_'+str(N)+'_m_'+str(m)+'_a_'+str(alpha)+ '.npy'
+#sol_newt = compute_densities(alpha,N,gridfilename,T,rk)
+#h   = 2**(-(7)*1.0/2) 
+#gridfilename = 'data/grids/two_cubes_h_'+str(np.round(h,3))+'.npy'
+#N = 256
+#tau = T*1.0/N
+#rk = RKMethod("RadauIIA-"+str(m),tau)
 #filename = 'data/density_two_cubes_h_'+str(np.round(h,3)) +'_N_'+str(N)+'_m_'+str(m)+'_a_'+str(alpha)+ '.npy'
 #sol_newt = compute_densities(alpha,N,gridfilename,T,rk)
 #alpha = 0.75
