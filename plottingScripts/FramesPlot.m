@@ -5,8 +5,8 @@ set(groot, 'defaultLegendInterpreter','latex');
 
 %load('../data/DonutFieldDataDOF896N200')
 
-load('../data/AngleTransformedFieldsN128')
-N=64;
+load('../data/AngleTransformedFieldsN256')
+N=256;
 X_mesh(:,:)=plot_grid(1,:,:);
 Y_mesh(:,:)=plot_grid(2,:,:);
 n_grid=sqrt(length(u_ges(:,1))) ; 
@@ -63,13 +63,13 @@ n_grid=sqrt(length(u_ges(:,1)));
 frames = [1:N+1];
 %frames=[80,100,120,140,160,180];
 %  figure('Position',[200 -2000 400 800])
-  video_object = VideoWriter('testvideoN128_angle');
+  video_object = VideoWriter('testvideoN256_angle');
   video_object.Quality = 95;
-  video_object.FrameRate = 5;
+  video_object.FrameRate = 8;
   open(video_object);
   
   figure();
-for n=1:N+1
+for n=20:N+1
    % figure(n);
    j=frames(n);
     
@@ -165,4 +165,4 @@ for n=1:N+1
 
 end
 close(video_object);
-%saveas(gcf,'Plots/MaxwellFrames','epsc')  
+saveas(gcf,'Plots/MaxwellFrames','epsc')  

@@ -14,8 +14,8 @@ N_s=6./step_size;
 start_time=2;
 end_time=6;
 %% Creating the plots
-start_space=1;
-end_space=5;
+start_space=2;
+end_space=6;
 
 vect=step_size(start_time:end_time);
 err=ERRS(start_space:end_space,start_time:end_time);
@@ -42,8 +42,8 @@ end
 
 % loglog(step_size(start_time:end_time),H1_err(1,start_time:end_time),'-d')
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-xlim([10^(-2) 10^(-0.5)])  
-ylim([10^(-2.5) 10^(-0)])
+xlim([10^(-2) 3.0/16])  
+ylim([10^(-2) 10^(-0.2)])
 
 %  
 %loglog(step_size(start_time:end_time),H1_err(2,start_time:end_time),'-o')
@@ -80,17 +80,17 @@ title("Time convergence",'Interpreter','Latex')
 %    strcat('h = ',num2str(dof_s(4))),strcat('h = ',num2str(dof_s(5))),...
 %    strcat('h = ',num2str(dof_s(6))),strcat('h = ',num2str(dof_s(7))),'O(\tau^2)' );
 %% Labelling the axis
-xlabel('step size \tau')
-ylabel('Maximal Error in $P=(2,0,0)$','Interpreter','Latex')
+%xlabel('Step size \tau','Interpreter','Latex')
+ylabel('Maximal error in $P=(0,0,0)$','Interpreter','Latex')
 
 % strH1=strcat(string1,' H^1-norm of error  ');
 %title(strH1)
-xlabel('step size \tau')
+xlabel('Step size $\tau$','Interpreter','Latex')
 %ylabel('H^1-norm error')
 hold off
-  legend(strcat('$h=2^{-1/2}$'),strcat('$h=2^{-1}$'),...
-    strcat('$h=2^{-3/2}$'),strcat('$h=2^{-2}$'),...
-    strcat('$h=2^{-5/2}$'),strcat('$h=2^{-3}$'),...
+  legend(strcat('$h=2^{-1/2}$'),strcat('$h=2^{-3/2}$'),...
+    strcat('$h=2^{-2}$'),strcat('$h=2^{-5/2}$'),...
+    strcat('$h=2^{-3}$'),...
     '$\mathcal O(\tau^2)$' ,'location','southeast');  
 % legend(strcat('$h$  = ',num2str(h_s(2))),strcat('$h$  = ',num2str(h_s(3))),...
 %     strcat('$h$  = ',num2str(h_s(4))),strcat('$h$  = ',num2str(h_s(5))),...
@@ -109,7 +109,7 @@ h2=figure(figurenumber+1)
 
 
 start_time=2;
-end_time=5;
+end_time=6;
 %% Creating the plots
 start_space=1;
 end_space=6;
@@ -163,8 +163,8 @@ end
 % % % % loglog(step_size(start_time:end_time),H1_err(8,start_time:end_time),'-s','MarkerSize',marksize)
 %% Plotting the reference line
 
- loglog(mesh_size,0.3*mesh_size.^0.5,'--k')
-loglog(mesh_size,0.3*mesh_size.^(2),'--k')
+ loglog(mesh_size,0.4*mesh_size.^0.5,'--k')
+loglog(mesh_size,0.4*mesh_size.^(1),'--k')
 %  loglog(mesh_size,0.7*mesh_size.^1.5,'--k')
  %% Title
 % strL2=strcat(string1,' s= ',num2str(s),' L2 time conv.');
@@ -172,8 +172,8 @@ loglog(mesh_size,0.3*mesh_size.^(2),'--k')
 %title(strL2)
 title("Space convergence", 'Interpreter','Latex')
     hold off
-xlim([10^(-0.8) 10^(0)])  
-ylim([10^(-2.0) 10^(0)])
+xlim([10^(-1) 10^(0)])  
+ylim([10^(-1.8) 10^(-0.3)])
     
 %% Creating the legend
 %legend({strcat('dof = ',num2str(dof_s(4))),strcat('dof = ',num2str(dof_s(5))),...
@@ -183,15 +183,15 @@ ylim([10^(-2.0) 10^(0)])
 %  l=legend({strcat('$N$ = ',num2str(N_s(3))),strcat('$N$ = ',num2str(N_s(4))),...
 %      strcat('$N$ = ',num2str(N_s(5))),strcat('$N$ = ',num2str(N_s(6))),...
 %     strcat('$N$ = ',num2str(N_s(7))),'$\mathcal O(h)$','$\mathcal O(h^{3/2})$'},'Interpreter','Latex','location','southeast');
-  l=legend({strcat('$N = 2^6$'),...
-     strcat('$N = 2^7$'),strcat('$N = 2^8$'),...
-    strcat('$N = 2^9$'),'$\mathcal O(h^{1/2})$','$\mathcal O(h^{3/2})$'},'Interpreter','Latex','location','southeast');
+  l=legend({strcat('$N = 2^4$'),strcat('$N = 2^5$'),...
+     strcat('$N = 2^6$'),strcat('$N = 2^7$'),...
+    strcat('$N = 2^8$'),'$\mathcal O(h^{1/2})$','$\mathcal O(h)$'},'Interpreter','Latex','location','southeast');
  % legend(strcat('h = ',num2str(dof_s(2))),strcat('h = ',num2str(dof_s(3))),...
 %    strcat('h = ',num2str(dof_s(4))),strcat('h = ',num2str(dof_s(5))),...
 %    strcat('h = ',num2str(dof_s(6))),strcat('h = ',num2str(dof_s(7))),'O(\tau^2)' );
 %% Labelling the axis
-xlabel('mesh size $h$','Interpreter','Latex')
-ylabel('Maximal Error in $P=(2,0,0)$','Interpreter','Latex')
+xlabel('Mesh size $h$','Interpreter','Latex')
+ylabel('Maximal error in $P=(0,0,0)$','Interpreter','Latex')
 %ylabel('H^1-norm error')
 hold off
 

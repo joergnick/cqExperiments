@@ -3,12 +3,13 @@ clear all
 set(groot, 'defaultAxesTickLabelInterpreter','latex'); 
 set(groot, 'defaultLegendInterpreter','latex');
 
-load('../data/delta01_dof896')
+load('../data/AngleTransformedFieldsN256');
 X_mesh(:,:)=plot_grid(1,:,:);
 Y_mesh(:,:)=plot_grid(2,:,:);
 n_grid=sqrt(length(u_ges(:,1))) ; 
 
-[scatterer ] = create_torus(X_mesh,Y_mesh);
+
+[scatterer ] = create_cubes(X_mesh,Y_mesh);
 % figure(11)
  %spy(scatterer)
 u_sq=zeros(n_grid,n_grid);
@@ -55,7 +56,7 @@ n_grid=sqrt(length(u_ges(:,1)));
 
 
 %frames=[40,55,70,85,100,115];
-frames=[20,30,40,50,60,70];
+frames=[32,64,96,128,160,192];
 %frames=[80,100,120,140,160,180];
   figure('Position',[-2000 200 800 400])
 for n=1:length(frames)
@@ -63,21 +64,21 @@ n
    subplot(2,3,n)
     j=frames(n);
     
-   limit_colors=[0,1.5];
-   limit_height=[0,1];
+   limit_colors=[0,1];
+   limit_height=[0,2];
    limit_x=[-1.5,1.5];
-   limit_y=[-1.5,1.5];
+   limit_y=[-0.5,1.5];
    
    width=0.213405797101449;
    
   
    am_colors=50;
    mymap=zeros(am_colors,3);
-   for colIndex=0:am_colors-1
-       mymap(colIndex+1,:)=ones(1,3)-colIndex/(am_colors-1)*ones(1,3);
-   end
+%    for colIndex=0:am_colors-1
+%        mymap(colIndex+1,:)=ones(1,3)-colIndex/(am_colors-1)*ones(1,3);
+%    end
   % colormap(mymap);
-  colormap jet
+  colormap jet(256);
   u_long=u_ges(:,j);
 
     for i=1:n_grid
@@ -102,12 +103,12 @@ n
     
     startp2=1;
     %endp2=n_grid2;
-      title(strcat('t= ',num2str(4/100*frames(n))),'interpreter','latex')
+      title(strcat('t= ',num2str(3/256*frames(n))),'interpreter','latex')
 
     hsp1 = get(gca, 'Position') ;      
    %% Position Subplot 1    
    set(gca, 'Position', [hsp1(1)-0.05 hsp1(2) width+0.03 hsp1(4)]) 
-   set(gca, 'Color','black')
+  % set(gca, 'Color','white')
 % %     subplot(1,3,2)
 % %      
 % %        
