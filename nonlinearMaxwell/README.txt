@@ -8,7 +8,7 @@ Scipy version : 1.4.1
 Numpy version : 1.18.5
 
 
-The following commands (with a shell in the folder cqExperiments, one level above the present level) recover the plots of the corresponding manuscript:
+The following commands (with a shell in the folder cqExperiments, one level above the present level), executed in order, recover the plots of the corresponding manuscript:
 
 python3 nonlinearMaxwell/generate_grids.py 
 python3 nonlinearMaxwell/create_densities.py
