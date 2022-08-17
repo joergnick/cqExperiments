@@ -8,18 +8,18 @@ sys.path.append('../data')
 from data_generators import load_grid,extract_densities
 
 #gridfilename='data/grids/.npy'
-h = (2)**(-4*1.0/2)
+h = (2)**(-6*1.0/2)
 #gridfilename='data/grids/sphereh'+str(np.round(h,3))+'.npy'
 #gridfilename='data/grids/cubeh'+str(np.round(h,3))+'.npy'
 gridfilename='data/grids/two_cubes_h_'+str(np.round(h,3))+'.npy'
 #gridfilename='data/grids/angle_oriented.npy'
 grid = load_grid(gridfilename)
-N = 128
+N = 256
 #N = 128
 m = 3
 #filename =  'data/density_sphere_h_'+str(np.round(h,3)) +'_N_'+str(N)+'_m_'+str(m)+ '.npy'
 #filename =  'data/density_cube_h_'+str(np.round(h,3)) +'_N_'+str(N)+'_m_'+str(m)+ '.npy'
-filename =  'data/density_two_cubes_h_'+str(np.round(h,3)) +'_N_'+str(N)+'_m_'+str(m)+ '.npy'
+filename =  'data/density_two_cubes_h_'+str(np.round(h,3)) +'_N_'+str(N)+'_m_'+str(m)+'_a_0.5.npy'
 #filename = 'data/density_angle_oriented_refined_N_'+str(N)+'_m_'+str(m)+ '.npy'''
 #filename = 'data/density_angle_transformed_N_'+str(N)+'_m_'+str(m)+ '.npy'''
 sol,T,mcheck = extract_densities(filename)
@@ -29,7 +29,7 @@ if np.isnan(sol).any():
     raise ValueError(" Solution contains NaN values, terminating. ")
 if (len(sol[0,:])-1)/m != N:
     raise ValueError("Difference in N, N = ",N," Ncheck = ", (len(sol[0,:])-1)/m, " Terminating.")
-dof = len(sol[:,0])/2
+dof = int(len(sol[:,0])/2)
 print("DOF = ",dof)
 
 
@@ -39,7 +39,7 @@ x_a=-0.5
 x_b=1.5
 y_a=-1.5
 y_b=1.5
-n_grid_points= 100
+n_grid_points= 150
 #n_grid_points= 197
 nx = n_grid_points
 nz = n_grid_points
@@ -69,16 +69,16 @@ def kirchhoff_repr(s,lambda_data):
 
 from linearcq import Conv_Operator
 mSpt_Dpt = Conv_Operator(kirchhoff_repr)
-uscatStages = mSpt_Dpt.apply_RKconvol(sol,T,method = "RadauIIA-"+str(m),cutoff=10**(-5),prolonge_by=0,factor_laplace_evaluations=2)
+uscatStages = mSpt_Dpt.apply_RKconvol(sol,T,method = "RadauIIA-"+str(m),cutoff=10**(-5),prolonge_by=0,factor_laplace_evaluations=3)
 uscat = uscatStages[:,::m]
 #uscat = np.zeros((n_grid_points**2*3,N))
 uscat = np.concatenate((np.zeros((len(uscat[:,0]),1)),uscat),axis = 1)
-import matplotlib
-from matplotlib import pylab as plt 
+#import matplotlib
+#from matplotlib import pylab as plt 
 u_ges=np.zeros((n_grid_points**2,N+1))
 for j in range(N+1):    
     # Adjust the figure size in IPython
-    matplotlib.rcParams['figure.figsize'] = (10.0, 8.0) 
+    #matplotlib.rcParams['figure.figsize'] = (10.0, 8.0) 
     t=j*T*1.0/N
     def incident_field(x):
         return np.array([np.exp(-100*(x[2]+t-2)**2), 0. * x[2], 0. * x[2]])

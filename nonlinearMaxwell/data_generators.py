@@ -13,7 +13,7 @@ from linearcq import Conv_Operator
 from customOperators import precompMM,sparseWeightedMM,applyNonlinearity,sparseMM
 from newtonStepper import NewtonIntegrator
 
-OrderQF =9
+OrderQF =10
 #print(bempp.api.global_parameters.quadrature.near.max_rel_dist)
 bempp.api.global_parameters.quadrature.near.max_rel_dist = 2
 
@@ -28,7 +28,7 @@ bempp.api.global_parameters.quadrature.double_singular = OrderQF
 #bempp.api.global_parameters.assembly.boundary_operator_assembly_type = 'dense'
 #bempp.api.global_parameters.assembly.enable_interpolation_for_oscillatory_kernels = False
 #bempp.api.global_parameters.assembly.interpolation_points_per_wavelength = 5000
-bempp.api.global_parameters.hmat.eps=10**-4
+bempp.api.global_parameters.hmat.eps=10**-5
 bempp.api.global_parameters.hmat.admissibility='strong'
 space_string = "RT"
 nrspace_string = "NC"
@@ -184,23 +184,24 @@ def compute_densities(alpha,N,gridfilename,T,rk,debug_mode=False):
     dof = RT_space.global_dof_count
     print("GLOBAL DOF: ",dof)
     print("Finished RHS.")
-    sol ,counters  = model.integrate(T,N, method = rk.method_name,max_evals_saved=8,debug_mode=debug_mode,same_rho = False)
+    sol ,counters  = model.integrate(T,N, method = rk.method_name,max_evals_saved=16,debug_mode=debug_mode,same_rho = False)
     print("GLOBAL DOF: ",dof)
     return sol
 
 def extract_densities(filename):
-    resDict = np.load(filename).item()
+    resDict = np.load(filename,allow_pickle=True).item()
     sol = resDict["sol"]
     T   = resDict["T"]
     m   = resDict["m"]
     return sol,T,m
 def evaluate_densities(filename,gridfilename):
     "Evaluates the densities saved at the points by convolution quadrature with $m$-stages."
-    points=np.array([[0],[0],[2]])
+    points=np.array([[0],[0],[0]])
+    #points=np.array([[0],[0],[2]])
     grid = load_grid(gridfilename)
     RT_space=bempp.api.function_space(grid, space_string,0) 
     dof = RT_space.global_dof_count
-    resDict = np.load(filename).item()
+    resDict = np.load(filename,allow_pickle=True).item()
     rhs = resDict["sol"]
     T   = resDict["T"]
     m   = resDict["m"]
@@ -216,7 +217,7 @@ def evaluate_densities(filename,gridfilename):
             scattered_field_data=np.zeros(np.shape(scattered_field_data))
         return scattered_field_data.reshape(3,1)[:,0]
     td_potential = Conv_Operator(th_potential_evaluation) 
-    evaluated_data = td_potential.apply_RKconvol(rhs,T,cutoff = 10**(-4),method = "RadauIIA-"+str(m),show_progress= False)
+    evaluated_data = td_potential.apply_RKconvol(rhs,T,cutoff = 10**(-8),method = "RadauIIA-"+str(m),show_progress= False)
     sol_points = np.zeros((len(evaluated_data[:,0]),len(evaluated_data[0,::m])+1))
     sol_points[:,1::] = evaluated_data[:,::m]
-    return sol_points,T
+    return sol_points,T,dof
