@@ -58,11 +58,7 @@ for space_index in range(Am_space):
         #plt.plot(tt_ref,np.linalg.norm(sol_ref[:,::],axis = 0),color='r')
         #plt.plot(tt,np.linalg.norm(num_sol[:,::],axis = 0),color='b')
         #plt.savefig('temp_sol')
-print("TEST DELETION: ")
-print(errors)
-np.delete(errors,(2),axis=0)
-print(errors)
-np.delete(hs,(2))
+
 import scipy.io
 res = dict()
 res["errors"]=errors
