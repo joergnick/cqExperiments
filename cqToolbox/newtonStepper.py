@@ -31,7 +31,7 @@ class NewtonIntegrator(AbstractIntegrator):
             return jacobian.dot(b)
         except:
             raise NotImplementedError("Gradient has no custom applyGradient method, however * is not supported.") 
-    def righthandside(self,t,history=None):
+    def righthandside(self,t,time_index,history=None):
         return 0
     def precomputing(self,s):
         raise NotImplementedError("No precomputing given.")
@@ -62,7 +62,7 @@ class NewtonIntegrator(AbstractIntegrator):
         x0  = np.zeros(w_star_sol_j.shape)
         rhs = np.zeros(w_star_sol_j.shape)
         for i in range(rk.m):
-            rhs[:,i] = np.real(-w_star_sol_j[:,i] + self.righthandside(j*rk.tau+rk.c[i]*rk.tau,history=history))
+            rhs[:,i] = np.real(-w_star_sol_j[:,i] + self.righthandside(j*rk.tau+rk.c[i]*rk.tau, j*rk.m+i ,history=history))
             if j >=1:
                 if np.linalg.norm(np.imag(self.extrapol(history[:,i+1:j*rk.m+i+1:rk.m],1)))>10**(-6):
                     print("Warning, imaginary part of history nonzero.")

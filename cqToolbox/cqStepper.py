@@ -57,7 +57,7 @@ class AbstractIntegrator:
         ## Initializing right-hand side:
         lengths = self.createFFTLengths(N)
         try:
-            dof = len(self.righthandside(0))
+            dof = len(self.righthandside(0,0))
         except:
             dof = 1
         ## Actual solving:

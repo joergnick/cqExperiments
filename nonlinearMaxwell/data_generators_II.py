@@ -50,13 +50,16 @@ def calc_gtH(rk,grid,N,T):
             def func_rhs(x,n,domain_index,result):
                 Einc =  np.array([np.exp(-variance*(x[2]+t-2)**2), 0. * x[2], 0. * x[2]])    
                 #tang = np.cross(n,np.cross(inc, n))
-                PT_Einc = np.cross(n,np.cross(Einc, n))
+                #PT_Einc = np.cross(n,np.cross(Einc, n))
+                #result[:] = PT_Einc
+                PT_Einc = np.cross(Einc, n)
                 result[:] = PT_Einc
             gt_Einc_grid = bempp.api.GridFunction(RT_space,fun = func_rhs,dual_space = RT_space)
             gTE[:,j*rk.m+stageInd] = gt_Einc_grid.coefficients
             def func_curls(x,n,domain_index,result):
                 curlU=np.array([ 0. * x[2],-2*variance*(x[2]+t-2)*np.exp(-variance*(x[2]+t-2)**2), 0. * x[2]])
-                result[:] = np.cross(curlU,n)
+                #result[:] = np.cross(curlU,n)
+                result[:] = np.cross(n , np.cross(curlU,n))
             curlfun_inc = bempp.api.GridFunction(RT_space,fun = func_curls,dual_space = RT_space) 
             curls[:,j*rk.m+stageInd]  = curlfun_inc.coefficients
     def sinv(s,b):
@@ -108,7 +111,7 @@ def compute_densities(alpha,N,gridfilename,T,rk,debug_mode=False):
     gridfunList,neighborlist,domainDict = precompMM(RT_space)
     id_op=bempp.api.operators.boundary.sparse.identity(RT_space, RT_space, RT_space)
     id_weak = id_op.weak_form()
-    gtH ,dummy    = calc_gtH(rk,grid,N,T)
+    gtH ,gtE    = calc_gtH(rk,grid,N,T)
     class ScatModel(NewtonIntegrator):
         alpha = -1.0 ## invalid value
         debug_mode = False
@@ -121,12 +124,12 @@ def compute_densities(alpha,N,gridfilename,T,rk,debug_mode=False):
             self.alpha = alpha
         def a(self,x):
             #return 0*np.linalg.norm(x)**(1-self.alpha)*x
-            return np.linalg.norm(x)**(self.alpha-1)*x
+            return np.linalg.norm(x)**((1-self.alpha)*1.0/self.alpha)*x
         def Da(self,x):
         #    if np.linalg.norm(x)<10**(-15):
         #        x=10**(-15)*np.ones(3)
            # return np.eye(3)
-            return ((self.alpha-1)*np.linalg.norm(x)**(self.alpha-3)*np.outer(x,x)+np.linalg.norm(x)**(self.alpha-1)*np.eye(3))
+            return ((1-self.alpha)*1.0/self.alpha*np.linalg.norm(x)**((1-self.alpha)*1.0/self.alpha-2)*np.outer(x,x)+np.linalg.norm(x)**((1-self.alpha)*1.0/self.alpha)*np.eye(3))
           #  return -0.5*np.linalg.norm(x)**(-2.5)*np.outer(x,x)+np.linalg.norm(x)**(-0.5)*np.eye(3)
         def precomputing(self,s):
             #NC_space=bempp.api.function_space(grid, "NC",0)
@@ -139,45 +142,45 @@ def compute_densities(alpha,N,gridfilename,T,rk,debug_mode=False):
             identity2=bempp.api.operators.boundary.sparse.identity(RT_space, RT_space, RT_space)
             blocks=np.array([[None,None], [None,None]])
             blocks[0,0] = -elec.weak_form()
-            blocks[0,1] =  magn.weak_form()-1.0/2*identity.weak_form()
-            blocks[1,0] = -magn.weak_form()-1.0/2*identity.weak_form()
+            blocks[0,1] =  magn.weak_form()+1.0/2*identity.weak_form()
+            blocks[1,0] = -magn.weak_form()+1.0/2*identity.weak_form()
             blocks[1,1] = -elec.weak_form()
             return [bempp.api.BlockedDiscreteOperator(blocks),identity2]
         def harmonic_forward(self,s,b,precomp = None):
             return precomp[0]*b
         def calc_jacobian(self,x,t,time_index):
             weightphiGF = bempp.api.GridFunction(RT_space,coefficients = x[:dof])
-            weightIncGF = bempp.api.GridFunction(RT_space,coefficients = gtH[:,time_index])
-            jacob = sparseWeightedMM(RT_space,weightphiGF+weightIncGF,self.Da,gridfunList,neighborlist,domainDict)
+            weightIncGF = bempp.api.GridFunction(RT_space,coefficients = gtE[:,time_index])
+            jacob = sparseWeightedMM(RT_space,weightphiGF-weightIncGF,self.Da,gridfunList,neighborlist,domainDict)
             #jacob = sparseMM(RT_space,gridfunList,neighborlist,domainDict)
             return jacob
         def apply_jacobian(self,jacob,x):
             dof = int(np.round(len(x)/2))
             jx = 1j*np.zeros(2*dof)
-            jx[:dof] = jacob*x[:dof]
+            jx[dof:] = jacob*x[dof:]
             return jx
         def nonlinearity(self,coeff,t,time_index):
             dof = int(np.round(len(coeff)/2))
-            phiGridFun = bempp.api.GridFunction(RT_space,coefficients=coeff[:dof]) 
-            gTHFun     = bempp.api.GridFunction(RT_space,coefficients = gtH[:,time_index])
-            agridFun   = applyNonlinearity(phiGridFun+gTHFun,self.a,gridfunList,domainDict)
+            psiGridFun = bempp.api.GridFunction(RT_space,coefficients=coeff[dof:]) 
+            gTEFun     = bempp.api.GridFunction(RT_space,coefficients = gtE[:,time_index])
+            agridFun   = applyNonlinearity(psiGridFun-gTEFun,self.a,gridfunList,domainDict)
             result     = np.zeros(2*dof) 
             #result[:dof] = id_weak*(phiGridFun+gTHFun).coefficients
-            result[:dof] = id_weak*agridFun.coefficients
+            result[dof:] = id_weak*agridFun.coefficients
             return result
     
         def righthandside(self,t,time_index,history=None):
             t += tshift
-            def func_rhs(x,n,domain_index,result):
-                inc  = np.array([np.exp(-variance*(x[2]+t-2)**2), 0. * x[2], 0. * x[2]])    
-                tang = np.cross(np.cross(inc, n),n)
-                result[:] = tang
-                
-            gridfunrhs = bempp.api.GridFunction(RT_space,fun = func_rhs,dual_space = RT_space)
+            #def func_rhs(x,n,domain_index,result):
+            #    inc  = np.array([np.exp(-variance*(x[2]+t-2)**2), 0. * x[2], 0. * x[2]])    
+            #    tang = np.cross(np.cross(inc, n),n)
+            #    result[:] = tang
+            gridfunrhs     = -bempp.api.GridFunction(RT_space,coefficients = gtH[:,time_index])
+            #gridfunrhs = bempp.api.GridFunction(RT_space,fun = func_rhs,dual_space = RT_space)
             dof = RT_space.global_dof_count
             rhs = np.zeros(dof*2)
             #rhs[:dof] = gridfunrhs.coefficients
-            rhs[:dof] = id_weak*gridfunrhs.coefficients
+            rhs[dof:] = id_weak*gridfunrhs.coefficients
             #print("||rhs|| = ",np.linalg.norm(rhs)," ||gridfun|| = ",np.linalg.norm(gridfunrhs.coefficients))
             return rhs
     model = ScatModel(alpha = alpha)
