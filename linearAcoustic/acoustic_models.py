@@ -1,6 +1,6 @@
 from CQ_acoustic import *
 import bempp.api
-from conv_op import *
+#from conv_op import *
 
 class Conv_Model:
 	import bempp.api
