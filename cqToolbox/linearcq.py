@@ -29,14 +29,6 @@ class Conv_Operator():
             print("WARNING, EXTERNAL RHO WAS SET.")
         else:
             rho=tol**(1.0/(3*N))
-            #rho=tol**(1.0/((3.0/2*L)))
-            ###################### BEST WORKING PARAMETERS KNOWN: 
-            #rho=tol**(1.0/(4*N))
-            #rho=tol**(1.0/(L))
-            #rho=tol**(1.0/(L))
-            #rho=tol**(1.0/(2*N))
-            #rho=tol**(1.0/(3*N))
-            #rho=tol**(1.0/(2*self.external_N))
         return L,dt,tol,rho
 
     def char_functions(self,zeta,order):
@@ -63,35 +55,28 @@ class Conv_Operator():
         rk = RKMethod(method,1)
         return rk.A,rk.b,rk.c,rk.m
        
-    def format_rhs(self,rhs,m):
+    def format_rhs(self,rhs,m,first_value_is_t0):
         try:
-            N=int(round((len(rhs[0,:]))//m))
+            rhs[0,0]
+            flag_1Dinput=False
         except:
-            N=int(round((len(rhs))/m))
-            rhs_mat=np.zeros((1,m*N))
-            if (len(rhs)==m*N+1):
-                ## Assume first value is zero:
-                print("Assume first value is zero value, rhs[0] = ",rhs[0])
-                rhs = rhs[1:]
-            rhs_mat[0,:]=rhs
-            rhs=rhs_mat 
-        return rhs,N
+            flag_1Dinput=True
+            rhs_mat = np.zeros((1,len(rhs))) 
+            rhs_mat[0,:] = rhs
+            rhs = rhs
+        if first_value_is_t0:
+            rhs = rhs[:,1:]
+        N=int((len(rhs[0,:]))//m)
+        return rhs,N,flag_1Dinput
 
-    def apply_RKconvol(self,rhs,T,show_progress=True,method="RadauIIA-2",factor_laplace_evaluations=2,cutoff=10**(-15),prolonge_by = 0,external_rho = None,external_L = None):
+    def apply_RKconvol(self,rhs,T,show_progress=True,method="RadauIIA-2",factor_laplace_evaluations=2,cutoff=10**(-15),prolonge_by = 0,external_rho = None,external_L = None,first_value_is_t0 = False):
         if external_rho:
             self.external_rho = external_rho
         if external_L:
             self.external_L = external_L
         m      = RKMethod(method,1).m
-        [rhs,N]=self.format_rhs(rhs,m)
-
-#        if N>10:
-#            L,dt,tol,rho=self.get_integration_parameters(N,T)
-#            print("N= ",N)
-#            print(rho)
-#            print(rhs)
-#            raise ValueError("Hi")
-
+        self.m=m    
+        [rhs,N,flag_1Dinput]=self.format_rhs(rhs,m,first_value_is_t0)
         tau = T*1.0/N ## tau stays the same after prolongation
         rk   = RKMethod(method,tau) ## rk also stays the same, as tau is equal.
         prolonged_flag = (prolonge_by>0)
@@ -99,22 +84,18 @@ class Conv_Operator():
         if (N>10) and prolonged_flag : 
             extr = Extrapolator()
             rhs  = extr.prolonge_towards_0(rhs,prolonge_by,rk)    
-        ## Step 1
+            [rhs,N,flag_1Dinput]=self.format_rhs(rhs,m,first_value_is_t0)
+        ## Step 1 ##
         self.factor_laplace_evaluations = max(1,factor_laplace_evaluations)
         [A_RK,b_RK,c_RK,m]=self.get_method_characteristics(method)
-        self.m=m    
-        [rhs,N]=self.format_rhs(rhs,m)
         L,dt,tol,rho=self.get_integration_parameters(N,T)
         rhs_fft=1j*np.zeros((len(rhs[:,0]),m*L))
 
         for stageInd in range(m):
             rhs_fft[:,stageInd:m*L:m]=self.scale_fft(rhs[:,stageInd:m*N:m],N,T)
         #Initialising important parameters for the later stage  
-        s_vect=self.get_frequencies(N,T)
-        dof=len(rhs[:,0])
-        L,dt,tol,rho=self.get_integration_parameters(N,T)
-        Half=int(np.ceil(float(L)/2.0))
-        ## Step 2
+        s_vect= rho * np.exp(-1j*2*np.pi*(np.linspace(0,L-1,L)/(L)))
+        ## Step 2 ##
         normsRHS=np.ones(m*L)
         counter=0
         for j in range(0,m*L):
@@ -123,7 +104,6 @@ class Conv_Operator():
                 counter=counter+1
         if normsRHS[0]>10**200:
             raise ValueError("Fourier coefficients have exploded.")
-
 
         HalfL= int(np.ceil(float(L)/2.0))
         if show_progress:
@@ -192,9 +172,12 @@ class Conv_Operator():
             phi_hat[:,stageInd:m*L:m]=self.rescale_ifft(phi_hat[:,stageInd:m*L:m],N,T)
         phi_sol=phi_hat[:,:m*N]
         if prolonged_flag:
-            return extr.cut_back(phi_sol)
-        else:
-            return phi_sol
+            phi_sol =  extr.cut_back(phi_sol)
+        if first_value_is_t0:
+            phi_sol = np.concatenate((np.zeros((len(phi_sol[:,0]),1)),phi_sol ),axis = 1)
+        if flag_1Dinput:
+            phi_sol=phi_sol[0,:]
+        return phi_sol
     def get_zeta_vect(self,N,T):
         L,dt,tol,rho=self.get_integration_parameters(N,T)
         import numpy as np

@@ -13,7 +13,7 @@ class LinearScatModel(NewtonIntegrator):
         return s**2
     def harmonic_forward(self,s,b,precomp = None):
         return precomp*b
-    def righthandside(self,t,history = None):
+    def righthandside(self,t,time_index,history = None):
         return 8*7*t**6
     def nonlinearity(self,x,t,time_index):
         return 0*x
@@ -24,7 +24,7 @@ class LinearScatModelSimple(NewtonIntegrator):
         return s**1
     def harmonic_forward(self,s,b,precomp = None):
         return precomp*b
-    def righthandside(self,t,history = None):
+    def righthandside(self,t,time_index,history = None):
         return 3*t**2
     def nonlinearity(self,x,t,time_index):
         return 0*x
@@ -36,7 +36,7 @@ class LinearScatModelInt(NewtonIntegrator):
         return s**(-1)
     def harmonic_forward(self,s,b,precomp = None):
         return precomp*b
-    def righthandside(self,t,history = None):
+    def righthandside(self,t,time_index,history = None):
         return t**3
     def nonlinearity(self,x,t,time_index):
         return 0*x
@@ -47,7 +47,7 @@ class LinearScatModelInt2(NewtonIntegrator):
         return s**(-2)
     def harmonic_forward(self,s,b,precomp = None):
         return precomp*b
-    def righthandside(self,t,history = None):
+    def righthandside(self,t,time_index,history = None):
         return 1.0/5*t**5
     def nonlinearity(self,x,t,time_index):
         return 0*x
@@ -59,7 +59,7 @@ class NonlinearScatModel(NewtonIntegrator):
         return s**1
     def harmonic_forward(self,s,b,precomp = None):
         return precomp*b
-    def righthandside(self,t,history = None):
+    def righthandside(self,t,time_index,history = None):
         return 3*t**2+t**9
     def nonlinearity(self,x,t,time_index):
         return x**3
@@ -71,7 +71,7 @@ class ScissorModel(NewtonIntegrator):
         return np.array([s**1,s**(-1)])
     def harmonic_forward(self,s,b,precomp = None):
         return np.array([precomp[0]*b[0],precomp[1]*b[1]])
-    def righthandside(self,t,history = None):
+    def righthandside(self,t,time_index,history = None):
         return np.array([3*t**2 , 1.0/3*t**3])
     def nonlinearity(self,x,t,time_index):
         return np.array([ 0 , 0 ])
@@ -84,7 +84,7 @@ class NonlinearScatModel2Components(NewtonIntegrator):
         return np.array([s**1,s**2])
     def harmonic_forward(self,s,b,precomp = None):
         return np.array([precomp[0]*b[0],precomp[1]*b[1]])
-    def righthandside(self,t,history = None):
+    def righthandside(self,t,time_index,history=None):
         return np.array([3*t**2+t**9 +t**4,4*3*t**2+t**4])
     def nonlinearity(self,x,t,time_index):
         return np.array([x[0]**3+x[1],x[1]])
@@ -96,7 +96,7 @@ class NonlinearScatModelCustomGradient(NewtonIntegrator):
         return np.array([s**1,s**2])
     def harmonic_forward(self,s,b,precomp = None):
         return np.array([precomp[0]*b[0],precomp[1]*b[1]])
-    def righthandside(self,t,history = None):
+    def righthandside(self,t,time_index,history=None):
         return np.array([3*t**2+t**9 +t**4,4*3*t**2+t**4])
     def nonlinearity(self,x,t,time_index):
         return np.array([x[0]**3+x[1],x[1]])
@@ -218,8 +218,7 @@ class TestCQMethods(unittest.TestCase):
         sol,counters = modelN.integrate(T,N,method = "RadauIIA-"+str(m))
         exSol        = modelN.ex_sol(np.linspace(0,T,N+1))
         err          = max(np.abs(sol[0,::m]-exSol))
-
-        self.assertLess(np.abs(err),10**(-5))
+        self.assertLess(np.abs(err),10**(-3))
     def test_nonlinear_RadauIIA_2_components(self):
         modelN       = NonlinearScatModel2Components()
         m = 2

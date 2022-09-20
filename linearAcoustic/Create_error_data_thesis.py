@@ -1,3 +1,4 @@
+from multiprocessing.sharedctypes import Value
 import sys
 sys.path.append('cqToolbox')
 sys.path.append('../cqToolbox')
@@ -9,6 +10,7 @@ from rkmethods import RKMethod
 
 
 import numpy as np
+import scipy.io
 import bempp.api
 
 #from conv_op import *
@@ -64,7 +66,7 @@ def apply_elliptic_scat(s,b,F_transfer,dx):
 
 	grid = bempp.api.shapes.sphere(h=dx)
 
-	OrderQF = 5
+	OrderQF = 9
 	#tol= np.finfo(float).eps
 	bempp.api.global_parameters.hmat.eps=10**-4
 	bempp.api.global_parameters.quadrature.near.max_rel_dist = 2
@@ -136,7 +138,6 @@ def apply_elliptic_scat(s,b,F_transfer,dx):
 	return phi
 
 def pot_vals(s,phi,grid):
-
 	OrderQF = 9
 
 	#tol= np.finfo(float).eps
@@ -144,17 +145,12 @@ def pot_vals(s,phi,grid):
 	bempp.api.global_parameters.quadrature.near.max_rel_dist = 2
 	bempp.api.global_parameters.quadrature.near.single_order =OrderQF-1
 	bempp.api.global_parameters.quadrature.near.double_order = OrderQF-1
-	
 	bempp.api.global_parameters.quadrature.medium.max_rel_dist =4
 	bempp.api.global_parameters.quadrature.medium.single_order =OrderQF-2
 	bempp.api.global_parameters.quadrature.medium.double_order =OrderQF-2
-
-
 	bempp.api.global_parameters.quadrature.far.single_order =OrderQF-3
 	bempp.api.global_parameters.quadrature.far.double_order =OrderQF-3
-
 	bempp.api.global_parameters.quadrature.double_singular = OrderQF
-
 
 	Points = np.array([[2],[0],[0]])
 
@@ -176,81 +172,6 @@ def pot_vals(s,phi,grid):
 	del dlp_pot
 	evaluated_elli_sol=(eval_slp+s**(-1)*eval_dlp)
 	return evaluated_elli_sol[0]
-
-
-def calc_ref_sol(N,dx,F_transfer,m):
-	import scipy.io
-	#workspace=scipy.io.loadmat('data/Ref_spherical.mat')
-	T=4
-	grid = bempp.api.shapes.sphere(h=dx)
-
-	dp0_space = bempp.api.function_space(grid,"P",1)
-	p1_space  = bempp.api.function_space(grid, "P" ,1)
-
-
-	def combined_inverse(s,b):
-		
-		rhs=-s*F_transfer(s)*b[0]+b[1]
-		phi=1j*np.zeros(2)
-		#result[1]=(1+1.0/s)**(-1)*b[0]
-		phi[1]=(1+1.0/s+F_transfer(s))**(-1)*rhs
-		phi[0]=(1+s)**(1)*s**(-1)*phi[1]
-
-		dof      = p1_space.global_dof_count
-		phi_space  =1j*np.zeros(2*dof)+ np.ones(2*dof)
-	
-		phi_space[:dof] = phi[0]*phi_space[:dof]
-		phi_space[dof:2*dof] = phi[1]*phi_space[dof:2*dof]
-
-		eval_Point=pot_vals(s,phi_space,grid)
-		return eval_Point
-	
-	ons=np.ones(N+1)
-	tt=np.linspace(0,T,N+1)
-	rhss=np.zeros((2,N+1))
-	rhss[0,:]=np.exp(-5*(ons-(3*ons-tt))**2)
-	rhss[1,:]=(19*ons-10*tt-10*ons)*rhss[0,:]
-
-#	def Fs_transfer(s,b):
-#		return s*F_transfer(s)*b
-
-##	ptFpt=Conv_Operator(Fs_transfer)
-##	
-##	rhs=-ptFpt.apply_convol(u,T,show_progress=False)+pnu
-	
-	PotmAptm1=Conv_Operator(combined_inverse)
-	sol_ref=PotmAptm1.apply_RKconvol(rhss,T,method="RadauIIA-"+str(m),show_progress=True,cutoff=10**(-8))
-	#ref_sol=workspace['ref_sol'][0]                           #
-	#N_ref=len(ref_sol)-1                                      #
-
-####
-####	grid = bempp.api.shapes.sphere(h=dx)
-####
-####	dp0_space = bempp.api.function_space(grid,"P",1)
-####	p1_space  = bempp.api.function_space(grid, "P" ,1)
-####
-####	dof      = p1_space.global_dof_count
-####	psi_ref  = np.ones((2*dof,N_ref+1))
-####
-####	psi_ref[:dof,:] = ref_dens[0,:]*psi_ref[:dof,:]
-####	psi_ref[dof:2*dof,:] = ref_dens[1,:]*psi_ref[dof:2*dof,:]
-######	for j in range(N+1):
-######		psi_ref[0:dof,j]     = ref_dens[0,j]*psi_ref[0:dof,j]
-######		psi_ref[dof:2*dof,j] = ref_dens[1,j]*psi_ref[dof:2*dof,j]
-####
-####
-####	def elli_pot_vals(s,b):
-####		return pot_vals(s,b,dx)
-####	Pot_time=Conv_Operator(elli_pot_vals)
-####	
-#####	sol_ref = Pot_time.apply_convol(psi_ref,T,show_progress=True)
-####
-######		psi[0:dof,j]     = ref_sol[0,j*speed]*psi[0:dof,j]
-######		psi[dof:2*dof,j] = ref_sol[1,j*speed]*psi[dof:2*dof,j]
-######		pnu_resc[j]      = pnu[j*speed]
-
-	return sol_ref
-
 
 def calc_ref_sol_fast(N,F_transfer,m):
 	import scipy.io
@@ -280,17 +201,19 @@ def calc_ref_sol_fast(N,F_transfer,m):
 ##	
 ##	rhs=-ptFpt.apply_convol(u,T,show_progress=False)+pnu
 	RHS_to_DIR=Conv_Operator(combined_inverse)
-	u_trace=RHS_to_DIR.apply_RKconvol(rhss,T,method="RadauIIA-"+str(m),show_progress=True,cutoff=10**(-7))
+	u_trace=RHS_to_DIR.apply_RKconvol(rhss,T,method="RadauIIA-"+str(m),show_progress=False,first_value_is_t0=True,cutoff=10**(-9))
+	u_trace = u_trace[0][::m]
 	u_P=np.zeros(m*N+1)
 #Works only if 1/tau is natural	
 	tpts = rk.get_time_points(T)
-	for j in range(0,m*N+1):
-		#tj=j*T*1.0/N
-		tj = tpts[j]
+	for j in range(0,N+1):
+		tj=j*T*1.0/N
+		#tj = tpts[j]
+		#t_transf=tj
 		t_transf=tj-1
 		if t_transf>0:	
 			#u(x,t)= 1/R*u(y,t-(R-1))
-			u_P[j]=1.0/2*u_trace[0][t_transf*N/T]
+			u_P[j]=1.0/2*u_trace[t_transf*N/T]
 	#ref_sol=workspace['ref_sol'][0]                           #
 	#N_ref=len(ref_sol)-1                                      #
 
@@ -329,39 +252,16 @@ def scattering_solution(dx,N,F_transfer,m):
 	grid=bempp.api.shapes.sphere(h=dx)
 	def elli_pot_vals(s,b):
 		return pot_vals(s,b,grid)
-	
 	Pot_time=Conv_Operator(elli_pot_vals)
 	rhs = create_rhs(N,T,dx,m)
-	
 	def gibc_elli(s,b):
 		return apply_elliptic_scat(s,b,F_transfer,dx)
-	
 	Scat_op = Conv_Operator(gibc_elli)
-	psi_num = Scat_op.apply_RKconvol(rhs,T,method="RadauIIA-"+str(m),cutoff=10**(-6))
-	num_sol = Pot_time.apply_RKconvol(psi_num,T,method="RadauIIA-"+str(m),cutoff=10**(-6))
-	####################################################
-	
-	#Calc Reference for Neumann- b.c.
-	#tt=np.linspace(0,T,N+1)
-	#Time_ref=np.zeros(N+1)
-	#u_inc=spherical_Incident_wave()
-	#for j in range(N+1):
-	#	Time_ref[j]=u_inc.eval((j*T*1.0/N)-2,Point)
-#	#print(time_evalsp[0])
+	psi_num = Scat_op.apply_RKconvol(rhs[:,1:],T,method="RadauIIA-"+str(m),show_progress=False,cutoff=10**(-6))
+	num_sol = Pot_time.apply_RKconvol(psi_num,T,method="RadauIIA-"+str(m),show_progress=False,cutoff=10**(-6))
+	return np.real(num_sol[0,:])
 
-#	plt.plot(tt,sol_num)
-#	plt.plot(tt,sol_ref,linestyle='dashed')
-	return num_sol
-	
-#	plt.ylim((-0.5,0.5))
-		
-		
-#Am_time=6
-#Am_space=2
-
-
-Am_time=8
-Am_time=3
+Am_time=6
 Am_space=5
 
 errors=np.zeros((Am_space+1,Am_time))
@@ -383,12 +283,11 @@ def F_transfer(s):
 ##dx_ref=0.005
 
 
-N_ref=2**10
+N_ref=2**8
 T=4
 m=2
 #dx_ref=2**(-6)
 sol_ref = calc_ref_sol_fast(N_ref,F_transfer,m)
-sol_ref = sol_ref[::m]
 #sol_ref_bempp = calc_ref_sol(N_ref,dx_ref,F_transfer)
 ##def F2_transfer(s):
 ##	return 0
@@ -413,11 +312,9 @@ T=4
 ##tau_s=mat_contents['tau_s'][0]
 start_time=0
 start_space=0
-ttref=np.linspace(0,4,N_ref+1)
+ttref=np.linspace(0,T,N_ref+1)
 for ixTime in range(Am_time):
-	N=32*2**(ixTime)
-	tt=np.linspace(0,5,N+1)
-
+	N=4*2**(ixTime)
 ## Rescaling reference solution:		
 	speed=N_ref/N
 	resc_ref=np.zeros(N+1)
@@ -425,7 +322,6 @@ for ixTime in range(Am_time):
 		resc_ref[j]      = sol_ref[j*speed]
 	num_sol = calc_ref_sol_fast(N,F_transfer,m)	
 	#num_sol  = scattering_solution(dx,N,F_transfer)
-
 	num_sol = num_sol[::m]
 	errors[Am_space,ixTime]=max(np.abs(resc_ref-num_sol))
 	print(errors)
@@ -434,18 +330,14 @@ for ixTime in range(Am_time):
 #	plt.semilogy(np.linspace(0,4,N+1),np.abs(resc_ref-num_sol))
 
 #	plt.show()
-m = 2
+m=2
 for ixSpace in range(start_space,Am_space):
-
 	for ixTime in range(start_time,Am_time):
-		N=8*2**(ixTime)
-		
-
+		N=32*2**(ixTime)
 		tau_s[ixTime]=T*1.0/N
 		tt=np.linspace(0,T,N+1)
-		dx=2**(-ixSpace)
+		dx=2**(-ixSpace-1)
 		h_s[ixSpace]=dx
-
 ########## Rescaling reference solution:		
 		speed=N_ref/N
 		resc_ref=np.zeros(N+1)
@@ -453,31 +345,18 @@ for ixSpace in range(start_space,Am_space):
 			resc_ref[j]      = sol_ref[j*speed]
 		#num_sol = calc_ref_sol(N,dx,F_transfer)	
 		num_sol  = scattering_solution(dx,N,F_transfer,m)
-		num_sol = num_sol[:,::m]
-		print(np.abs(resc_ref[1:]-num_sol))
-		print(max(np.abs(resc_ref[1:]-num_sol)))
-		errors[ixSpace,ixTime]=max(np.abs(resc_ref[1:]-num_sol)[0])
+		num_sol = num_sol[m-1::m]
+		errors[ixSpace,ixTime]=max(np.abs(resc_ref[1:]-num_sol))
 		print(errors)
-#		plt.plot(tt,resc_ref,linestyle='dashed')	
-#		plt.plot(tt,num_sol)
+		import matplotlib.pyplot
+
+		plt.plot(tt[1:],resc_ref[1:],linestyle='dashed')	
+		plt.plot(tt[1:],num_sol)
+		plt.show()
 	#	plt.semilogy(np.linspace(0,5,N+1),np.abs(resc_ref,num_sol))
 
 		
 	
 
-		import scipy.io
-		scipy.io.savemat('data/ERR_DATA.mat', dict( ERR=errors,h_s=h_s,tau_s=tau_s))
-
-	
-
-
-
-
-
-
-		
-
-
-
-
+		scipy.io.savemat('data/ERR_DATA_ACOUSTIC.mat', dict( ERR=errors,h_s=h_s,tau_s=tau_s))
 

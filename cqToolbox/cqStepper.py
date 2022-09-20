@@ -20,7 +20,8 @@ class AbstractIntegrator:
         ## Optional method supplied by user:
     def precomputing(self,s):
         raise NotImplementedError("No precomputing given.")
-
+    def righthandside(self,t,index,history=None):
+        raise NotImplementedError("Method righthandside not given.")
         ## Methods provided by class
     def forward_wrapper(self,s,b):
         ## Frequency was already seen and evaluation has been saved:           
@@ -42,7 +43,7 @@ class AbstractIntegrator:
         lengths = [1]
         it = 1
         while len(lengths)<=N:
-            lengths.append( 2**it)
+            lengths.append(2**it)
             lengths.extend(lengths[:-1][::-1])
             it = it+1
         return lengths
@@ -103,7 +104,7 @@ class AbstractIntegrator:
             conv_hist[:,(j+1)*m+1:(j+1)*m+1+currLenCut*m] += localconvHist[:,currLen*m:currLen*m+currLenCut*m]
         #if debug_mode: 
             #print("N: ",N," m: ",rk.m," 2*m*N ",2*m*N, " Amount evaluations: ",self.countEv)
-        print("N: ",N," m: ",rk.m," 2*m*N ",2*m*N, " Amount evaluations: ",self.countEv)
+        #print("N: ",N," m: ",rk.m," 2*m*N ",2*m*N, " Amount evaluations: ",self.countEv)
         return np.real(sol) ,counters
 
 #    def integrate(self,T,rk,reUse=True,debugMode=False):
