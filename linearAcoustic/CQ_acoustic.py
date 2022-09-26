@@ -200,8 +200,8 @@ def create_u_inc_RHS(grid,p1_space,N,T,C1,C2,a1,a2,t_1,t_2,epsilon):
 	lb=bempp.api.boundary.sparse.laplace_beltrami(p1_space,p1_space,p1_space)
 	for j in range(0,N+1):
 		t=j*1.0/N
-		func_sum=lambda (x) :-epsilon*(u_inc(C1,a1,t_1,t,x)+u_inc(C2,a2,t_2,t,x))
-		func_rhs=lambda (x): pn_u_inc(C1,a1,t_1,t,x)-pn_u_inc(C1,a1,t_1,t,x)-epsilon*(u_inc_ddot(C1,a1,t_1,t,x)+u_inc_ddot(C2,a2,t_2,t,x))
+		func_sum=lambda x :-epsilon*(u_inc(C1,a1,t_1,t,x)+u_inc(C2,a2,t_2,t,x))
+		func_rhs=lambda x : pn_u_inc(C1,a1,t_1,t,x)-pn_u_inc(C1,a1,t_1,t,x)-epsilon*(u_inc_ddot(C1,a1,t_1,t,x)+u_inc_ddot(C2,a2,t_2,t,x))
 		gridfun_lb=lb*bempp.api.GridFunction(p1_space,fun=func_sum)
 		gridfun_rhs=bempp.api.GridFunction(p1_space,fun=func_rhs)
 		RHS[:,j]=(gridfun_lb+gridfun_rhs).coefficients

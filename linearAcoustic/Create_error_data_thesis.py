@@ -25,7 +25,7 @@ def create_timepoints(c,N,T):
     return T*time_points
 def create_rhs(N,T,dx,m):
 	grid = bempp.api.shapes.sphere(h=dx)
-	dp0_space = bempp.api.function_space(grid,"P",1)
+	dp0_space = bempp.api.function_space(grid,"DP",0)
 	p1_space  = bempp.api.function_space(grid,"P",1)
 	rk = RKMethod("RadauIIA-"+str(m) ,T*1.0/N)    
 	time_points = rk.get_time_points(T)
@@ -37,7 +37,7 @@ def create_rhs(N,T,dx,m):
 	u_inc=spherical_Incident_wave()
 	ident_1=bempp.api.operators.boundary.sparse.identity(p1_space,p1_space,p1_space)
 	u_incs=np.zeros((dof1,m*N+1))	
-	pnu_incs=np.zeros((dof1,m*N+1))
+	pnu_incs=np.zeros((dof0,m*N+1))
 
 	for j in range(0,m*N+1):
 		#tj=j*T*1.0/N
@@ -49,13 +49,13 @@ def create_rhs(N,T,dx,m):
 			result[0]=u_inc.eval_dnormal(tj,x,normal)
 
 		gridfun_inc=bempp.api.GridFunction(p1_space,fun=u_inc_fun)
-		gridfun_neu=bempp.api.GridFunction(p1_space,fun=u_neu_fun)
+		gridfun_neu=bempp.api.GridFunction(dp0_space,fun=u_neu_fun)
 
 		u_incs[:,j]=gridfun_inc.coefficients
 		pnu_incs[:,j]=gridfun_neu.coefficients
 
-		rhs[0:dof0,j]=gridfun_inc.coefficients
-		rhs[dof0:dof0+dof1,j]=gridfun_neu.coefficients
+		rhs[0:dof1,j]=gridfun_inc.coefficients
+		rhs[dof1:dof0+dof1,j]=gridfun_neu.coefficients
 	return rhs
 
 
@@ -77,7 +77,7 @@ def apply_elliptic_scat(s,b,F_transfer,dx):
 	bempp.api.global_parameters.quadrature.double_singular = OrderQF
 
 	#Define space
-	dp0_space = bempp.api.function_space(grid,"P",1)
+	dp0_space = bempp.api.function_space(grid,"DP",0)
 	p1_space = bempp.api.function_space(grid, "P" ,1)
 
 	dof0 = dp0_space.global_dof_count
@@ -89,50 +89,52 @@ def apply_elliptic_scat(s,b,F_transfer,dx):
 	## Definition of Operators
 
 	slp = bempp.api.operators.boundary.modified_helmholtz.single_layer(dp0_space,p1_space,dp0_space,s)
-	dlp = bempp.api.operators.boundary.modified_helmholtz.double_layer(p1_space,p1_space,p1_space,s)
-	adlp = bempp.api.operators.boundary.modified_helmholtz.adjoint_double_layer(dp0_space,dp0_space,dp0_space,s)
+	dlp = bempp.api.operators.boundary.modified_helmholtz.double_layer(p1_space,p1_space,dp0_space,s)
+	adlp = bempp.api.operators.boundary.modified_helmholtz.adjoint_double_layer(dp0_space,dp0_space,p1_space,s)
 	hslp = bempp.api.operators.boundary.modified_helmholtz.hypersingular(p1_space,dp0_space,p1_space,s,use_slp=True)
 
-	ident_0 = bempp.api.operators.boundary.sparse.identity(dp0_space,dp0_space,dp0_space)
-	ident_1 = bempp.api.operators.boundary.sparse.identity(p1_space,p1_space,p1_space)
+	ident_0 = bempp.api.operators.boundary.sparse.identity(dp0_space,dp0_space,p1_space)
+	ident_1 = bempp.api.operators.boundary.sparse.identity(p1_space,p1_space,dp0_space)
+
 	ident_10 = bempp.api.operators.boundary.sparse.identity(p1_space,dp0_space,p1_space)
+	ident_00 = bempp.api.operators.boundary.sparse.identity(dp0_space,dp0_space,p1_space)
 	
 	## Bringing RHS into GridFuncion - type ;
-	Fsu = s*F_transfer(s)*b[:dof0]
-	grid_Fsu = bempp.api.GridFunction(dp0_space,coefficients=Fsu)
-	grid_pnu = bempp.api.GridFunction(p1_space,coefficients=b[dof0:dof])
+	#Fsu = s*F_transfer(s)*b[:dof0]
+	#grid_Fsu = bempp.api.GridFunction(dp0_space,coefficients=Fsu)
+	#grid_pnu = bempp.api.GridFunction(dp0_space,coefficients=b[dof0:dof])
 	
 
-	grid_ginc = grid_pnu - grid_Fsu
-
+	#grid_ginc = grid_pnu - grid_Fsu
+	ginc =ident_00.weak_form()*b[dof1:dof0+dof1] -ident_10.weak_form()*(s*F_transfer(s)*b[:dof1])
+	rhs = 1j*np.zeros(dof0+dof1)
+	rhs[dof0:dof0+dof1] = ginc
 	## Building Blocked System
 
-	blocks=bempp.api.BlockedOperator(2,2)
-
-	blocks[0,0] =(s*slp)
-	blocks[0,1] = (dlp)-1.0/2*ident_1
-	blocks[1,0] = -(adlp)+1.0/2*ident_0
-	blocks[1,1] = (1.0/s*hslp+F_transfer(s)*ident_1)
+	#blocks=bempp.api.BlockedOperator(2,2)
+	blocks=np.array([[None,None], [None,None]])
+	blocks[0,0] =(s*slp).weak_form()
+	blocks[0,1] = (dlp.weak_form())-1.0/2*ident_1.weak_form()
+	blocks[1,0] = -(adlp.weak_form())+1.0/2*ident_0.weak_form()
+	blocks[1,1] = (1.0/s*hslp.weak_form()+F_transfer(s)*ident_10.weak_form())
 	#blocks[1,1] = (1.0/s*hslp+s**(-1.0/2)*ident_1)
 	#blocks[1,1] = 1.0/s*hslp	
-
-	B_weak_form=blocks
+	B_weak_form=bempp.api.BlockedDiscreteOperator(blocks)
+	#B_weak_form=blocks
 	#B_weak_form=bempp.api.BlockedDiscreteOperator(np.array(blocks))
 	#print("Weak_form_assembled")
-	from bempp.api.linalg import gmres
-	#from scipy.sparse.linalg import gmres
-	sol,info=gmres(B_weak_form,[0*grid_ginc,grid_ginc],maxiter=300,tol=10**(-5))
+	#from bempp.api.linalg import gmres
+	from scipy.sparse.linalg import gmres
+	sol,info=gmres(B_weak_form,rhs,maxiter=300,tol=10**(-5))
 	#sol=B_weak_form*[grid_rhs1,grid_rhs2]
 	if info>0:
 		#res=np.linalg.norm(B_weak_form*sol-b)
 		print("Linear Algebra warning")
 
-	phi=1j*np.zeros(dof0+dof1)
+	#phi[:dof0]=sol[0].coefficients
+	#phi[dof0:dof0+dof1]=sol[1].coefficients
 
-	phi[:dof0]=sol[0].coefficients
-	phi[dof0:dof0+dof1]=sol[1].coefficients
-
-	return phi
+	return sol
 
 def pot_vals(s,phi,grid):
 	OrderQF = 9
@@ -150,7 +152,7 @@ def pot_vals(s,phi,grid):
 
 	Points = np.array([[2],[0],[0]])
 
-	dp0_space = bempp.api.function_space(grid,"P",1)
+	dp0_space = bempp.api.function_space(grid,"DP",0)
 	p1_space = bempp.api.function_space(grid, "P" ,1)
 
 	dof0=dp0_space.global_dof_count
@@ -197,7 +199,7 @@ def calc_ref_sol_fast(N,F_transfer,m):
 		tj=j*T*1.0/N
 		t_transf=tj-1
 		if t_transf>0:	
-			u_P[j]=1.0/2*u_trace[t_transf*N/T]
+			u_P[j]=1.0/2*u_trace[int(t_transf*N/T)]
 	return u_P
 
 def scattering_solution(dx,N,F_transfer,m):
@@ -269,7 +271,7 @@ for ixTime in range(Am_time):
 	speed=N_ref/N
 	resc_ref=np.zeros(N+1)
 	for j in range(N+1):
-		resc_ref[j]      = sol_ref[j*speed]
+		resc_ref[j]      = sol_ref[int(j*speed)]
 	num_sol = calc_ref_sol_fast(N,F_transfer,m)	
 	#num_sol  = scattering_solution(dx,N,F_transfer)
 	num_sol = num_sol[::]
@@ -292,7 +294,7 @@ for ixSpace in range(start_space,Am_space):
 		speed=N_ref/N
 		resc_ref=np.zeros(N+1)
 		for j in range(N+1):
-			resc_ref[j]      = sol_ref[j*speed]
+			resc_ref[j]      = sol_ref[int(j*speed)]
 		#num_sol = calc_ref_sol(N,dx,F_transfer)	
 		num_sol  = scattering_solution(dx,N,F_transfer,m)
 		num_sol = num_sol[m-1::m]
@@ -303,5 +305,5 @@ for ixSpace in range(start_space,Am_space):
 		#plt.plot(tt[1:],num_sol)
 		#plt.show()
 		#plt.semilogy(np.linspace(0,5,N+1),np.abs(resc_ref,num_sol))
-		scipy.io.savemat('data/ERR_DATA_ACOUSTIC.mat', dict( ERR=errors,h_s=h_s,tau_s=tau_s))
+		scipy.io.savemat('data/ERR_DATA_ACOUSTIC_dp0.mat', dict( ERR=errors,h_s=h_s,tau_s=tau_s))
 
