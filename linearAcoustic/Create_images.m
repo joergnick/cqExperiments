@@ -3,7 +3,7 @@ clear all
 set(groot, 'defaultAxesTickLabelInterpreter','latex'); 
 set(groot, 'defaultLegendInterpreter','latex');
 
-load('data/Acoustic')
+load('../data/Acoustic')
 X_mesh3(:,:)=plot_grid(1,:,:);
 Y_mesh3(:,:)=plot_grid(2,:,:);
 n_grid3=sqrt(length(u_ges(:,1))) ; 
@@ -14,7 +14,7 @@ n_grid3=sqrt(length(u_ges(:,1)));
 [scatterer3 ] = create_scatterer(X_mesh3,Y_mesh3);
 
 [u_ges3 ] = draw_scatterer( u_ges3, scatterer3);
-load('data/Absorbing')
+load('../data/Absorbing')
 X_mesh2(:,:)=plot_grid(1,:,:);
 Y_mesh2(:,:)=plot_grid(2,:,:);
 n_grid2=sqrt(length(u_ges(:,1))) ; 
@@ -26,8 +26,7 @@ n_grid2=sqrt(length(u_ges(:,1)));
 
 [u_ges2 ] = draw_scatterer( u_ges2, scatterer2);
 
-load('data/GIBC')
-
+load('../data/GIBC')
 
 n_grid=sqrt(length(u_ges(:,1)));
 u_sq=zeros(n_grid,n_grid);

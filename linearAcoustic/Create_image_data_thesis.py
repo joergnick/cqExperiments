@@ -230,7 +230,7 @@ def scattering_solution(N,T,F_transfer,m,delta=False):
     Scat_op = Conv_Operator(gibc_elli)
     psi_num = Scat_op.apply_RKconvol(rhs[:,1:],T,method="RadauIIA-"+str(m),show_progress=False,cutoff=10**(-6))
     num_sol = Pot_time.apply_RKconvol(psi_num,T,method="RadauIIA-"+str(m),show_progress=False,cutoff=10**(-6))
-    return np.real(num_sol[0,:]),plot_grid,Points
+    return np.real(num_sol[:,::m]),plot_grid,Points
 
 N=200
 m=3
