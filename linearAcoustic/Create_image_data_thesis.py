@@ -25,14 +25,13 @@ def create_rhs(N,T,m):
     dof1=p1_space.global_dof_count
     dof=dof0+dof1
     rhs=np.zeros((dof,m*N+1))
-    u_inc=spherical_Incident_wave()
+    u_inc=Incident_wave(-100,np.array([0,-1.0,0]),-3)
     ident_1=bempp.api.operators.boundary.sparse.identity(p1_space,p1_space,p1_space)
     u_incs=np.zeros((dof1,m*N+1))   
     pnu_incs=np.zeros((dof0,m*N+1))
     for j in range(0,m*N+1):
         #tj=j*T*1.0/N
         tj = time_points[j]
-        
         def u_inc_fun(x,normal,domain_index,result):
             result[0]=u_inc.eval(tj,x)
         def u_neu_fun(x,normal,domain_index,result):
@@ -207,7 +206,7 @@ def pot_vals(s,phi,grid,Points):
     return evaluated_elli_sol[0]
 
 def scattering_solution(N,T,F_transfer,m,delta=False):
-    n_grid_points=200
+    n_grid_points=50
     ########DRAFT MAGNET PICTURE DATA:
     x_a=-0.75
     x_b=0.75
@@ -216,7 +215,9 @@ def scattering_solution(N,T,F_transfer,m,delta=False):
 ###############################################
     plot_grid = np.mgrid[y_a:y_b:1j*n_grid_points, x_a:x_b:1j*n_grid_points]
     Points = np.vstack( ( plot_grid[0].ravel() , plot_grid[1].ravel() , 0.25*np.ones(plot_grid[0].size) ) )
-    grid=bempp.api.import_grid('data/grids/magnet_h05_h01.msh')
+    
+    #grid=bempp.api.import_grid('data/grids/magnet_h05_h01.msh')
+    grid=bempp.api.import_grid('data/grids/magnet_h05_h1.msh')
     def elli_pot_vals(s,b):
         return pot_vals(s,b,grid,Points)
     Pot_time=Conv_Operator(elli_pot_vals)
@@ -230,7 +231,25 @@ def scattering_solution(N,T,F_transfer,m,delta=False):
     Scat_op = Conv_Operator(gibc_elli)
     psi_num = Scat_op.apply_RKconvol(rhs[:,1:],T,method="RadauIIA-"+str(m),show_progress=False,cutoff=10**(-6))
     num_sol = Pot_time.apply_RKconvol(psi_num,T,method="RadauIIA-"+str(m),show_progress=False,cutoff=10**(-6))
-    return np.real(num_sol[:,::m]),plot_grid,Points
+    u_eval= np.real(num_sol[:,::m])
+
+    u_ges=np.zeros((n_grid_points**2,N))
+    zrs=np.zeros((n_grid_points,n_grid_points))
+    #zrs[max_grid<0.50]=np.nan
+
+    for indt in range(0,int(N)):
+        u_tp=u_eval[:,indt]
+        uinc=np.zeros(n_grid_points**2)
+        uinc_wave=Incident_wave(-100,np.array([0,-1.0,0]),-3)
+
+        for k in range(n_grid_points**2):
+            uinc[k]=uinc_wave.eval(T*indt*1.0/N,Points[:,k])
+        uinc_rs=uinc.reshape((n_grid_points,n_grid_points))
+        u_ges[:,indt]=u_tp+uinc
+    #######################################################################################
+        u_tp_rs = np.real(u_tp.reshape((n_grid_points,n_grid_points)))
+        u_tp_rs=u_tp_rs+uinc_rs
+    return u_tp_rs,plot_grid,Points
 
 N=200
 m=3

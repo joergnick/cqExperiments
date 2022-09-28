@@ -52,21 +52,24 @@ Y_mesh(:,:)=plot_grid(2,:,:);
 
 
 
-frames=[240,280,320,360];
+%frames=[240,280,320,360];
+%frames=[120,140,160,180];
+frames=[60,70,80,90,100,110,120,130,140];
 for n=1:length(frames)
 %for n=1:1
     figure('Position',[200 200 1200 350])
     
     j=frames(n);
-    
-   limit_colors=[-2.5,2.5];
-   limit_height=[-2.5,2.5];
+   limit_colors=[-10,10];
+   limit_height=[-10,10];    
+%    limit_colors=[-2.5,2.5];
+%    limit_height=[-2.5,2.5];
    limit_x=[-0.25,1.25];
    limit_y=[-0.75,0.75];
    
    width=0.213405797101449;
    
-   colormap bone(25)
+   colormap jet(200) %bone(25)
   u_long=u_ges(:,j);
   u_long2=u_ges2(:,j); 
   u_long3=u_ges3(:,j); 
