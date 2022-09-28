@@ -234,22 +234,14 @@ def scattering_solution(N,T,F_transfer,m,delta=False):
     u_eval= np.real(num_sol[:,::m])
 
     u_ges=np.zeros((n_grid_points**2,N))
-    zrs=np.zeros((n_grid_points,n_grid_points))
-    #zrs[max_grid<0.50]=np.nan
-
     for indt in range(0,int(N)):
         u_tp=u_eval[:,indt]
         uinc=np.zeros(n_grid_points**2)
         uinc_wave=Incident_wave(-100,np.array([0,-1.0,0]),-3)
-
         for k in range(n_grid_points**2):
             uinc[k]=uinc_wave.eval(T*indt*1.0/N,Points[:,k])
-        uinc_rs=uinc.reshape((n_grid_points,n_grid_points))
         u_ges[:,indt]=u_tp+uinc
-    #######################################################################################
-        u_tp_rs = np.real(u_tp.reshape((n_grid_points,n_grid_points)))
-        u_tp_rs=u_tp_rs+uinc_rs
-    return u_tp_rs,plot_grid,Points
+    return u_ges,plot_grid,Points
 
 N=200
 m=3
