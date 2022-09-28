@@ -3,7 +3,8 @@ clear all
 set(groot, 'defaultAxesTickLabelInterpreter','latex'); 
 set(groot, 'defaultLegendInterpreter','latex');
 
-load('../data/Acoustic')
+%load('../data/Acoustic')
+load('../data/GIBC')
 X_mesh3(:,:)=plot_grid(1,:,:);
 Y_mesh3(:,:)=plot_grid(2,:,:);
 n_grid3=sqrt(length(u_ges(:,1))) ; 
@@ -14,7 +15,8 @@ n_grid3=sqrt(length(u_ges(:,1)));
 [scatterer3 ] = create_scatterer(X_mesh3,Y_mesh3);
 
 [u_ges3 ] = draw_scatterer( u_ges3, scatterer3);
-load('../data/Absorbing')
+%load('../data/Absorbing')
+load('../data/GIBC')
 X_mesh2(:,:)=plot_grid(1,:,:);
 Y_mesh2(:,:)=plot_grid(2,:,:);
 n_grid2=sqrt(length(u_ges(:,1))) ; 
@@ -24,7 +26,7 @@ u_sq2=zeros(n_grid2,n_grid2);
 n_grid2=sqrt(length(u_ges(:,1)));
 [scatterer2 ] = create_scatterer(X_mesh2,Y_mesh2);
 
-[u_ges2 ] = draw_scatterer( u_ges2, scatterer2);
+%[u_ges2 ] = draw_scatterer( u_ges2, scatterer2);
 
 load('../data/GIBC')
 
@@ -54,14 +56,14 @@ Y_mesh(:,:)=plot_grid(2,:,:);
 
 %frames=[240,280,320,360];
 %frames=[120,140,160,180];
-frames=[60,70,80,90,100,110,120,130,140];
+frames=[110,120,130,140,150,160];
 for n=1:length(frames)
 %for n=1:1
     figure('Position',[200 200 1200 350])
     
-    j=frames(n);
-   limit_colors=[-10,10];
-   limit_height=[-10,10];    
+    j=frames(n); 
+   limit_colors=[-1.5,1.5];
+   limit_height=[-2.5,2.5];
 %    limit_colors=[-2.5,2.5];
 %    limit_height=[-2.5,2.5];
    limit_x=[-0.25,1.25];
@@ -69,7 +71,7 @@ for n=1:length(frames)
    
    width=0.213405797101449;
    
-   colormap jet(200) %bone(25)
+   colormap bone(200)%jet(200) %bone(25)
   u_long=u_ges(:,j);
   u_long2=u_ges2(:,j); 
   u_long3=u_ges3(:,j); 
