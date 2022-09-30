@@ -206,7 +206,7 @@ def pot_vals(s,phi,grid,Points):
     return evaluated_elli_sol[0]
 
 def scattering_solution(N,T,F_transfer,m,delta=False):
-    n_grid_points=200
+    n_grid_points=20
     ########DRAFT MAGNET PICTURE DATA:
     x_a=-0.75
     x_b=0.75
@@ -217,7 +217,8 @@ def scattering_solution(N,T,F_transfer,m,delta=False):
     Points = np.vstack( ( plot_grid[0].ravel() , plot_grid[1].ravel() , 0.25*np.ones(plot_grid[0].size) ) )
     
     #grid=bempp.api.import_grid('data/grids/magnet_h05_h01.msh')
-    grid=bempp.api.import_grid('data/grids/magnet_h05_h01.msh')
+    grid=bempp.api.import_grid('data/grids/magnet_h05_h1.msh')
+    #grid=bempp.api.import_grid('data/grids/magnet_h05_h01.msh')
     def elli_pot_vals(s,b):
         return pot_vals(s,b,grid,Points)
     Pot_time=Conv_Operator(elli_pot_vals)
