@@ -169,8 +169,8 @@ def apply_elliptic_scat_thin_layer(s,b,delta,grid):
     sol,info=gmres(B_weak_form,rhs,maxiter=300,tol=10**(-5))
     #sol=B_weak_form*[grid_rhs1,grid_rhs2]
     if info>0:
-        #res=np.linalg.norm(B_weak_form*sol-b)
-        print("Linear Algebra warning")
+        res=np.linalg.norm(B_weak_form*sol-b)
+        print("Linear Algebra warning, res = "+str(res))
     return sol
 def pot_vals(s,phi,grid,Points):
     OrderQF = 9

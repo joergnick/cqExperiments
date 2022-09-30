@@ -99,7 +99,7 @@ hold off
   legend({'$h = 2^{-1}$','$h = 2^{-2}$',...
     '$h = 2^{-3}$','$h = 2^{-4}$','$h = 2^{-5}$',...
      '$\mathcal O(\tau^3)$' },'location','southeast','FontSize',9);
-saveas(gcf,'../plottingScripts/Plots/TimeConvergenceAcoustic','epsc')
+saveas(gcf,'../plottingScriptPlots/TimeConvergenceAcoustic','epsc')
 %% SPACE CONVERGENCE PLOT
 %% Comment in from here for space convergence plot
 
