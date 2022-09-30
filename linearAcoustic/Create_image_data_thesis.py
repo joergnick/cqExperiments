@@ -224,10 +224,10 @@ def scattering_solution(N,T,F_transfer,m,delta=False):
     rhs = create_rhs(N,T,m)
     if delta:
         def gibc_elli(s,b):
-            return apply_elliptic_scat(s,b,F_transfer,grid)
+            return apply_elliptic_scat_thin_layer(s,b,delta,grid)
     else:
         def gibc_elli(s,b):
-            return apply_elliptic_scat_thin_layer(s,b,delta,grid)
+            return apply_elliptic_scat(s,b,F_transfer,grid)
     Scat_op = Conv_Operator(gibc_elli)
     psi_num = Scat_op.apply_RKconvol(rhs[:,1:],T,method="RadauIIA-"+str(m),show_progress=False,cutoff=10**(-6))
     num_sol = Pot_time.apply_RKconvol(psi_num,T,method="RadauIIA-"+str(m),show_progress=False,cutoff=10**(-6))
@@ -250,7 +250,7 @@ T=5
 boundary_cond="GIBC"
 F_transfer=None
 delta=0.1
-u_ges,plot_grid,Points = scattering_solution(N,T,F_transfer,m,delta=False)
+u_ges,plot_grid,Points = scattering_solution(N,T,F_transfer,m,delta=delta)
 scipy.io.savemat('data/'+boundary_cond+'.mat',dict(u_ges=u_ges,N=N,T=T,plot_grid=plot_grid,Points=Points))
 
 boundary_cond="Absorbing"
