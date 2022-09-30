@@ -252,6 +252,7 @@ F_transfer=None
 delta=0.1
 u_ges,plot_grid,Points = scattering_solution(N,T,F_transfer,m,delta=delta)
 scipy.io.savemat('data/'+boundary_cond+'.mat',dict(u_ges=u_ges,N=N,T=T,plot_grid=plot_grid,Points=Points))
+print(boundary_cond+" completed.")
 
 boundary_cond="Absorbing"
 def F_transfer(s):
@@ -259,6 +260,7 @@ def F_transfer(s):
     return s**(1.0/2)/0.1
 u_ges,plot_grid,Points = scattering_solution(N,T,F_transfer,m,delta=False)
 scipy.io.savemat('data/'+boundary_cond+'.mat',dict(u_ges=u_ges,N=N,T=T,plot_grid=plot_grid,Points=Points))
+print(boundary_cond+" completed.")
 
 boundary_cond="Acoustic"
 def F_transfer(s):
@@ -266,4 +268,4 @@ def F_transfer(s):
     return (s+1+s**(-1))**(-1)*s
 u_ges,plot_grid,Points = scattering_solution(N,T,F_transfer,m,delta=False)
 scipy.io.savemat('data/'+boundary_cond+'.mat',dict(u_ges=u_ges,N=N,T=T,plot_grid=plot_grid,Points=Points))
-
+print(boundary_cond+" completed.")
