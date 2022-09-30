@@ -17,6 +17,7 @@ from acoustic_models import Incident_wave,spherical_Incident_wave
 
 def create_rhs(N,T,m):
     grid=bempp.api.import_grid('data/grids/magnet_h05_h01.msh')
+    #grid=bempp.api.import_grid('data/grids/magnet_h05_h01.msh')
     dp0_space = bempp.api.function_space(grid,"DP",0)
     p1_space  = bempp.api.function_space(grid,"P",1)
     rk = RKMethod("RadauIIA-"+str(m) ,T*1.0/N)    
@@ -69,25 +70,25 @@ def apply_elliptic_scat(s,b,F_transfer,grid):
 
     blocks = np.array([[None,None],[None,None]])
     ## Definition of Operators
+   # ## Definition of Operators
+   # slp = bempp.api.operators.boundary.modified_helmholtz.single_layer(dp0_space,p1_space,dp0_space,s)
+   # dlp = bempp.api.operators.boundary.modified_helmholtz.double_layer(p1_space,p1_space,dp0_space,s)
+   # adlp = bempp.api.operators.boundary.modified_helmholtz.adjoint_double_layer(dp0_space,dp0_space,p1_space,s)
+   # hslp = bempp.api.operators.boundary.modified_helmholtz.hypersingular(p1_space,dp0_space,p1_space,s,use_slp=True)
+   # ident_0 = bempp.api.operators.boundary.sparse.identity(dp0_space,dp0_space,p1_space)
+   # ident_1 = bempp.api.operators.boundary.sparse.identity(p1_space,p1_space,dp0_space)
+   # ident_10 = bempp.api.operators.boundary.sparse.identity(p1_space,dp0_space,p1_space)
+   # ident_00 = bempp.api.operators.boundary.sparse.identity(dp0_space,dp0_space,p1_space)
+   # lb=bempp.api.operators.boundary.sparse.laplace_beltrami(p1_space,dp0_space,p1_space)
+    slp = bempp.api.operators.boundary.modified_helmholtz.single_layer(dp0_space,dp0_space,dp0_space,s)
+    dlp = bempp.api.operators.boundary.modified_helmholtz.double_layer(p1_space,dp0_space,dp0_space,s)
+    adlp = bempp.api.operators.boundary.modified_helmholtz.adjoint_double_layer(dp0_space,p1_space,p1_space,s)
+    hslp = bempp.api.operators.boundary.modified_helmholtz.hypersingular(p1_space,p1_space,p1_space,s,use_slp=True)
+    ident_0 = bempp.api.operators.boundary.sparse.identity(dp0_space,p1_space,p1_space)
+    ident_1 = bempp.api.operators.boundary.sparse.identity(p1_space,dp0_space,dp0_space)
+    ident_10 = bempp.api.operators.boundary.sparse.identity(p1_space,p1_space,p1_space)
+    ident_00 = bempp.api.operators.boundary.sparse.identity(dp0_space,p1_space,p1_space)
 
-    slp = bempp.api.operators.boundary.modified_helmholtz.single_layer(dp0_space,p1_space,dp0_space,s)
-    dlp = bempp.api.operators.boundary.modified_helmholtz.double_layer(p1_space,p1_space,dp0_space,s)
-    adlp = bempp.api.operators.boundary.modified_helmholtz.adjoint_double_layer(dp0_space,dp0_space,p1_space,s)
-    hslp = bempp.api.operators.boundary.modified_helmholtz.hypersingular(p1_space,dp0_space,p1_space,s,use_slp=True)
-
-    ident_0 = bempp.api.operators.boundary.sparse.identity(dp0_space,dp0_space,p1_space)
-    ident_1 = bempp.api.operators.boundary.sparse.identity(p1_space,p1_space,dp0_space)
-
-    ident_10 = bempp.api.operators.boundary.sparse.identity(p1_space,dp0_space,p1_space)
-    ident_00 = bempp.api.operators.boundary.sparse.identity(dp0_space,dp0_space,p1_space)
-    
-    ## Bringing RHS into GridFuncion - type ;
-    #Fsu = s*F_transfer(s)*b[:dof0]
-    #grid_Fsu = bempp.api.GridFunction(dp0_space,coefficients=Fsu)
-    #grid_pnu = bempp.api.GridFunction(dp0_space,coefficients=b[dof0:dof])
-    
-
-    #grid_ginc = grid_pnu - grid_Fsu
     ginc =ident_00.weak_form()*b[dof1:dof0+dof1] -ident_10.weak_form()*(s*F_transfer(s)*b[:dof1])
     rhs = 1j*np.zeros(dof0+dof1)
     rhs[dof0:dof0+dof1] = ginc
@@ -98,7 +99,7 @@ def apply_elliptic_scat(s,b,F_transfer,grid):
     blocks[0,0] =(s*slp).weak_form()
     blocks[0,1] = (dlp.weak_form())-1.0/2*ident_1.weak_form()
     blocks[1,0] = -(adlp.weak_form())+1.0/2*ident_0.weak_form()
-    blocks[1,1] = (1.0/s*hslp.weak_form()+F_transfer(s)*ident_10.weak_form())
+    blocks[1,1] = (1.0/s*hslp.weak_form()+s**(-1)*F_transfer(s)*ident_10.weak_form())
     #blocks[1,1] = (1.0/s*hslp+s**(-1.0/2)*ident_1)
     #blocks[1,1] = 1.0/s*hslp   
     B_weak_form=bempp.api.BlockedDiscreteOperator(blocks)
@@ -137,22 +138,35 @@ def apply_elliptic_scat_thin_layer(s,b,delta,grid):
     dof0 = dp0_space.global_dof_count
     dof1 = p1_space.global_dof_count
     blocks = np.array([[None,None],[None,None]])
-    ## Definition of Operators
-    slp = bempp.api.operators.boundary.modified_helmholtz.single_layer(dp0_space,p1_space,dp0_space,s)
-    dlp = bempp.api.operators.boundary.modified_helmholtz.double_layer(p1_space,p1_space,dp0_space,s)
-    adlp = bempp.api.operators.boundary.modified_helmholtz.adjoint_double_layer(dp0_space,dp0_space,p1_space,s)
-    hslp = bempp.api.operators.boundary.modified_helmholtz.hypersingular(p1_space,dp0_space,p1_space,s,use_slp=True)
-    ident_0 = bempp.api.operators.boundary.sparse.identity(dp0_space,dp0_space,p1_space)
-    ident_1 = bempp.api.operators.boundary.sparse.identity(p1_space,p1_space,dp0_space)
-    ident_10 = bempp.api.operators.boundary.sparse.identity(p1_space,dp0_space,p1_space)
-    ident_00 = bempp.api.operators.boundary.sparse.identity(dp0_space,dp0_space,p1_space)
-    lb=bempp.api.operators.boundary.sparse.laplace_beltrami(p1_space,dp0_space,p1_space)
+   # ## Definition of Operators
+   # slp = bempp.api.operators.boundary.modified_helmholtz.single_layer(dp0_space,p1_space,dp0_space,s)
+   # dlp = bempp.api.operators.boundary.modified_helmholtz.double_layer(p1_space,p1_space,dp0_space,s)
+   # adlp = bempp.api.operators.boundary.modified_helmholtz.adjoint_double_layer(dp0_space,dp0_space,p1_space,s)
+   # hslp = bempp.api.operators.boundary.modified_helmholtz.hypersingular(p1_space,dp0_space,p1_space,s,use_slp=True)
+   # ident_0 = bempp.api.operators.boundary.sparse.identity(dp0_space,dp0_space,p1_space)
+   # ident_1 = bempp.api.operators.boundary.sparse.identity(p1_space,p1_space,dp0_space)
+   # ident_10 = bempp.api.operators.boundary.sparse.identity(p1_space,dp0_space,p1_space)
+   # ident_00 = bempp.api.operators.boundary.sparse.identity(dp0_space,dp0_space,p1_space)
+   # lb=bempp.api.operators.boundary.sparse.laplace_beltrami(p1_space,dp0_space,p1_space)
+    slp = bempp.api.operators.boundary.modified_helmholtz.single_layer(dp0_space,dp0_space,dp0_space,s)
+    dlp = bempp.api.operators.boundary.modified_helmholtz.double_layer(p1_space,dp0_space,dp0_space,s)
+    adlp = bempp.api.operators.boundary.modified_helmholtz.adjoint_double_layer(dp0_space,p1_space,p1_space,s)
+    hslp = bempp.api.operators.boundary.modified_helmholtz.hypersingular(p1_space,p1_space,p1_space,s,use_slp=True)
+
+    ident_0 = bempp.api.operators.boundary.sparse.identity(dp0_space,p1_space,p1_space)
+    ident_1 = bempp.api.operators.boundary.sparse.identity(p1_space,dp0_space,dp0_space)
+
+
+    ident_10 = bempp.api.operators.boundary.sparse.identity(p1_space,p1_space,p1_space)
+    lb=bempp.api.operators.boundary.sparse.laplace_beltrami(p1_space,p1_space,p1_space)
+
+    ident_00 = bempp.api.operators.boundary.sparse.identity(dp0_space,p1_space,p1_space)
     ## Bringing RHS into GridFuncion - type ;
     #Fsu = s*F_transfer(s)*b[:dof0]
     #grid_Fsu = bempp.api.GridFunction(dp0_space,coefficients=Fsu)
     #grid_pnu = bempp.api.GridFunction(dp0_space,coefficients=b[dof0:dof])
     #grid_ginc = grid_pnu - grid_Fsu
-    ginc =ident_00.weak_form()*b[dof1:dof0+dof1] -delta*(s*ident_10.weak_form()+1.0/s*lb.weak_form())*b[:dof1]
+    ginc =ident_00.weak_form()*b[dof1:dof0+dof1] -delta*(s**2*ident_10.weak_form()+lb.weak_form())*b[:dof1]
     #ginc =ident_00.weak_form()*b[dof1:dof0+dof1] -ident_10.weak_form()*(s*F_transfer(s)*b[:dof1])
     rhs = 1j*np.zeros(dof0+dof1)
     rhs[dof0:dof0+dof1] = ginc
@@ -169,7 +183,7 @@ def apply_elliptic_scat_thin_layer(s,b,delta,grid):
     sol,info=gmres(B_weak_form,rhs,maxiter=300,tol=10**(-5))
     #sol=B_weak_form*[grid_rhs1,grid_rhs2]
     if info>0 or True:
-        res=np.linalg.norm(B_weak_form*sol-b)
+        res=np.linalg.norm(B_weak_form*sol-rhs)
         print("Linear Algebra warning, res = "+str(res))
     return sol
 def pot_vals(s,phi,grid,Points):
@@ -206,7 +220,7 @@ def pot_vals(s,phi,grid,Points):
     return evaluated_elli_sol[0]
 
 def scattering_solution(N,T,F_transfer,m,delta=False):
-    n_grid_points=20
+    n_grid_points=200
     ########DRAFT MAGNET PICTURE DATA:
     x_a=-0.75
     x_b=0.75
@@ -216,8 +230,8 @@ def scattering_solution(N,T,F_transfer,m,delta=False):
     plot_grid = np.mgrid[y_a:y_b:1j*n_grid_points, x_a:x_b:1j*n_grid_points]
     Points = np.vstack( ( plot_grid[0].ravel() , plot_grid[1].ravel() , 0.25*np.ones(plot_grid[0].size) ) )
     
-    #grid=bempp.api.import_grid('data/grids/magnet_h05_h01.msh')
-    grid=bempp.api.import_grid('data/grids/magnet_h05_h1.msh')
+    grid=bempp.api.import_grid('data/grids/magnet_h05_h01.msh')
+    #grid=bempp.api.import_grid('data/grids/magnet_h05_h1.msh')
     #grid=bempp.api.import_grid('data/grids/magnet_h05_h01.msh')
     def elli_pot_vals(s,b):
         return pot_vals(s,b,grid,Points)
@@ -258,7 +272,7 @@ print(boundary_cond+" completed.")
 boundary_cond="Absorbing"
 def F_transfer(s):
 ###########Absorbing b.c. #############
-    return s**(1.0/2)/0.1
+    return s**(-1.0/2)/0.1
 u_ges,plot_grid,Points = scattering_solution(N,T,F_transfer,m,delta=False)
 scipy.io.savemat('data/'+boundary_cond+'.mat',dict(u_ges=u_ges,N=N,T=T,plot_grid=plot_grid,Points=Points))
 print(boundary_cond+" completed.")
@@ -266,7 +280,7 @@ print(boundary_cond+" completed.")
 boundary_cond="Acoustic"
 def F_transfer(s):
 ###########Acoustic b.c. #############
-    return (s+1+s**(-1))**(-1)*s
+    return (s+1+s**(-1))**(-1)
 u_ges,plot_grid,Points = scattering_solution(N,T,F_transfer,m,delta=False)
 scipy.io.savemat('data/'+boundary_cond+'.mat',dict(u_ges=u_ges,N=N,T=T,plot_grid=plot_grid,Points=Points))
 print(boundary_cond+" completed.")
