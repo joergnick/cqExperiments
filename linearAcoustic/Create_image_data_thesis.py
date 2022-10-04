@@ -265,8 +265,8 @@ T=5
 boundary_cond="GIBC"
 F_transfer=None
 delta=0.1
-u_ges,plot_grid,Points = scattering_solution(N,T,F_transfer,m,delta=delta)
-scipy.io.savemat('data/'+boundary_cond+'.mat',dict(u_ges=u_ges,N=N,T=T,plot_grid=plot_grid,Points=Points))
+#u_ges,plot_grid,Points = scattering_solution(N,T,F_transfer,m,delta=delta)
+#scipy.io.savemat('data/'+boundary_cond+'.mat',dict(u_ges=u_ges,N=N,T=T,plot_grid=plot_grid,Points=Points))
 print(boundary_cond+" completed.")
 
 boundary_cond="Absorbing"
