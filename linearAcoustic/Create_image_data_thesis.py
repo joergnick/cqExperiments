@@ -99,7 +99,7 @@ def apply_elliptic_scat(s,b,F_transfer,grid):
     blocks[0,0] =(s*slp).weak_form()
     blocks[0,1] = (dlp.weak_form())-1.0/2*ident_1.weak_form()
     blocks[1,0] = -(adlp.weak_form())+1.0/2*ident_0.weak_form()
-    blocks[1,1] = (1.0/s*hslp.weak_form()+s**(-1)*F_transfer(s)*ident_10.weak_form())
+    blocks[1,1] = (1.0/s*hslp.weak_form()+F_transfer(s)*ident_10.weak_form())
     #blocks[1,1] = (1.0/s*hslp+s**(-1.0/2)*ident_1)
     #blocks[1,1] = 1.0/s*hslp   
     B_weak_form=bempp.api.BlockedDiscreteOperator(blocks)

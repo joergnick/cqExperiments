@@ -62,8 +62,8 @@ for n=1:length(frames)
     figure('Position',[200 200 1200 350])
     
     j=frames(n); 
-   limit_colors=[-1.5,1.5];
-   limit_height=[-2.5,2.5];
+   limit_colors=[-2.5,2.5];
+   limit_height=[-10,10];
 %    limit_colors=[-2.5,2.5];
 %    limit_height=[-2.5,2.5];
    limit_x=[-0.25,1.25];
@@ -71,7 +71,7 @@ for n=1:length(frames)
    
    width=0.213405797101449;
    
-   colormap bone(25)%jet(200) %bone(25)
+   colormap jet(256)%bone(25)%jet(200) %bone(25)
   u_long=u_ges(:,j);
   u_long2=u_ges2(:,j); 
   u_long3=u_ges3(:,j); 
