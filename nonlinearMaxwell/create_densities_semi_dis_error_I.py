@@ -19,12 +19,12 @@ from id_bc_rk import scattering_solution
 from data_generators_II import compute_densities
 #T = 1
 T = 3
-m = 3
+m = 2
 #diffsAbstract = np.load('data/diffsAbstract.npy')
 #print("Abstract = ",diffsAbstract)
-am_space = 5
-am_time  = 1
-alpha = 0.25
+am_space = 6
+am_time  = 6
+alpha = 0.5
 diffs = np.zeros(am_time)
 norms_direct = np.zeros(am_time)
 diffs_direct = np.zeros(am_time)
@@ -32,7 +32,7 @@ import time
 for space_index in range(am_space):
     for time_index in range(am_time):
         h   = 2**(-(space_index+0)*1.0/2)
-        N   = int(np.round(256*2**time_index))
+        N   = int(np.round(16*2**time_index))
         #### MAX DIFFERENCE IS 0.012 for N:
         #N   = 255*2**time_index
         #STILL WORKS until at least 85% : N   = 600*2**time_index
