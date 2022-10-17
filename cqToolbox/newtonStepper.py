@@ -20,7 +20,7 @@ class NewtonIntegrator(AbstractIntegrator):
         self.freqObj = dict()
         self.freqUse = dict()
         self.countEv = 0
-        self.debug_mode = False
+        self.debug_mode = True
         ## Methods supplied by user:
     def nonlinearity(self,x,t,time_index):
         raise NotImplementedError("No nonlinearity given.")
@@ -64,14 +64,14 @@ class NewtonIntegrator(AbstractIntegrator):
         for i in range(rk.m):
             rhs[:,i] = np.real(-w_star_sol_j[:,i] + self.righthandside(j*rk.tau+rk.c[i]*rk.tau, j*rk.m+i ,history=history))
             if j >=1:
-                if np.linalg.norm(np.imag(self.extrapol(history[:,i+1:j*rk.m+i+1:rk.m],1)))>10**(-6):
+                if np.linalg.norm(np.imag(self.extrapol(history[:,i+1:j*rk.m+i+1:rk.m],0)))>10**(-6):
                     print("Warning, imaginary part of history nonzero.")
-                x0[:,i] = np.real(self.extrapol(np.real(history[:,i+1:j*rk.m+i+1:rk.m]),1))
+                x0[:,i] = np.real(self.extrapol(np.real(history[:,i+1:j*rk.m+i+1:rk.m]),0))
             else:
                 x0[:,i] = np.zeros(len(w_star_sol_j[:,0]))
         #print("Begin Newton, ||x0|| = "+str(np.linalg.norm(x0))+" ||rhs|| = "+str(np.linalg.norm(rhs)))
         counter = 0
-        thresh = 5
+        thresh = 1
         x = x0
         info = 1
         res = None
@@ -87,7 +87,7 @@ class NewtonIntegrator(AbstractIntegrator):
                 info = 0
             if self.debug_mode:
                 print("INFO AFTER {} STEP: ".format(counter),info)
-            if np.linalg.norm(x)>10**3000:
+            if np.linalg.norm(x)>10**10:
                 print("Warning, setback after divergence in Newton's method, ||x|| = "+str(np.linalg.norm(x)))
                 raise ValueError("Newton method diverging.")
                 x = x0
@@ -96,7 +96,7 @@ class NewtonIntegrator(AbstractIntegrator):
             counter = counter+1
         #print("||res|| = "+str(np.linalg.norm(res)))
         if self.debug_mode:
-            print("AMOUNT NEWTON ITERATIONS = "+str(counter)+" ||x_pred|| = "+str(np.linalg.norm(x0))+ " ||x|| = "+str(np.linalg.norm(x)))
+            print("AMOUNT NEWTON ITERATIONS = "+str(counter)+" ||x_pred|| = "+str(np.linalg.norm(x0))+ " ||x|| = "+str(np.linalg.norm(x))+ " ||x_pred-x|| = "+str(np.linalg.norm(x0-x)))
         return x
 
     def newton_iteration(self,j,rk,rhs,W0,x0,history,tolsolver,coeff = 1,debug_mode=False,last_residual=None,jacob_list = None):

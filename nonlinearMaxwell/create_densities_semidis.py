@@ -35,7 +35,7 @@ for space_index in range(am_space):
         gridfilename = 'data/grids/two_cubes_h_'+str(np.round(h,3))+'.npy'
         
         start = time.time()
-        alpha = 0.25
+        alpha = 0.5
         filename = 'data/thesis_nonlinear/density_two_cubes_h_'+str(np.round(h,3)) +'_N_'+str(N)+'_m_'+str(m)+'_a_'+str(alpha)+ '_II.npy'
         if os.path.isfile(filename):
             print("File "+filename+" already computed, jumped.")
@@ -54,7 +54,7 @@ for space_index in range(am_space):
         resDict["m"] = rk.m
         resDict["N"] = N
         np.save(filename,resDict)
-        
+        continue
         start = time.time()
         alpha = 0.5
         filename = 'data/thesis_nonlinear/density_two_cubes_h_'+str(np.round(h,3)) +'_N_'+str(N)+'_m_'+str(m)+'_a_'+str(alpha)+ '_II.npy'
@@ -111,7 +111,7 @@ for space_index in range(am_space):
         rk = RKMethod("RadauIIA-"+str(m),tau)
         start = time.time()
         
-        alpha = 0.25
+        alpha = 0.5
         filename = 'data/thesis_nonlinear/density_two_cubes_h_'+str(np.round(h,3)) +'_N_'+str(N)+'_m_'+str(m)+'_a_'+str(alpha)+ '_II.npy'
         if os.path.isfile(filename):
             print("File "+filename+" already computed, jumped.")
@@ -130,7 +130,7 @@ for space_index in range(am_space):
         resDict["m"] = rk.m
         resDict["N"] = N
         np.save(filename,resDict)
-        
+        continue 
         alpha = 0.5
         filename = 'data/thesis_nonlinear/density_two_cubes_h_'+str(np.round(h,3)) +'_N_'+str(N)+'_m_'+str(m)+'_a_'+str(alpha)+ '_II.npy'
         if os.path.isfile(filename):

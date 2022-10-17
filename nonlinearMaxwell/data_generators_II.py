@@ -114,7 +114,6 @@ def compute_densities(alpha,N,gridfilename,T,rk,debug_mode=False):
     gtH ,gtE    = calc_gtH(rk,grid,N,T)
     class ScatModel(NewtonIntegrator):
         alpha = -1.0 ## invalid value
-        debug_mode = False
         def __init__(self,alpha=1.0):
             NewtonIntegrator.__init__(self)
             #print("Parameter alpha has been set to: "+str(alpha)+".")
@@ -124,6 +123,8 @@ def compute_densities(alpha,N,gridfilename,T,rk,debug_mode=False):
             self.alpha = alpha
         def a(self,x):
             #return 0*np.linalg.norm(x)**(1-self.alpha)*x
+            if np.isnan(x).any():
+                raise ValueError("An invalid value was inserted into a()!, x= ",x)
             return np.linalg.norm(x)**((1-self.alpha)*1.0/self.alpha)*x
         def Da(self,x):
         #    if np.linalg.norm(x)<10**(-15):
@@ -187,7 +188,7 @@ def compute_densities(alpha,N,gridfilename,T,rk,debug_mode=False):
     dof = RT_space.global_dof_count
     print("GLOBAL DOF: ",dof)
     print("Finished RHS.")
-    sol ,counters  = model.integrate(T,N, method = rk.method_name,max_evals_saved=16,debug_mode=debug_mode,same_rho = False)
+    sol ,counters  = model.integrate(T,N, method = rk.method_name,max_evals_saved=16,debug_mode=True,same_rho = False)
     print("GLOBAL DOF: ",dof)
     return sol
 
