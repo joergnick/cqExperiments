@@ -55,15 +55,16 @@ Y_mesh(:,:)=plot_grid(2,:,:);
 
 
 %frames=[240,280,320,360];
-frames=[120,140,160,180];
-%frames=[110,120,130,140,150,160];
+%frames=[120,140,160,180];
+frames=[120,130,140,150,160,170,180,190];
+%frames=[160];
 for n=1:length(frames)
 %for n=1:1
     figure('Position',[200 200 1200 350])
     
     j=frames(n); 
-   limit_colors=[-2.5,2.5];
-   limit_height=[-10,10];
+   limit_colors=[-2,2];
+   limit_height=[-2,2];
 %    limit_colors=[-2.5,2.5];
 %    limit_height=[-2.5,2.5];
    limit_x=[-0.25,1.25];
@@ -71,7 +72,7 @@ for n=1:length(frames)
    
    width=0.213405797101449;
    
-   colormap jet(256)%bone(25)%jet(200) %bone(25)
+   colormap bone(256)%jet(200) %bone(25)
   u_long=u_ges(:,j);
   u_long2=u_ges2(:,j); 
   u_long3=u_ges3(:,j); 
@@ -93,7 +94,7 @@ for n=1:length(frames)
     subplot(1,3,1)
     
     surf(X_mesh(startp:endp,:),Y_mesh(startp:endp,:),u_sq(startp:endp,:)','edgecolor','none')
-   ylabel(strcat("t= ", num2str(j*5/400-2)))
+   ylabel(strcat("t= ", num2str(j*5/200)))
   
     caxis(limit_colors)
    % view(180,0)
@@ -105,7 +106,7 @@ for n=1:length(frames)
     
     startp2=1;
     endp2=n_grid2;
-       title('(A) Thin layer b.c.')
+       title('Thin layer b.c.')
 
     hsp1 = get(gca, 'Position') ;      
    %% Position Subplot 1    
@@ -129,7 +130,7 @@ for n=1:length(frames)
     hsp2 = get(gca, 'Position') ;
        %% Position Subplot 2 
     set(gca, 'Position', [hsp2(1)-0.04 hsp1(2) width+0.03 hsp1(4)]) 
-         title('(B1) Highly absorbing b.c.')
+         title('Highly absorbing b.c.')
 
      subplot(1,3,3)
      hsp3=get(gca,'Position');
@@ -144,13 +145,13 @@ for n=1:length(frames)
     ylim(limit_y)
     zlim(limit_height)
 
-   title('(C) Acoustic b.c.')
+   title('Acoustic b.c.')
      hsp2(3)
       %% Position Subplot 3  
      set(gca, 'Position', [hsp3(1)-0.03 hsp3(2) width+0.02 hsp1(4)]) 
     cb=  colorbar;
    hcb=get(cb,'position');
-   set(cb,'position',[hcb(1)+0.05 hcb(2)+0.025 hcb(3) hcb(4)-0.05] )
+   set(cb,'position',[hcb(1)+0.07 hcb(2)+0.025 hcb(3) hcb(4)-0.05] )
      
      drawnow
      saveas(gcf,strcat('Framenumber',num2str(frames(n))),'epsc')

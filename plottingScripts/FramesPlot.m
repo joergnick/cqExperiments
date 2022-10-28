@@ -4,7 +4,8 @@ set(groot, 'defaultAxesTickLabelInterpreter','latex');
 set(groot, 'defaultLegendInterpreter','latex');
 
 %load('../data/DonutFieldDataDOF896N200')
-
+%load('../data/thesis_nonlinear/AngleTransformedFields_a_0.75N256.mat')
+                        %     'AngleTransformedFields_a_0.25N256'
 load('../data/AngleTransformedFieldsN256')
 N=256;
 X_mesh(:,:)=plot_grid(1,:,:);
@@ -63,7 +64,7 @@ n_grid=sqrt(length(u_ges(:,1)));
 frames = [1:N+1];
 %frames=[80,100,120,140,160,180];
 %  figure('Position',[200 -2000 400 800])
-  video_object = VideoWriter('testvideoN256_angle');
+  video_object = VideoWriter('testvideoN256_a_0.5');
   video_object.Quality = 95;
   video_object.FrameRate = 8;
   open(video_object);
@@ -165,4 +166,4 @@ for n=20:N+1
 
 end
 close(video_object);
-saveas(gcf,'Plots/MaxwellFrames','epsc')  
+saveas(gcf,'Plots/MaxwellFrames_a_0.75','epsc')  
