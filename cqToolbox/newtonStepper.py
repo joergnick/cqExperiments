@@ -148,8 +148,9 @@ class NewtonIntegrator(AbstractIntegrator):
         newton_operator = LinearOperator((m*dof,m*dof),newton_lambda)
         counterObj = gmres_counter()
         #print("Residual: ",np.linalg.norm(rhs_long))
-        dx_long,info = gmres(newton_operator,rhs_long,maxiter = 100,callback = counterObj,tol=10**(-9))
-        #print("Residual after GMRES: ",np.linalg.norm(rhs_long-newton_func(dx_long))," COUNT GMRES: ",counterObj.niter)
+        dx_long,info = gmres(newton_operator,rhs_long,maxiter = 500,callback = counterObj,tol=10**(-9))
+        if info>0:
+            print("GMRES counter erreicht, info = "+str(info)+" Residual after GMRES: ",np.linalg.norm(rhs_long-newton_func(dx_long))," COUNT GMRES: ",counterObj.niter)
         #if info != 0:
         #    print("GMRES Info not zero, Info: ", info)
 
@@ -172,9 +173,11 @@ class NewtonIntegrator(AbstractIntegrator):
         #if coeff*np.linalg.norm(dx)/np.sqrt(dof)<tolsolver:
         #    return x0,0,nonlinear_residual
         #### Terminating if change in residual was small:
-        if (last_residual is not None) and (np.linalg.norm(nonlinear_residual-last_residual))<10**(-4):
+        if (last_residual is not None) and (np.linalg.norm(nonlinear_residual-last_residual))<10**(-8):
             #print("Early finish, residual: "+str(np.linalg.norm(nonlinear_residual)))
             return np.real(x1), 0,nonlinear_residual,jacob_list
+        if last_residual is not None and np.linalg.norm(last_residual) < np.linalg.norm(nonlinear_residual):
+            return np.real(x0),0,last_residual,jacob_list
         if debug_mode:
             print("Newton step completed, residual : "+str(np.linalg.norm(nonlinear_residual)))
         #print("||dx|| = ",np.linalg.norm(dx))

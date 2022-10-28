@@ -22,7 +22,7 @@ T = 3
 m = 3
 #diffsAbstract = np.load('data/diffsAbstract.npy')
 #print("Abstract = ",diffsAbstract)
-am_space = 6
+am_space = 9
 am_time  = 1
 alpha = 0.5
 import time
@@ -104,7 +104,7 @@ am_time  = 6
 m = 2
 for space_index in range(am_space):
     for time_index in range(am_time):
-        h   = 2**(-(space_index+2)*1.0/2)
+        h   = 2**(-(space_index+4)*1.0/2)
         N   = int(np.round(16*2**time_index))
         tau = T*1.0/N
         gridfilename = 'data/grids/two_cubes_h_'+str(np.round(h,3))+'.npy'
