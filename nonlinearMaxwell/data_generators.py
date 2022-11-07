@@ -86,8 +86,8 @@ def load_grid(gridfilename):
         Elements=Elements-1
         load_success = True
     if gridfilename[-3:] == 'npy':
-        mat_contents = np.load(gridfilename).item()
-        #mat_contents = np.load(gridfilename,allow_pickle=True).item()
+        #mat_contents = np.load(gridfilename).item()
+        mat_contents = np.load(gridfilename,allow_pickle=True).item()
         Nodes        = mat_contents['Nodes']
         Elements     = mat_contents['Elements']
         load_success = True
@@ -202,8 +202,8 @@ def evaluate_densities(filename,gridfilename):
     grid = load_grid(gridfilename)
     RT_space=bempp.api.function_space(grid, space_string,0) 
     dof = RT_space.global_dof_count
-    resDict = np.load(filename).item()
-    #resDict = np.load(filename,allow_pickle=True).item()
+    #resDict = np.load(filename).item()
+    resDict = np.load(filename,allow_pickle=True).item()
     rhs = resDict["sol"]
     T   = resDict["T"]
     m   = resDict["m"]

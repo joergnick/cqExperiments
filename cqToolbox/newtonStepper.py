@@ -20,7 +20,6 @@ class NewtonIntegrator(AbstractIntegrator):
         self.freqObj = dict()
         self.freqUse = dict()
         self.countEv = 0
-        self.debug_mode = True
         ## Methods supplied by user:
     def nonlinearity(self,x,t,time_index):
         raise NotImplementedError("No nonlinearity given.")
@@ -85,8 +84,7 @@ class NewtonIntegrator(AbstractIntegrator):
             x,info,res,jlist = self.newton_iteration(j,rk,rhs,W0,x,history, tolsolver,coeff=scal**(counter-thresh),last_residual=res,jacob_list = jlist)
             if info < 10**(-8):
                 info = 0
-            if self.debug_mode:
-                print("INFO AFTER {} STEP: ".format(counter),info)
+            #print("INFO AFTER {} STEP: ".format(counter),info)
             if np.linalg.norm(x)>10**10:
                 print("Warning, setback after divergence in Newton's method, ||x|| = "+str(np.linalg.norm(x)))
                 raise ValueError("Newton method diverging.")
@@ -95,8 +93,7 @@ class NewtonIntegrator(AbstractIntegrator):
                 info = 1
             counter = counter+1
         #print("||res|| = "+str(np.linalg.norm(res)))
-        if self.debug_mode:
-            print("AMOUNT NEWTON ITERATIONS = "+str(counter)+" ||x_pred|| = "+str(np.linalg.norm(x0))+ " ||x|| = "+str(np.linalg.norm(x))+ " ||x_pred-x|| = "+str(np.linalg.norm(x0-x)))
+        #print("AMOUNT NEWTON ITERATIONS = "+str(counter)+" ||x_pred|| = "+str(np.linalg.norm(x0))+ " ||x|| = "+str(np.linalg.norm(x))+ " ||x_pred-x|| = "+str(np.linalg.norm(x0-x)))
         return x
 
     def newton_iteration(self,j,rk,rhs,W0,x0,history,tolsolver,coeff = 1,debug_mode=False,last_residual=None,jacob_list = None):
@@ -148,7 +145,7 @@ class NewtonIntegrator(AbstractIntegrator):
         newton_operator = LinearOperator((m*dof,m*dof),newton_lambda)
         counterObj = gmres_counter()
         #print("Residual: ",np.linalg.norm(rhs_long))
-        dx_long,info = gmres(newton_operator,rhs_long,maxiter = 500,callback = counterObj,tol=10**(-9))
+        dx_long,info = gmres(newton_operator,rhs_long,maxiter = 500,callback = counterObj,tol=10**(-14),restart = 50)
         if info>0:
             print("GMRES counter erreicht, info = "+str(info)+" Residual after GMRES: ",np.linalg.norm(rhs_long-newton_func(dx_long))," COUNT GMRES: ",counterObj.niter)
         #if info != 0:

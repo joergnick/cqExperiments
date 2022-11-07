@@ -1,5 +1,6 @@
 #import psutil
 import time
+import math
 from scipy.sparse.linalg import gmres
 from scipy.optimize import newton_krylov
 import numpy as np
@@ -39,15 +40,6 @@ class AbstractIntegrator:
         ## Thus we simply apply the forward application without saving the objects.
         return self.harmonic_forward(s,b,precomp=self.precomputing(s))
 
-    def createFFTLengths(self,N):
-        lengths = [1]
-        it = 1
-        while len(lengths)<=N:
-            lengths.append(2**it)
-            lengths.extend(lengths[:-1][::-1])
-            it = it+1
-        return lengths
-
     def integrate(self,T,N,method = "RadauIIA-2",tolsolver = 10**(-10),max_evals_saved=100000,factor_laplace_evaluations = 2,debug_mode=False,same_rho = False,same_L = False):
         self.tdForward.external_N = N 
         self.max_evals_saved   = max_evals_saved
@@ -78,21 +70,22 @@ class AbstractIntegrator:
         external_L = None
         if same_L:
             external_L = 2*N
-        
+         
         for j in range(0,N):
             ## Calculating solution at timepoint tj
             start_ts = time.time()
             lconv = conv_hist[:,j*m+1:(j+1)*m+1]
-            sol[:,j*m+1:(j+1)*m+1] = (self.time_step(W0,j,rk,sol[:,:rk.m*(j)+1],lconv,tolsolver=tolsolver,debug_mode=debug_mode))
+            sol[:,j*m+1:(j+1)*m+1] = (self.time_step(W0,j,rk,sol[:,:rk.m*(j)+1],lconv,tolsolver=tolsolver))
             if np.isnan(sol[:,j*m+1:(j+1)*m+1]).any():
                 print("NAN value in solution detected, norms until this point: ", np.linalg.norm(sol[:,:j*m+1],axis = 0))
                 print("Time index = ",j, " N = ",N)
                 raise ValueError("NAN is detected in solution.")
             end_ts   = time.time() 
+            print("Computed new step, relative progress: "+str(j*1.0/N)+". Time taken: "+str(np.round((end_ts-start_ts)*1.0/60.0,decimals = 3))+" Min. ||x(t_j)|| = "+str(np.linalg.norm(sol[:,j*m+1:(j+1)*m+1])))
             if debug_mode:
                print("Computed new step, relative progress: "+str(j*1.0/N)+". Time taken: "+str(np.round((end_ts-start_ts)*1.0/60.0,decimals = 3))+" Min. ||x(t_j)|| = "+str(np.linalg.norm(sol[:,j*m+1:(j+1)*m+1])))
             ## Calculating Local History:
-            currLen = lengths[j]
+            currLen = math.gcd(2**(j+1),(j+1))
             localHist = np.concatenate((sol[:,m*(j+1)+1-m*currLen:m*(j+1)+1],np.zeros((dof,m*currLen))),axis=1)
             if len(localHist[0,:])>=1:
                 localconvHist = (self.tdForward.apply_RKconvol(localHist,(len(localHist[0,:]))*tau/m,method = method,factor_laplace_evaluations=factor_laplace_evaluations,external_rho=external_rho,external_L = external_L,prolonge_by=0,show_progress=False))

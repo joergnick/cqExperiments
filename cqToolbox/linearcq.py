@@ -20,6 +20,7 @@ class Conv_Operator():
             if self.external_N<0:
                 self.external_N = N
             L=max(4*int(N),1)
+            #L=max(4*int(N),1)
             ###################### BEST WORKING PARAMETERS KNOWN: 
             #L=4*int(N)
         #L=3.0/2*N
@@ -28,7 +29,8 @@ class Conv_Operator():
             rho = self.external_rho
             print("WARNING, EXTERNAL RHO WAS SET.")
         else:
-            rho=tol**(1.0/(3*N))
+            rho=tol**(1.0/(2*N))
+            #rho=tol**(1.0/(3*N))
         return L,dt,tol,rho
 
     def char_functions(self,zeta,order):

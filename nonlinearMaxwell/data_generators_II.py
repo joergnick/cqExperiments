@@ -13,7 +13,7 @@ from linearcq import Conv_Operator
 from customOperators import precompMM,sparseWeightedMM,applyNonlinearity,sparseMM
 from newtonStepper import NewtonIntegrator
 
-OrderQF =10
+OrderQF = 14
 #print(bempp.api.global_parameters.quadrature.near.max_rel_dist)
 bempp.api.global_parameters.quadrature.near.max_rel_dist = 2
 
@@ -25,11 +25,11 @@ bempp.api.global_parameters.quadrature.medium.double_order =OrderQF-2
 bempp.api.global_parameters.quadrature.far.single_order =OrderQF-3
 bempp.api.global_parameters.quadrature.far.double_order =OrderQF-3
 bempp.api.global_parameters.quadrature.double_singular = OrderQF
-#bempp.api.global_parameters.assembly.boundary_operator_assembly_type = 'dense'
+bempp.api.global_parameters.assembly.boundary_operator_assembly_type = 'dense'
 #bempp.api.global_parameters.assembly.enable_interpolation_for_oscillatory_kernels = False
 #bempp.api.global_parameters.assembly.interpolation_points_per_wavelength = 5000
-bempp.api.global_parameters.hmat.eps=10**-6
-bempp.api.global_parameters.hmat.admissibility='strong'
+#bempp.api.global_parameters.hmat.eps=10**-10
+#bempp.api.global_parameters.hmat.admissibility='strong'
 space_string = "RT"
 nrspace_string = "NC"
 
@@ -188,7 +188,8 @@ def compute_densities(alpha,N,gridfilename,T,rk,debug_mode=False):
     dof = RT_space.global_dof_count
     print("GLOBAL DOF: ",dof)
     print("Finished RHS.")
-    sol ,counters  = model.integrate(T,N, method = rk.method_name,max_evals_saved=16,debug_mode=True,same_rho = False)
+    sol ,counters  = model.integrate(T,N, method = rk.method_name,max_evals_saved=256,debug_mode=debug_mode,same_rho = False)
+    #sol ,counters  = model.integrate(T,N, method = rk.method_name,max_evals_saved=16,debug_mode=debug_mode,same_rho = False)
     print("GLOBAL DOF: ",dof)
     return sol
 
