@@ -2,11 +2,15 @@ clear all
 %load('../data/Err_data_delta10.mat')
 % load('../data/err_data_nonlinear_server2.mat')
 load('../data/error_m_2_space_II.mat')
+errors(3,:) = [];
 errors_II = errors;
 load('../data/error_m_2_space_I.mat')
+errors(3,:) = [];
 errors_I = errors;
+hs(3) = [];
 h_s = hs;
-load('../data/error_m_2_time_II.mat')
+%load('../data/error_m_2_time_I.mat')
+load('../data/error_multiple_m_time_II.mat')
 tau_s = taus;
 
 %load('data/Err_data_delta0p1.mat')

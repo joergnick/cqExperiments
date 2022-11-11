@@ -15,14 +15,15 @@ start_time=1;
 end_time=9;
 %% Creating the plots
 start_space= 1;
-end_space  =2;
+end_space  =3;
 
 
 
 
 err=time_errs_II(start_space:end_space,start_time:end_time);
 [n1 n2]=size(err);
-
+vect = zeros(n1,n2):
+for m=:
 vect=step_size(start_time:end_time);
 
 symbols='sox*d+^.v><';
@@ -30,7 +31,7 @@ ms=[6 6 6 8 6 6 6 6 6 6 6];
 gr=(linspace(.66,0,n1))';
 colors=[gr gr gr];
 for jj=1:n1
-    loglog(vect,err(jj,:), ...
+    loglog(vect(jj,:),err(jj,:), ...
            'LineWidth',1,...
            'Marker',symbols(jj),...
            'MarkerSize',ms(jj),...
@@ -40,25 +41,29 @@ for jj=1:n1
     end
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
- xlim([10^(-2.3) 10^(-0.8)])  
+ xlim([10^(-2.5) 10^(-1)])  
  ylim([10^(-3) 10^(-0)])
 
 %% Plotting the reference line
 
   %loglog((step_size),5*step_size,'--k')
   loglog((step_size),5*step_size,'--k')
-  loglog((step_size),50*step_size.^2,'--k')
+  loglog((step_size),100*step_size.^2,'--k')
  % loglog((step_size),10^3*step_size.^3,'--k')
  %% Title
 
 title("Time convergence",'Interpreter','Latex')
     hold off
 %% Labelling the axis
-xlabel('step size $\tau$','Interpreter','Latex')
-ylabel('Maximal Error in $\textit{\textbf{P}}=(0,0,0)$','Interpreter','Latex')
+xlabel('step size \tau')
+ylabel('Maximal Error in $P=(0,0,0)$','Interpreter','Latex')
 
+% strH1=strcat(string1,' H^1-norm of error  ');
+%title(strH1)
+xlabel('step size \tau')
+%ylabel('H^1-norm error')
 hold off
-legend(strcat('$m=1$'), strcat('$m=2$') ,'$\mathcal O(\tau)$','$\mathcal O(\tau^2)$' ,'location','southeast');  
+  legend(strcat('$h=1/2$'), '$\mathcal O(\tau^2)$' ,'location','southeast');  
   
 %% SPACE CONVERGENCE PLOT 1
 %% Comment in from here for space convergence plot
@@ -105,15 +110,15 @@ end
 %title(strL2)
 title("Space convergence I", 'Interpreter','Latex')
     hold off
- xlim([10^(-1.0) 10^(0.1)])  
- ylim([10^(-2) 10^(-0.)])
+% xlim([10^(-1.2) 10^(0)])  
+% ylim([10^(-2.5) 10^(0)])
     
 %% Creating the legend
   l=legend({strcat('$N = 32$'),'$\mathcal O(h)$'},'Interpreter','Latex','location','southeast');
 
 %% Labelling the axis
-xlabel('mesh width $h$','Interpreter','Latex')
-ylabel('Maximal Error in $\textit{\textbf{P}}=(0,0,0)$','Interpreter','Latex')
+xlabel('mesh size $h$','Interpreter','Latex')
+ylabel('Maximal Error in $\textbf{P}=(0,0,0)$','Interpreter','Latex')
 %ylabel('H^1-norm error')
 hold off
 
@@ -178,8 +183,7 @@ end
 %% Plotting the reference line
 
  loglog(mesh_size,0.8*mesh_size.^1,'--k')
- xlim([10^(-1.0) 10^(0.1)])  
- ylim([10^(-2) 10^(-0.)])
+
  %% Title
 % strL2=strcat(string1,' s= ',num2str(s),' L2 time conv.');
 %strL2=strcat(string1,' L^2-norm time conv.');
@@ -197,11 +201,11 @@ title("Space convergence II", 'Interpreter','Latex')
 %  l=legend({strcat('$N$ = ',num2str(N_s(3))),strcat('$N$ = ',num2str(N_s(4))),...
 %      strcat('$N$ = ',num2str(N_s(5))),strcat('$N$ = ',num2str(N_s(6))),...
 %     strcat('$N$ = ',num2str(N_s(7))),strcat('$N$ = ',num2str(N_s(7))),'$\mathcal O(h)$','$\mathcal O(h^{3/2})$'},'Interpreter','Latex','location','southeast');
- l=legend({strcat('$N = 32$'),'$\mathcal O(h)$'},'Interpreter','Latex','location','southeast');
+ l=legend({strcat('$N = 32$'),'$\mathcal O(h)$','$\mathcal O(h^{3/2})$'},'Interpreter','Latex','location','southeast');
 
 %% Labelling the axis
-xlabel("mesh width $h$",'Interpreter','Latex')
-ylabel("Maximal Error in $\textit{\textbf{P}}=(0,0,0)$",'Interpreter','Latex')
+xlabel('mesh size $h$','Interpreter','Latex')
+ylabel('Maximal Error in $P=(0,0,0)$','Interpreter','Latex')
 %ylabel('H^1-norm error')
 hold off
 

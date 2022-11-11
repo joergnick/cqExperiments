@@ -3,10 +3,10 @@ clear all
 set(groot, 'defaultAxesTickLabelInterpreter','latex'); 
 set(groot, 'defaultLegendInterpreter','latex');
 
-%load('../data/DonutFieldDataDOF896N200')
+load('../data/DonutFieldDataDOF896N200')
 alphas = [0.25,0.5,0.75];
 
-load('../data/AngleTransformedFieldsN256')
+%load('../data/AngleTransformedFieldsN256')
 N=256;
 X_mesh(:,:)=plot_grid(1,:,:);
 Y_mesh(:,:)=plot_grid(2,:,:);
@@ -15,12 +15,13 @@ n_grid=sqrt(length(u_ges(:,1))) ;
 u_sq=zeros(n_grid,n_grid);
 n_grid=sqrt(length(u_ges(:,1)));
 [u_ges ] = draw_scatterer( u_ges, scatterer);
+%frames=[64,96,128,160,192,192+32];
 frames=[64,96,128,160,192,192+32];
 figure('Position',[200 -2000 400 800])
 
 for n=1:length(frames)
    j=frames(n);
-   title
+%   title
    subplot(3,2,n)
    
    limit_colors=[0,1];

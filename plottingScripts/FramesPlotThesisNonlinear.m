@@ -49,7 +49,6 @@ for n=1:length(frames)
 
 end
 hp6 = get(subplot(3,2,6),'Position');
-hp6
 colorbar('position',[hp6(1)+hp6(3)+0.01  hp6(2)+0.55*hp6(3) 0.03 hp6(2)+hp6(3)*1.0 ])
 %close(video_object);
 sv_name = strcat('Plots/MaxwellFrames_a_',char(string(alpha)))

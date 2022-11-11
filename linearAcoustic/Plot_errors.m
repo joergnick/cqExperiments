@@ -80,12 +80,12 @@ title("Time convergence")
 %    strcat('h = ',num2str(dof_s(4))),strcat('h = ',num2str(dof_s(5))),...
 %    strcat('h = ',num2str(dof_s(6))),strcat('h = ',num2str(dof_s(7))),'O(\tau^2)' );
 %% Labelling the axis
-xlabel('step size \tau')
-ylabel('Maximal Error in $P=(2,0,0)$','Interpreter','Latex')
+xlabel('step size $\tau$','Interpreter','Latex')
+ylabel('Maximal Error in $\textit{\textbf{P}}=(2,0,0)$','Interpreter','Latex')
 
 % strH1=strcat(string1,' H^1-norm of error  ');
 %title(strH1)
-xlabel('step size \tau')
+
 %ylabel('H^1-norm error')
 hold off
 %   legend({strcat('$h$ = ',num2str(h_s(1))),strcat('$h$  = ',num2str(h_s(2))),strcat('$h$  = ',num2str(h_s(3))),...
@@ -186,8 +186,8 @@ title("Space convergence")
 %    strcat('h = ',num2str(dof_s(4))),strcat('h = ',num2str(dof_s(5))),...
 %    strcat('h = ',num2str(dof_s(6))),strcat('h = ',num2str(dof_s(7))),'O(\tau^2)' );
 %% Labelling the axis
-xlabel('mesh size $h$','Interpreter','Latex')
-ylabel('Maximal Error in $P=(2,0,0)$','Interpreter','Latex')
+xlabel('mesh width $h$','Interpreter','Latex')
+ylabel('Maximal Error in $\textit{\textbf{P}}=(2,0,0)$','Interpreter','Latex')
 %ylabel('H^1-norm error')
 hold off
 
