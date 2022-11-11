@@ -105,7 +105,7 @@ m = 3
 for space_index in range(am_space):
     for time_index in range(am_time):
         h   = 2**(-(space_index+2)*1.0/2)
-        N   = int(np.round(16*2**(4.5+time_index*0.5)))
+        N   = int(np.round(16*2**(5+time_index*0.5)))
         print("N = "+str(N))
         tau = T*1.0/N
         gridfilename = 'data/grids/two_cubes_h_'+str(np.round(h,3))+'.npy'

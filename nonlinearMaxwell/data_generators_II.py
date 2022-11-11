@@ -13,18 +13,18 @@ from linearcq import Conv_Operator
 from customOperators import precompMM,sparseWeightedMM,applyNonlinearity,sparseMM
 from newtonStepper import NewtonIntegrator
 
-OrderQF = 14
+OrderQF = 17
 #print(bempp.api.global_parameters.quadrature.near.max_rel_dist)
 bempp.api.global_parameters.quadrature.near.max_rel_dist = 2
 
 bempp.api.global_parameters.quadrature.near.single_order =OrderQF-1
 bempp.api.global_parameters.quadrature.near.double_order = OrderQF-1
 bempp.api.global_parameters.quadrature.medium.max_rel_dist =4
-bempp.api.global_parameters.quadrature.medium.single_order =OrderQF-2
-bempp.api.global_parameters.quadrature.medium.double_order =OrderQF-2
-bempp.api.global_parameters.quadrature.far.single_order =OrderQF-3
-bempp.api.global_parameters.quadrature.far.double_order =OrderQF-3
-bempp.api.global_parameters.quadrature.double_singular = OrderQF
+bempp.api.global_parameters.quadrature.medium.single_order =OrderQF-3
+bempp.api.global_parameters.quadrature.medium.double_order =OrderQF-3
+bempp.api.global_parameters.quadrature.far.single_order =OrderQF-4
+bempp.api.global_parameters.quadrature.far.double_order =OrderQF-4
+bempp.api.global_parameters.quadrature.double_singular = OrderQF-1
 bempp.api.global_parameters.assembly.boundary_operator_assembly_type = 'dense'
 #bempp.api.global_parameters.assembly.enable_interpolation_for_oscillatory_kernels = False
 #bempp.api.global_parameters.assembly.interpolation_points_per_wavelength = 5000
