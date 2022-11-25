@@ -134,13 +134,8 @@ class Conv_Operator():
             start=time.time()
             if j>0:
                 relevantChange=False
-                rhsStages2=1j*rhsStages*0
                 lhsStages=1j*lhsStages*0
                 rhsStages =  np.matmul(rhs_fft[:,m*j:m*(j+1)],Tinv.T)
-                for stageInd in range(m):
-                    
-                    for sumInd in range(m):
-                        rhsStages2[:,stageInd]=rhsStages2[:,stageInd]+Tinv[stageInd,sumInd]*rhs_fft[:,m*j+sumInd]
                 for stageInd in range(m):
                     if np.linalg.norm(rhsStages[:,stageInd])>cutoff :
                         relevantChange=True
