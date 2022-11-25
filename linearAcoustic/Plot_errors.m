@@ -68,7 +68,7 @@ end
 % strL2=strcat(string1,' s= ',num2str(s),' L2 time conv.');
 %strL2=strcat(string1,' L^2-norm time conv.');
 %title(strL2)
-title("Time convergence")
+title("Time convergence",'Interpreter','Latex')
     hold off
 
     
@@ -169,7 +169,7 @@ end
 % strL2=strcat(string1,' s= ',num2str(s),' L2 time conv.');
 %strL2=strcat(string1,' L^2-norm time conv.');
 %title(strL2)
-title("Space convergence")
+title("Space convergence",'Interpreter','Latex')
     hold off
  xlim([10^(-1.6) 10^(0.1)])  
  ylim([10^(-4) 10^(-0.5)])

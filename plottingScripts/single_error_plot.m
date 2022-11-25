@@ -99,7 +99,7 @@ hold off
 
 %% SPACE CONVERGENCE PLOT 1
 %% Comment in from here for space convergence plot
-saveas(gcf,'Plots/time_conv','epsc')  
+saveas(gcf,'Plots/TimeConvergenceNonlinearMaxwell','epsc')  
 h2=figure(figurenumber+1)
 %set(h2,'Position',[10 10 900 420])
 %subplot(1,2,1)
@@ -347,6 +347,6 @@ hold off
 % % title(strH1)
 % % 
 % % hold off
-saveas(gcf,'Plots/space_conv','epsc')  
+saveas(gcf,'Plots/SpaceConvergenceNonlinearMaxwell','epsc')  
 end
 

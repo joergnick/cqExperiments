@@ -61,18 +61,25 @@ frames=[120,130,140,150,160,170,180,190];
 for n=1:length(frames)
 %for n=1:1
     figure('Position',[200 200 1200 350])
-    
     j=frames(n); 
-   limit_colors=[-2,2];
-   limit_height=[-2,2];
+   limit_colors=[-1.8,1.8];
+   limit_height=[-1.7,1.7];
 %    limit_colors=[-2.5,2.5];
 %    limit_height=[-2.5,2.5];
    limit_x=[-0.25,1.25];
    limit_y=[-0.75,0.75];
    
    width=0.213405797101449;
+    cmap_bone = bone(256);
+    my_colormap = imadjust(cmap_bone,[0.15,0.85])
+%    cmap_bone
+%    my_colormap = 0*cmap_bone;
+%    tt = linspace(-1,1,length(cmap_bone(:,1)));
+%    my_colormap(:,1) = real(0.5*(2*(cmap_bone(:,1)-0.5)).*tt'.^(1.0/29)+0.5);
+%    my_colormap(:,2) = real(0.5*(2*(cmap_bone(:,2)-0.5)).*tt'.^(1.0/29)+0.5);
+%   my_colormap(:,3) = real(0.5*(2*(cmap_bone(:,3)-0.5)).*tt'.^(1.0/29)+0.5);
    
-   colormap bone(256)%jet(200) %bone(25)
+   colormap(my_colormap)%jet(200) %bone(25)
   u_long=u_ges(:,j);
   u_long2=u_ges2(:,j); 
   u_long3=u_ges3(:,j); 
@@ -148,12 +155,15 @@ for n=1:length(frames)
    title('Acoustic b.c.')
      hsp2(3)
       %% Position Subplot 3  
-     set(gca, 'Position', [hsp3(1)-0.03 hsp3(2) width+0.02 hsp1(4)]) 
+    set(gca, 'Position', [hsp3(1)-0.03 hsp3(2) width+0.02 hsp1(4)]) 
     cb=  colorbar;
-   hcb=get(cb,'position');
-   set(cb,'position',[hcb(1)+0.07 hcb(2)+0.025 hcb(3) hcb(4)-0.05] )
-     
+    hcb=get(cb,'position');
+    set(cb,'position',[hcb(1)+0.07 hcb(2)+0.025 hcb(3) hcb(4)-0.05] )
+
+    
      drawnow
+    % print(['filename.pdf'],'-dpdf','-bestfit')
+    % saveas(gcf,strcat('Framenumber',num2str(frames(n)),'.pdf'))
      saveas(gcf,strcat('Framenumber',num2str(frames(n))),'epsc')
-   
+     
 end
