@@ -202,41 +202,42 @@ class TestCQMethods(unittest.TestCase):
     def test_nonlinear_RadauIIA_2(self):
         modelN       = NonlinearScatModel()
         m = 2
-        N = 15
+        N = 40
         T = 2
         sol,counters = modelN.integrate(T,N,method = "RadauIIA-"+str(m))
         exSol        = modelN.ex_sol(np.linspace(0,T,N+1))
         err          = max(np.abs(sol[0,::m]-exSol))
-        self.assertLess(np.abs(err),10**(-3))
+        self.assertLess(np.abs(err),2*10**(-3))
 
 
     def test_nonlinear_RadauIIA_3(self):
         modelN       = NonlinearScatModel()
         m = 3
-        N = 15
+        N = 30
         T = 2
         sol,counters = modelN.integrate(T,N,method = "RadauIIA-"+str(m))
         exSol        = modelN.ex_sol(np.linspace(0,T,N+1))
         err          = max(np.abs(sol[0,::m]-exSol))
-        self.assertLess(np.abs(err),10**(-3))
+        self.assertLess(np.abs(err),10**(-2))
     def test_nonlinear_RadauIIA_2_components(self):
         modelN       = NonlinearScatModel2Components()
         m = 2
         N = 16
+
         T = 2
         sol,counters = modelN.integrate(T,N,method = "RadauIIA-"+str(m))
         exSol        = modelN.ex_sol(np.linspace(0,T,N+1))
         err          = np.max(np.max(np.abs(sol[:,::m]-exSol)))
-        self.assertLess(np.abs(err),10**(-2))
+        self.assertLess(np.abs(err),5*10**(-2))
     def test_nonlinear_RadauIIA_2_custom_gradient(self):
         modelN       = NonlinearScatModelCustomGradient()
         m = 2
-        N = 35
+        N = 50
         T = 2
         sol,counters = modelN.integrate(T,N,method = "RadauIIA-"+str(m))
         exSol        = modelN.ex_sol(np.linspace(0,T,N+1))
         err          = np.max(np.max(np.abs(sol[:,::m]-exSol)))
-        self.assertLess(np.abs(err),10**(-4))
+        self.assertLess(np.abs(err),10**(-3))
     def test_nonlinear_RadauIIA_3_custom_gradient(self):
         modelN       = NonlinearScatModelCustomGradient()
         m = 3
@@ -245,7 +246,7 @@ class TestCQMethods(unittest.TestCase):
         sol,counters = modelN.integrate(T,N,tolsolver=10**(-8),method = "RadauIIA-"+str(m))
         exSol        = modelN.ex_sol(np.linspace(0,T,N+1))
         err          = np.max(np.max(np.abs(sol[:,::m]-exSol)))
-        self.assertLess(np.abs(err),10**(-4))
+        self.assertLess(np.abs(err),10**(-2))
     def test_nonlinear_inhom_RadauIIA_2(self):
         N       = 100
         T       = 2
@@ -259,17 +260,18 @@ class TestCQMethods(unittest.TestCase):
                 return np.array([s**1,s**2])
             def harmonic_forward(self,s,b,precomp = None):
                 return np.array([precomp[0]*b[0],precomp[1]*b[1]])
-            def righthandside(self,t,history = None):
+            def righthandside(self,t,time_index=None,history = None):
                 return np.array([3*t**2+(t**3+t**1)**3 +t**4,4*3*t**2+t**4])
             def nonlinearity(self,x,t,time_index):
                 return np.array([(x[0]+inHom[time_index])**3+x[1],x[1]])
             def ex_sol(self,ts):
-                return np.array([ts**3,ts**4])
+                return np.array([ts**3,ts**3])
+        #modelNI = NonlinearInhomModel()
         modelNI = NonlinearScatModel2Components()
         sol,counters = modelNI.integrate(T,N,tolsolver=10**(-10),method = "RadauIIA-"+str(m))
         exSol        = modelNI.ex_sol(np.linspace(0,T,N+1))
         err          = np.max(np.max(np.abs(sol[:,::m]-exSol)))
-        self.assertLess(np.abs(err),10**(-4))
+        self.assertLess(np.abs(err),5*10**(-4))
     def test_nonlinear_inhom_RadauIIA_3(self):
         N       = 60
         T       = 1.5
@@ -293,7 +295,7 @@ class TestCQMethods(unittest.TestCase):
         sol,counters = modelNI.integrate(T,N,tolsolver=10**(-10),method = "RadauIIA-"+str(m))
         exSol        = modelNI.ex_sol(np.linspace(0,T,N+1))
         err          = np.max(np.max(np.abs(sol[:,::m]-exSol)))
-        self.assertLess(np.abs(err),10**(-6))
+        self.assertLess(np.abs(err),10**(-4))
 
     def test_extrapolation_p1(self):
         modelN       = NonlinearScatModel()

@@ -145,8 +145,8 @@ class NewtonIntegrator(AbstractIntegrator):
         newton_operator = LinearOperator((m*dof,m*dof),newton_lambda)
         counterObj = gmres_counter()
         #print("Residual: ",np.linalg.norm(rhs_long))
-        dx_long,info = gmres(newton_operator,rhs_long,maxiter = 500,callback = counterObj,tol=10**(-14),restart = 50)
-        if info>0:
+        dx_long,info = gmres(newton_operator,rhs_long,maxiter = 500,callback = counterObj,tol=10**(-15),restart = 50)
+        if info>0 and (np.linalg.norm(rhs_long-newton_func(dx_long)) >10**(-13)):
             print("GMRES counter erreicht, info = "+str(info)+" Residual after GMRES: ",np.linalg.norm(rhs_long-newton_func(dx_long))," COUNT GMRES: ",counterObj.niter)
         #if info != 0:
         #    print("GMRES Info not zero, Info: ", info)

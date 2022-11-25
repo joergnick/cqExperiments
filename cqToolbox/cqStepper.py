@@ -85,7 +85,7 @@ class AbstractIntegrator:
             ## Calculating Local History:
             currLen = math.gcd(2**j,j)
             localHist = np.concatenate((sol[:,m*j+1-m*currLen:m*j+1],np.zeros((dof,m*currLen))),axis=1)
-            localconvHist = (self.tdForward.apply_RKconvol(localHist,(len(localHist[0,:]))*tau/m,method = method,factor_laplace_evaluations=factor_laplace_evaluations,external_rho=external_rho,external_L = external_L,prolonge_by=0,show_progress=False))
+            localconvHist = (self.tdForward.apply_RKconvol(localHist,(len(localHist[0,:]))*tau/m,method = method,factor_laplace_evaluations=factor_laplace_evaluations,external_rho=external_rho,external_L = external_L,prolonge_by=0,show_progress=False,first_value_is_t0=False))
             ## Updating Global History: 
             currLenCut = min(currLen,N-j)
             conv_hist[:,j*m+1:j*m+1+currLenCut*m] += localconvHist[:,currLen*m:currLen*m+currLenCut*m]

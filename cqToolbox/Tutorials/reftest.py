@@ -41,7 +41,7 @@ def rhs_func(t):
 
 ScatOperator=Conv_Operator(freq_int)
 Am = 8
-m = 7
+m = 2
 
 ###### Calculate reference solution
 N=int(np.round(8*2**(Am+2)))
@@ -52,10 +52,11 @@ time_points=create_timepoints("RadauIIA-"+str(m),N,T)
 rhs= np.exp(-sigma*time_points)*rhs_func(time_points)
 #rhs=np.exp(-sigma*time_points)*(np.exp(-(time_points-13)**2)+np.exp(-(time_points-11)**2)+np.exp(-(time_points-10)**2)+np.exp(-(time_points-12)**2))  
 #rhs=np.exp(-sigma*time_points)*time_points**20
-num_solStages = ScatOperator.apply_RKconvol(rhs,T,cutoff=10**(-15),show_progress=False,method="RadauIIA-"+str(m))
-solref=np.zeros(N+1)
-solref[1:N+1]=np.real(num_solStages[0,m-1:N*m:m])
-solref = np.exp(sigma*tt)*solref
+num_solStages = ScatOperator.apply_RKconvol(rhs[1:],T,cutoff=10**(-15),show_progress=False,method="RadauIIA-"+str(m))
+solref=np.zeros(N)
+print(num_solStages.shape)
+solref[:N]=np.real(num_solStages[m-1:N*m:m])
+solref = np.exp(sigma*tt[1:])*solref
 Nref = N 
 
 taus = np.zeros(Am)
@@ -70,11 +71,11 @@ for j in range(Am):
     rhs= np.exp(-sigma*time_points)*rhs_func(time_points)
     #rhs=np.exp(-sigma*time_points)*(np.exp(-(time_points-13)**2)+np.exp(-(time_points-11)**2)+np.exp(-(time_points-10)**2)+np.exp(-(time_points-12)**2))
     #rhs=np.exp(-sigma*time_points)*time_points**20
-    num_solStages = ScatOperator.apply_RKconvol(rhs,T,cutoff=10**(-15),show_progress=False,method="RadauIIA-"+str(m))
-    solRK=np.zeros(N+1)
-    solRK[1:N+1]=np.real(num_solStages[0,m-1:N*m:m])
-    solRK = np.exp(sigma*tt)*solRK
-    errRK[j] = np.sqrt(taus[j]*sum((np.abs(solRK[0:N+1]-solref[0:Nref+1:speed]))**2))
+    num_solStages = ScatOperator.apply_RKconvol(rhs[1:],T,cutoff=10**(-15),show_progress=False,method="RadauIIA-"+str(m))
+    solRK=np.zeros(N)
+    solRK=np.real(num_solStages[0,m-1:N*m:m])
+    solRK = np.exp(sigma*tt[1:])*solRK
+    #errRK[j] = np.sqrt(taus[j]*sum((np.abs(solRK[0:N+1]-solref[0:Nref+1:speed]))**2))
 print(errRK)
 ##print(solRK[-1])
 #import matplotlib.pyplot as plt

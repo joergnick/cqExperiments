@@ -29,7 +29,7 @@ class Conv_Operator():
             rho = self.external_rho
             print("WARNING, EXTERNAL RHO WAS SET.")
         else:
-            rho=tol**(1.0/(2*N))
+            rho=tol**(1.0/(2.5*N))
             #rho=tol**(1.0/(3*N))
         return L,dt,tol,rho
 
@@ -52,8 +52,6 @@ class Conv_Operator():
         return rho*Unit_Roots
 
     def get_method_characteristics(self,method):
-        import numpy as np
-        import math
         rk = RKMethod(method,1)
         return rk.A,rk.b,rk.c,rk.m
        
@@ -65,13 +63,13 @@ class Conv_Operator():
             flag_1Dinput=True
             rhs_mat = np.zeros((1,len(rhs))) 
             rhs_mat[0,:] = rhs
-            rhs = rhs
+            rhs = rhs_mat
         if first_value_is_t0:
             rhs = rhs[:,1:]
         N=int((len(rhs[0,:]))//m)
         return rhs,N,flag_1Dinput
 
-    def apply_RKconvol(self,rhs,T,show_progress=True,method="RadauIIA-2",factor_laplace_evaluations=2,cutoff=10**(-15),prolonge_by = 0,external_rho = None,external_L = None,first_value_is_t0 = False):
+    def apply_RKconvol(self,rhs,T,show_progress=True,method="RadauIIA-2",factor_laplace_evaluations=2,cutoff=10**(-15),prolonge_by = 0,external_rho = None,external_L = None,first_value_is_t0 = True):
         if external_rho:
             self.external_rho = external_rho
         if external_L:
@@ -122,7 +120,7 @@ class Conv_Operator():
             s=s_vect[j]
             deltaMatrix=np.linalg.inv(A_RK+s*1.0/(1-s)*np.ones((m,1))*b_RK)
             deltaEigs,T =np.linalg.eig(deltaMatrix)
-            if np.linalg.cond(T)>200:
+            if np.linalg.cond(T)>10**6:
                 print("CONDITION LARGE", np.linalg.cond(T))
             #res = np.linalg.norm(deltaMatrix-T.dot(np.diag(deltaEigs)).dot(np.linalg.inv(T)))
             #if np.linalg.cond(deltaMatrix)>1000:
@@ -136,15 +134,15 @@ class Conv_Operator():
             start=time.time()
             if j>0:
                 relevantChange=False
-                rhsStages=1j*rhsStages*0
+                rhsStages2=1j*rhsStages*0
                 lhsStages=1j*lhsStages*0
+                rhsStages =  np.matmul(rhs_fft[:,m*j:m*(j+1)],Tinv.T)
                 for stageInd in range(m):
+                    
                     for sumInd in range(m):
-                        rhsStages[:,stageInd]=rhsStages[:,stageInd]+Tinv[stageInd,sumInd]*rhs_fft[:,m*j+sumInd]
-                    maxRHS=np.max(np.abs(rhsStages[:,stageInd]))
-                    #if (maxRHS>cutoff or j<20 ) and (j<400):
-                    #if j<= first_minimum:
-                    if maxRHS>cutoff :
+                        rhsStages2[:,stageInd]=rhsStages2[:,stageInd]+Tinv[stageInd,sumInd]*rhs_fft[:,m*j+sumInd]
+                for stageInd in range(m):
+                    if np.linalg.norm(rhsStages[:,stageInd])>cutoff :
                         relevantChange=True
                         lhsStages[:,stageInd]=self.apply_elliptic_operator(deltaEigs[stageInd],rhsStages[:,stageInd])       
             else:
