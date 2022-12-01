@@ -113,49 +113,30 @@ class Conv_Operator():
         import time
         start=0
         end=0
-
         rhsStages=1j*np.zeros((len(rhs_fft[:,0]),m))
-        invA_RK = np.linalg.inv(A_RK)
         for j in range(0,HalfL+1):
-            s=s_vect[j]
-            deltaMatrix=np.linalg.inv(A_RK+s*1.0/(1-s)*np.ones((m,1))*b_RK)
-            deltaEigs,T =np.linalg.eig(deltaMatrix)
+            deltaMatrix=np.linalg.inv(A_RK+s_vect[j]*1.0/(1-s_vect[j])*np.ones((m,1))*b_RK)
+            deltaEigs,T =np.linalg.eig(deltaMatrix/dt)
             if np.linalg.cond(T)>10**6:
                 print("CONDITION LARGE", np.linalg.cond(T))
-            #res = np.linalg.norm(deltaMatrix-T.dot(np.diag(deltaEigs)).dot(np.linalg.inv(T)))
-            #if np.linalg.cond(deltaMatrix)>1000:
-            #    print("s = "+str(s)+"CONDITION deltaMatrix: ", np.linalg.cond(deltaMatrix))
-            #    print(deltaEigs)
-            deltaEigs=deltaEigs/dt
             Tinv=np.linalg.inv(T)
-#           print("NormT: ",np.linalg.norm(T))
             if show_progress:
                 print("j:",j,"L:",L, "Time of previous iteration: " +str((end-start)/60), " MIN" )
             start=time.time()
-            if j>0:
-                relevantChange=False
-                lhsStages=1j*lhsStages*0
-                rhsStages =  np.matmul(rhs_fft[:,m*j:m*(j+1)],Tinv.T)
-                for stageInd in range(m):
-                    if np.linalg.norm(rhsStages[:,stageInd])>cutoff :
-                        relevantChange=True
-                        lhsStages[:,stageInd]=self.apply_elliptic_operator(deltaEigs[stageInd],rhsStages[:,stageInd])       
-            else:
-                relevantChange=True
-                for sumInd in range(m):
-                    rhsStages[:,0]=rhsStages[:,0]+Tinv[0,sumInd]*rhs_fft[:,m*j+sumInd]
+            rhsStages =  np.matmul(rhs_fft[:,m*j:m*(j+1)],Tinv.T)
+            if j==0:  ## Separating cases, since dof of target space is unknown.
                 first_eval=self.apply_elliptic_operator(deltaEigs[0],rhsStages[:,0])
-                phi_hat=1j*np.zeros((len(first_eval),m*L))
-                lhsStages=1j*np.zeros((len(phi_hat[:,0]),m))
+                dof_trgt_spc = len(first_eval)
+                phi_hat=1j*np.zeros((dof_trgt_spc,m*L))
+                lhsStages=1j*np.zeros((dof_trgt_spc,m))
                 lhsStages[:,0]=first_eval
                 for stageInd in range(1,m):
-                    for sumInd in range(m):
-                        rhsStages[:,stageInd]=rhsStages[:,stageInd]+Tinv[stageInd,sumInd]*rhs_fft[:,m*j+sumInd]
+                    lhsStages[:,stageInd]=self.apply_elliptic_operator(deltaEigs[stageInd],rhsStages[:,stageInd])
+            for stageInd in range(m):
+                if np.linalg.norm(rhsStages[:,stageInd])>cutoff :
                     lhsStages[:,stageInd]=self.apply_elliptic_operator(deltaEigs[stageInd],rhsStages[:,stageInd])       
-            if relevantChange:  
-                for stageInd in range(m):
-                    for sumInd in range(m):
-                        phi_hat[:,m*j+stageInd]=phi_hat[:,m*j+stageInd]+T[stageInd,sumInd]*lhsStages[:,sumInd]
+
+            phi_hat[:,m*j:m*(j+1)] = np.matmul(lhsStages,T.T)
             end=time.time()
         ## Mirroring the second part of the frequencies by complex conjugation
         for freqInd in range(HalfL,L):  
@@ -173,6 +154,7 @@ class Conv_Operator():
         if flag_1Dinput:
             phi_sol=phi_sol[0,:]
         return phi_sol
+
     def get_zeta_vect(self,N,T):
         L,dt,tol,rho=self.get_integration_parameters(N,T)
         import numpy as np
