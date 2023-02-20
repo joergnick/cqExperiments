@@ -20,7 +20,8 @@ class Conv_Operator():
             if self.external_N<0:
                 self.external_N = N
             #L=max(4*int(N),1)
-            L=max(4*int(N),1)
+            L=max(int(N),1)
+            #L=max(4*int(N),1)
             ###################### BEST WORKING PARAMETERS KNOWN: 
             #L=4*int(N)
         #L=3.0/2*N
