@@ -55,16 +55,18 @@ n_grid=sqrt(length(u_ges(:,1)));
 
 
 %frames=[40,55,70,85,100,115];
-frames=[20,30,40,50,60,70];
+frames=[10,20,30,40,50,60];
+%frames=[20,40];
 %frames=[80,100,120,140,160,180];
-  figure('Position',[-2000 200 800 400])
-for n=1:length(frames)
+figure('Position',[-2000 200 800 400])
+ for n=1:length(frames)
+  %  figure(n)
 n
    subplot(2,3,n)
     j=frames(n);
     
-   limit_colors=[0,1.5];
-   limit_height=[0,1];
+   limit_colors=[0,1.2];
+   limit_height=[0,2];
    limit_x=[-1.5,1.5];
    limit_y=[-1.5,1.5];
    
@@ -107,7 +109,7 @@ n
     hsp1 = get(gca, 'Position') ;      
    %% Position Subplot 1    
    set(gca, 'Position', [hsp1(1)-0.05 hsp1(2) width+0.03 hsp1(4)]) 
-   set(gca, 'Color','black')
+   set(gca, 'Color','white')
 % %     subplot(1,3,2)
 % %      
 % %        

@@ -7,5 +7,5 @@ load('../data/Err_data_delta10.mat')
 ERR2=ERR;
 load('../data/Err_data_delta01.mat')
 %load('data/Err_data_newsigns2.mat')
-
 MaxwellErrors(ERR,ERR2,h_s,tau_s, "Absorbing b.c.", 3,1)
+%MaxwellErrorsSingle(ERR,ERR2,h_s,tau_s, "Absorbing b.c.", 3,1)
