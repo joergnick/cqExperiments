@@ -1,6 +1,7 @@
 #import psutil
 from scipy.sparse.linalg import gmres
-from scipy.optimize import newton_krylov
+import scipy
+
 import numpy as np
 from cqDirectStepper import AbstractIntegratorDirect
 from cqStepper import AbstractIntegrator
@@ -70,7 +71,7 @@ class NewtonIntegrator(AbstractIntegrator):
                 x0[:,i] = np.zeros(len(w_star_sol_j[:,0]))
         #print("Begin Newton, ||x0|| = "+str(np.linalg.norm(x0))+" ||rhs|| = "+str(np.linalg.norm(rhs)))
         counter = 0
-        thresh = 1
+        thresh = 4
         x = x0
         info = 1
         res = None
@@ -80,8 +81,9 @@ class NewtonIntegrator(AbstractIntegrator):
                 scal = 1 
             else:
                 #break
-                scal = 0.5
-            x,info,res,jlist = self.newton_iteration(j,rk,rhs,W0,x,history, tolsolver,coeff=scal**(counter-thresh),last_residual=res,jacob_list = jlist)
+                scal = 0.9
+            x,info,res,jlist = self.newton_iteration(j,rk,rhs,W0,x,history, tolsolver,coeff=scal**(counter-thresh),last_residual=res,jacob_list = None)
+            #x,info,res,jlist = self.newton_iteration(j,rk,rhs,W0,x,history, tolsolver,coeff=scal**(counter-thresh),last_residual=res,jacob_list = jlist)
             if info < 10**(-8):
                 info = 0
             #print("INFO AFTER {} STEP: ".format(counter),info)
@@ -92,8 +94,8 @@ class NewtonIntegrator(AbstractIntegrator):
                 counter = thresh
                 info = 1
             counter = counter+1
-        #print("||res|| = "+str(np.linalg.norm(res)))
-        #print("AMOUNT NEWTON ITERATIONS = "+str(counter)+" ||x_pred|| = "+str(np.linalg.norm(x0))+ " ||x|| = "+str(np.linalg.norm(x))+ " ||x_pred-x|| = "+str(np.linalg.norm(x0-x)))
+        print("||Newton_res|| = "+str(np.linalg.norm(res)))
+        print("AMOUNT NEWTON ITERATIONS = "+str(counter)+" ||x_pred|| = "+str(np.linalg.norm(x0))+ " ||x|| = "+str(np.linalg.norm(x))+ " ||x_pred-x|| = "+str(np.linalg.norm(x0-x)))
         return x
 
     def newton_iteration(self,j,rk,rhs,W0,x0,history,tolsolver,coeff = 1,debug_mode=False,last_residual=None,jacob_list = None):
@@ -143,11 +145,17 @@ class NewtonIntegrator(AbstractIntegrator):
         newton_lambda = lambda x: newton_func(x)
         from scipy.sparse.linalg import LinearOperator
         newton_operator = LinearOperator((m*dof,m*dof),newton_lambda)
+        id_mat = np.eye(m*dof)
+        newton_dense = np.array([newton_operator(id_mat[:,i]) for i in range(m*dof)])
         counterObj = gmres_counter()
         #print("Residual: ",np.linalg.norm(rhs_long))
-        dx_long,info = gmres(newton_operator,rhs_long,maxiter = 500,callback = counterObj,tol=10**(-15),restart = 50)
-        if info>0 and (np.linalg.norm(rhs_long-newton_func(dx_long)) >10**(-13)):
-            print("GMRES counter erreicht, info = "+str(info)+" Residual after GMRES: ",np.linalg.norm(rhs_long-newton_func(dx_long))," COUNT GMRES: ",counterObj.niter)
+        #newton_dense = newton_operator.to_dense()
+        #CondN = np.linalg.cond(newton_dense) 
+        dx_long = np.linalg.solve(newton_dense.T,rhs_long)
+        #print("Solver finished, condN = ",CondN," Residual: ",np.linalg.norm(rhs_long-newton_func(dx_long)))
+        #dx_long,info = gmres(newton_operator,rhs_long,maxiter = 500,callback = counterObj,tol=10**(-14),restart=100)
+        #if info>0 and (np.linalg.norm(rhs_long-newton_func(dx_long)) >10**(-13)):
+        #    print("GMRES counter erreicht, info = "+str(info)+" Residual after GMRES: ",np.linalg.norm(rhs_long-newton_func(dx_long))," COUNT GMRES: ",counterObj.niter)
         #if info != 0:
         #    print("GMRES Info not zero, Info: ", info)
 

@@ -27,7 +27,8 @@ from data_generators import load_grid
 #gridfilename = 'data/grids/angle_oriented.npy'
 for space_ind in range(9):    
     h=2**(-0.5*(space_ind))
-    grid = bempp.api.shapes.cube(h=h)
+    grid = bempp.api.shapes.sphere(h=h)
+    #grid = bempp.api.shapes.cube(h=h)
     #grid = bempp.api.import_grid('data/grids/angle_oriented.msh')
     #grid = bempp.api.import_grid('data/grids/angle_transformed.msh')
     nodes_left = grid.leaf_view.vertices
@@ -42,10 +43,10 @@ for space_ind in range(9):
     elements = np.concatenate((elements_left,elements_right),axis = 1)
     dof      = len(nodes[0,:])
     print("Generate grid, number of nodes: "+str(dof))
-    #filename = 'data/grids/sphere_python3_h' +str(h)+'.npy'
+    filename = 'data/grids/sphere_python3_h' +str(h)+'.npy'
     #filename = 'data/grids/sphereDOF'+str(dof)+'h' +str(h)+'.npy'
     #filename = 'data/grids/angle_transformed.npy'
-    filename = 'data/grids/two_cubes_h_'+str(np.round(h,3))+'.npy'
+    #filename = 'data/grids/two_cubes_h_'+str(np.round(h,3))+'.npy'
     grid_data = dict()
     grid_data["Nodes"] = nodes
     grid_data["Elements"] = elements
