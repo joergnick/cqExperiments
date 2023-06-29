@@ -22,7 +22,7 @@ from scipy.sparse.linalg import aslinearoperator
 #
 #RT_space = bempp.api.function_space(grid,"RT",0)
 
-bempp.api.global_parameters.hmat.eps=10**-12
+bempp.api.global_parameters.hmat.eps=10**-14
 def evaluate_on_elements(gridfun,grid):
     """Calculate the support of a element centers."""
     local_coordinates = np.array([[1./3,0.05,0.95,0.05],[1./3,0.05,0.05,0.95]])
@@ -67,7 +67,7 @@ def sparseWeightedMM(space,weightGF,Da,gridfunList,neighborlist,domainDict):
     dof = space.global_dof_count
     import numpy as np
     from bempp.api.integration import gauss_triangle_points_and_weights
-    accuracy_order = gridfunList[0].parameters.quadrature.far.single_order + 6
+    accuracy_order = gridfunList[0].parameters.quadrature.far.single_order + 7
     points, weights = gauss_triangle_points_and_weights(accuracy_order)
     element_list = list(gridfunList[0].grid.leaf_view.entity_iterator(0))
     data = []
@@ -94,7 +94,7 @@ def applyNonlinearity(gridFun,nonlinearity,gridfunList,domainDict):
     dof = space.global_dof_count
     coeff = gridFun.coefficients
     from bempp.api.integration import gauss_triangle_points_and_weights
-    accuracy_order = gridFun.parameters.quadrature.far.single_order +6
+    accuracy_order = gridFun.parameters.quadrature.far.single_order +7
     points, weights = gauss_triangle_points_and_weights(accuracy_order)
     element_list = list(gridfunList[0].grid.leaf_view.entity_iterator(0))
     weightIntegrals = np.zeros(dof)

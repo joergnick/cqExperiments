@@ -11,9 +11,9 @@ import scipy.io
 ## Own inclusions
 from linearcq import Conv_Operator
 from customOperators import precompMM,sparseWeightedMM,applyNonlinearity,sparseMM
-from newtonStepper import NewtonIntegrator
+from newtonStepperRev import NewtonIntegrator
 
-OrderQF =14
+OrderQF =16
 #print(bempp.api.global_parameters.quadrature.near.max_rel_dist)
 bempp.api.global_parameters.quadrature.near.max_rel_dist = 2
 
@@ -33,8 +33,8 @@ bempp.api.global_parameters.hmat.admissibility='strong'
 space_string = "RT"
 nrspace_string = "NC"
 
-tshift = 0.0
-variance = 100
+tshift = 0
+variance = 2
 def calc_gtH(rk,grid,N,T):
     m = len(rk.c)
     tau = T*1.0/N
@@ -49,27 +49,27 @@ def calc_gtH(rk,grid,N,T):
             t = tau*j+tau*rk.c[stageInd] 
             t += tshift
             def func_rhs(x,n,domain_index,result):
-                Einc =  np.array([np.exp(-variance*(x[2]+t-2)**2), 0. * x[2], 0. * x[2]])    
+                Einc =  np.array([np.exp(-variance*(x[2]+t-4)**2), 0. * x[2], 0. * x[2]])    
                 #tang = np.cross(n,np.cross(inc, n))
                 PT_Einc = np.cross(n,np.cross(Einc, n))
                 result[:] = PT_Einc
             gt_Einc_grid = bempp.api.GridFunction(RT_space,fun = func_rhs,dual_space = RT_space)
             gTE[:,j*rk.m+stageInd] = gt_Einc_grid.coefficients
-            def func_curls(x,n,domain_index,result):
-                curlU=np.array([ 0. * x[2],-2*variance*(x[2]+t-2)*np.exp(-variance*(x[2]+t-2)**2), 0. * x[2]])
-                result[:] = np.cross(curlU,n)
+           # def func_curls(x,n,domain_index,result):
+           #     curlU=np.array([ 0. * x[2],-2*variance*(x[2]+t-2)*np.exp(-variance*(x[2]+t-2)**2), 0. * x[2]])
+           #     result[:] = np.cross(curlU,n)
             def func_Hinc(x,n,domain_index,result):
-                Hinc =  -np.array([0. * x[2], np.exp(-variance*(x[2]+t-2)**2), 0. * x[2]])    
+                Hinc =  -np.array([0. * x[2], np.sin(20*(x[2]+t-4))*np.exp(-variance*(x[2]+t-4)**2), 0. * x[2]])    
                 result[:] = np.cross(Hinc,n)
             gtHinc_closed[:,j*rk.m+stageInd] = bempp.api.GridFunction(RT_space,fun = func_Hinc,dual_space = RT_space).coefficients
-            curlfun_inc = bempp.api.GridFunction(RT_space,fun = func_curls,dual_space = RT_space) 
-            curls[:,j*rk.m+stageInd]  = curlfun_inc.coefficients
-    def sinv(s,b):
-        return s**(-1)*b
-    IntegralOperator = Conv_Operator(sinv)
-    gTH = np.real(-IntegralOperator.apply_RKconvol(curls,T,method="RadauIIA-"+str(m),show_progress=False,first_value_is_t0=False))
+           # curlfun_inc = bempp.api.GridFunction(RT_space,fun = func_curls,dual_space = RT_space) 
+           # curls[:,j*rk.m+stageInd]  = curlfun_inc.coefficients
+   # def sinv(s,b):
+   #     return s**(-1)*b
+   # IntegralOperator = Conv_Operator(sinv)
+   # gTH = np.real(-IntegralOperator.apply_RKconvol(curls,T,method="RadauIIA-"+str(m),show_progress=False,first_value_is_t0=False))
  
-    print("MAX ||Hinc-Hincapprox||", max(np.linalg.norm(gTH-gtHinc_closed,axis = 0)))
+   # print("MAX ||Hinc-Hincapprox||", max(np.linalg.norm(gTH-gtHinc_closed,axis = 0)))
     gTH = gtHinc_closed
     gTH = np.concatenate((np.zeros((dof,1)),gTH),axis = 1)
     gTE = np.concatenate((np.zeros((dof,1)),gTE),axis = 1)
@@ -110,7 +110,7 @@ def compute_densities(alpha,N,gridfilename,T,rk,debug_mode=False,sigma = 0):
     #grid = bempp.api.shapes.cube(h=1)
     RT_space=bempp.api.function_space(grid, space_string,0)
 
-    #print("GLOBAL DOF: ",RT_space.global_dof_count)
+    print("GLOBAL DOF: ",RT_space.global_dof_count)
     #RT_space=bempp.api.function_space(grid, "RT",0)
     gridfunList,neighborlist,domainDict = precompMM(RT_space)
     id_op=bempp.api.operators.boundary.sparse.identity(RT_space, RT_space, RT_space)
@@ -121,24 +121,56 @@ def compute_densities(alpha,N,gridfilename,T,rk,debug_mode=False,sigma = 0):
         debug_mode = False
         def __init__(self,alpha=1.0):
             NewtonIntegrator.__init__(self)
+            self.newton_dense = None
             #print("Parameter alpha has been set to: "+str(alpha)+".")
             if (alpha<=0) or (alpha>1):
                 print("Parameter alpha has been set to: "+str(alpha)+".")
                 raise ValueError("The parameter alpha must be in the interval (0,1].")
             self.alpha = alpha
         def a(self,x):
-            cutoff_space = 10**(-30)
-            if np.linalg.norm(x)<cutoff_space:
-                x=cutoff_space*1.0/np.sqrt(3)*np.ones(3)
+            cutoff_space = 10**(-15)
+            normx = np.linalg.norm(x)
+            if normx <10**(-50):
+                direc_x = 1.0/np.sqrt(3)*np.ones(3)
+            else:
+                direc_x = x*1.0/normx
+            if normx<cutoff_space:
+                x=cutoff_space*direc_x
             #return 0*np.linalg.norm(x)**(1-self.alpha)*x
             return np.linalg.norm(x)**(self.alpha-1)*x
         def Da(self,x):
-            cutoff_space = 10**(-30)
-            if np.linalg.norm(x)<cutoff_space:
-                x=cutoff_space*1.0/np.sqrt(3)*np.ones(3)
+            cutoff_space = 10**(-15)
+            normx = np.linalg.norm(x)
+            if normx <10**(-50):
+                direc_x = 1.0/np.sqrt(3)*np.ones(3)
+            else:
+                direc_x = x*1.0/normx
+            if normx<cutoff_space:
+                x=cutoff_space*direc_x
             #return np.eye(3)
             return ((self.alpha-1)*np.linalg.norm(x)**(self.alpha-3)*np.outer(x,x)+np.linalg.norm(x)**(self.alpha-1)*np.eye(3))
           #  return -0.5*np.linalg.norm(x)**(-2.5)*np.outer(x,x)+np.linalg.norm(x)**(-0.5)*np.eye(3)
+        def precompute_system(self,m,dof,W0,rk):
+            if self.newton_dense is not None:
+                return self.newton_dense
+            def newton_func(x_dummy):
+                x_mat    = x_dummy.reshape(m,dof).T
+                x_diag   = rk.diagonalize(x_mat)
+                grad_mat = 1j*np.zeros((dof,m))
+                Bs_mat   = 1j*np.zeros((dof,m))
+                for m_index in range(m):
+                    Bs_mat[:,m_index]   = self.harmonic_forward(rk.delta_eigs[m_index],x_diag[:,m_index],precomp = W0[m_index])
+                res_mat  = rk.reverse_diagonalize(Bs_mat)
+                new_res =  res_mat.T.ravel()
+                #print("||IM(res)|| = ",np.linalg.norm(np.imag(new_res)))
+                #return new_res
+                return np.real(new_res)
+            id_mat = np.eye(m*dof)
+            newton_dense = np.array([newton_func(id_mat[:,i]) for i in range(m*dof)])            
+            self.newton_dense = newton_dense
+            return newton_dense
+
+
         def precomputing(self,s):
             s = s + sigma
             #NC_space=bempp.api.function_space(grid, "NC",0)
@@ -158,18 +190,22 @@ def compute_densities(alpha,N,gridfilename,T,rk,debug_mode=False,sigma = 0):
         def harmonic_forward(self,s,b,precomp = None):
             return precomp[0]*b
         def calc_jacobian(self,x,t,time_index):
+            dof = int(np.round(len(x)/2))
             weightphiGF = bempp.api.GridFunction(RT_space,coefficients = x[:dof])
             weightIncGF = bempp.api.GridFunction(RT_space,coefficients = gtH[:,time_index])
-            jacob =sparseWeightedMM(RT_space,np.exp(sigma*t)*weightphiGF+weightIncGF,self.Da,gridfunList,neighborlist,domainDict)
+            jacobsparse =sparseWeightedMM(RT_space,np.exp(sigma*t)*weightphiGF+weightIncGF,self.Da,gridfunList,neighborlist,domainDict)
             #normJ = np.linalg.norm(jacob.todense())
             #print("normJ = ",normJ)
             #jacob = sparseMM(RT_space,gridfunList,neighborlist,domainDict)
+            dof = int(np.round(len(x)/2))
+            jacob = np.zeros((2*dof,2*dof))
+            jacob[:dof,:dof] = jacobsparse.todense()
             return jacob
         def apply_jacobian(self,jacob,x):
             dof = int(np.round(len(x)/2))
-            jx = 1j*np.zeros(2*dof)
-            jx[:dof] = jacob*x[:dof]
-            return jx
+           # jx = 1j*np.zeros(2*dof)
+           # jx[:dof] = jacob*x[:dof]
+            return jacob.dot(x)
         def nonlinearity(self,coeff,t,time_index):
             dof = int(np.round(len(coeff)/2))
             phiGridFun = bempp.api.GridFunction(RT_space,coefficients=coeff[:dof]) 
@@ -181,9 +217,8 @@ def compute_densities(alpha,N,gridfilename,T,rk,debug_mode=False,sigma = 0):
             return result
     
         def righthandside(self,t,time_index,history=None):
-            t += tshift
             def func_rhs(x,n,domain_index,result):
-                inc  = np.array([np.exp(-variance*(x[2]+t-2)**2), 0. * x[2], 0. * x[2]])    
+                inc  = np.array([np.sin(20*(x[2]+t-4))*np.exp(-variance*(x[2]+t-4)**2), 0. * x[2], 0. * x[2]])    
                 tang = np.cross(np.cross(inc, n),n)
                 result[:] = np.exp(-sigma*t)*tang
                 
@@ -209,8 +244,9 @@ def extract_densities(filename):
 def evaluate_densities(filename,gridfilename):
     "Evaluates the densities saved at the points by convolution quadrature with $m$-stages."
     #points=np.array([[0],[0],[0]])
-    points=np.array([[2],[0],[0]])
-    #points=np.array([[0],[0],[2]])
+    #points=np.array([[1.5],[0],[0]])
+    points= 1.2*np.array([[1,-1,0,0,0,0],[0,0,1,-1,0,0],[0,0,0,0,1,-1]])
+    n_points = len(points[0])
     grid = load_grid(gridfilename)
     RT_space=bempp.api.function_space(grid, space_string,0) 
     dof = RT_space.global_dof_count
@@ -229,9 +265,9 @@ def evaluate_densities(filename,gridfilename):
         if np.isnan(scattered_field_data).any():
             #print("NAN Warning, s = ", s)
             scattered_field_data=np.zeros(np.shape(scattered_field_data))
-        return scattered_field_data.reshape(3,1)[:,0]
+        return scattered_field_data.reshape(3*n_points,1)[:,0]
     td_potential = Conv_Operator(th_potential_evaluation) 
     evaluated_data = td_potential.apply_RKconvol(rhs,T,cutoff = 10**(-8),method = "RadauIIA-"+str(m),show_progress= False,first_value_is_t0=False)
     sol_points = np.zeros((len(evaluated_data[:,0]),len(evaluated_data[0,::m])+1))
-    sol_points[:,1::] = evaluated_data[:,::m]
+    sol_points[:,1::] = np.real(evaluated_data[:,::m])
     return sol_points,T,dof

@@ -1,7 +1,7 @@
 import numpy as np
 from rkmethods import Extrapolator,RKMethod
 class Conv_Operator():
-    tol=10**-15
+    tol=10**-14
     #tol=10**-20
     external_N   = -1
     external_rho = None
@@ -21,7 +21,7 @@ class Conv_Operator():
                 self.external_N = N
             #L=max(4*int(N),1)
             #L=max(2*int(N),1)
-            L=max(3*int(N),1)
+            L=max(4*int(N),1)
             ###################### BEST WORKING PARAMETERS KNOWN: 
             #L=4*int(N)
         #L=3.0/2*N
@@ -30,7 +30,7 @@ class Conv_Operator():
             rho = self.external_rho
             print("WARNING, EXTERNAL RHO WAS SET.")
         else:
-            rho=tol**(1.0/(2.5*N))
+            rho=tol**(1.0/(2*N))
             #rho=tol**(1.0/(3*N))
         return L,dt,tol,rho
 

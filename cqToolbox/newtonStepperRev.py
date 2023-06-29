@@ -7,6 +7,8 @@ from cqDirectStepper import AbstractIntegratorDirect
 from cqStepper import AbstractIntegrator
 from rkmethods import RKMethod
 from linearcq import Conv_Operator
+from scipy.linalg import lu_factor
+from scipy.linalg import lu_solve
 class gmres_counter(object):
     def __init__(self, disp=False):
         self._disp = disp
@@ -57,6 +59,21 @@ class NewtonIntegrator(AbstractIntegrator):
             y_minus = self.nonlinearity(x0-taugrad*idMat[:,i],t,time_index)
             jacoba[:,i] = (y_plus-y_minus)/(2*taugrad)
         return jacoba
+    def precompute_system(self,m,dof,W0,rk):
+        def newton_func(x_dummy):
+            x_mat    = x_dummy.reshape(m,dof).T
+            x_diag   = rk.diagonalize(x_mat)
+            grad_mat = 1j*np.zeros((dof,m))
+            Bs_mat   = 1j*np.zeros((dof,m))
+            for m_index in range(m):
+                grad_mat[:,m_index] = self.apply_jacobian(jacob_list[m_index],x_mat[:,m_index])
+                Bs_mat[:,m_index]   = self.harmonic_forward(rk.delta_eigs[m_index],x_diag[:,m_index],precomp = W0[m_index])
+            res_mat  = rk.reverse_diagonalize(Bs_mat) + grad_mat
+            new_res =  res_mat.T.ravel()
+            #print("||IM(res)|| = ",np.linalg.norm(np.imag(new_res)))
+            #return new_res
+            return np.real(new_res)
+        return None
 
     def time_step(self,W0,j,rk,history,w_star_sol_j,tolsolver=10**(-7),debug_mode=False):
         x0  = np.zeros(w_star_sol_j.shape)
@@ -71,20 +88,31 @@ class NewtonIntegrator(AbstractIntegrator):
                 x0[:,i] = np.zeros(len(w_star_sol_j[:,0]))
         #print("Begin Newton, ||x0|| = "+str(np.linalg.norm(x0))+" ||rhs|| = "+str(np.linalg.norm(rhs)))
         counter = 0
-        thresh = 4
+        thresh = 1
         x = x0
         info = 1
         res = None
-        jlist = None
+        newt_system = None
+        am_inner = 8
+        old_res = 1
         while info >0:
             if counter <=thresh:
-                scal = 1 
+                scal = 0.9
             else:
                 #break
-                scal = 0.9
-            x,info,res,jlist = self.newton_iteration(j,rk,rhs,W0,x,history, tolsolver,coeff=scal**(counter-thresh),last_residual=res,jacob_list = None)
+                scal = 0.5
+            #if counter % am_inner == 0:
+            #    newt_system = None 
+            x,info,res,newt_system = self.newton_iteration(j,rk,rhs,W0,x,history, tolsolver,coeff=scal**((counter-thresh)*am_inner/am_inner),last_residual=res,newt_system = newt_system)
+            #print("Residual: "+str(np.linalg.norm(res)))
+            new_res = np.linalg.norm(res)
+            if new_res/old_res>0.9:
+                #print("NEW JACOBIAN")
+                newt_system = None
+                counter += 1
+            old_res = new_res
             #x,info,res,jlist = self.newton_iteration(j,rk,rhs,W0,x,history, tolsolver,coeff=scal**(counter-thresh),last_residual=res,jacob_list = jlist)
-            if info < 10**(-8):
+            if info < 10**(-12):
                 info = 0
             #print("INFO AFTER {} STEP: ".format(counter),info)
             if np.linalg.norm(x)>10**10:
@@ -93,12 +121,12 @@ class NewtonIntegrator(AbstractIntegrator):
                 x = x0
                 counter = thresh
                 info = 1
-            counter = counter+1
+            #counter = counter+1
         #print("||Newton_res|| = "+str(np.linalg.norm(res)))
         #print("AMOUNT NEWTON ITERATIONS = "+str(counter)+" ||x_pred|| = "+str(np.linalg.norm(x0))+ " ||x|| = "+str(np.linalg.norm(x))+ " ||x_pred-x|| = "+str(np.linalg.norm(x0-x)))
         return x
-
-    def newton_iteration(self,j,rk,rhs,W0,x0,history,tolsolver,coeff = 1,debug_mode=False,last_residual=None,jacob_list = None):
+    
+    def newton_iteration(self,j,rk,rhs,W0,x0,history,tolsolver,coeff = 1,debug_mode=False,last_residual=None,newt_system = None):
         t = j*rk.tau
         m = rk.m
         x0_pure = x0
@@ -107,7 +135,7 @@ class NewtonIntegrator(AbstractIntegrator):
         #    for dof_index in range(dof):
         #        if np.abs(x0[dof_index,stage_ind])<10**(-30):
         #            x0[dof_index,stage_ind] = 10**(-30)
-        if jacob_list is None:
+        if newt_system is None:
             jacob_list = [self.calc_jacobian(x0[:,k],t+rk.tau*rk.c[k],j*m+k+1) for k in range(m)]
         #jacob_list = [self.calc_jacobian(x0[:,k],t+rk.tau*rk.c[k],j*m+k+1) for k in range(m)]
         #print(type(jacob_list[0]))
@@ -128,32 +156,52 @@ class NewtonIntegrator(AbstractIntegrator):
         for stage_ind in range(m):
             rhs_long[stage_ind*dof:(stage_ind+1)*dof] = rhs_newton[:,stage_ind]
             x0_pure_long[stage_ind*dof:(stage_ind+1)*dof] = x0_pure[:,stage_ind]
-        def newton_func(x_dummy):
-            x_mat    = x_dummy.reshape(m,dof).T
-            x_diag   = rk.diagonalize(x_mat)
-            grad_mat = 1j*np.zeros((dof,m))
-            Bs_mat   = 1j*np.zeros((dof,m))
-            for m_index in range(m):
-                grad_mat[:,m_index] = self.apply_jacobian(jacob_list[m_index],x_mat[:,m_index])
-                Bs_mat[:,m_index]   = self.harmonic_forward(rk.delta_eigs[m_index],x_diag[:,m_index],precomp = W0[m_index])
-            res_mat  = rk.reverse_diagonalize(Bs_mat) + grad_mat
-            new_res =  res_mat.T.ravel()
-            #print("||IM(res)|| = ",np.linalg.norm(np.imag(new_res)))
-            #return new_res
-            return np.real(new_res)
+        #def newton_func(x_dummy):
+        #    x_mat    = x_dummy.reshape(m,dof).T
+        #    x_diag   = rk.diagonalize(x_mat)
+        #    grad_mat = 1j*np.zeros((dof,m))
+        #    Bs_mat   = 1j*np.zeros((dof,m))
+        #    for m_index in range(m):
+        #        grad_mat[:,m_index] = self.apply_jacobian(jacob_list[m_index],x_mat[:,m_index])
+        #        Bs_mat[:,m_index]   = self.harmonic_forward(rk.delta_eigs[m_index],x_diag[:,m_index],precomp = W0[m_index])
+        #    res_mat  = rk.reverse_diagonalize(Bs_mat) + grad_mat
+        #    new_res =  res_mat.T.ravel()
+        #    #print("||IM(res)|| = ",np.linalg.norm(np.imag(new_res)))
+        #    #return new_res
+        #    return np.real(new_res)
 
-        newton_lambda = lambda x: newton_func(x)
-        from scipy.sparse.linalg import LinearOperator
-        newton_operator = LinearOperator((m*dof,m*dof),newton_lambda)
-        id_mat = np.eye(m*dof)
-        newton_dense = np.array([newton_operator(id_mat[:,i]) for i in range(m*dof)])
-        counterObj = gmres_counter()
+        
+        #id_mat = np.eye(m*dof)
+        #newton_dense  = np.array([newton_func(id_mat[:,i]) for i in range(m*dof)])
+        if newt_system is None: 
+            newton_dense =  self.precompute_system(m,dof,W0,rk).copy()
+            for stage in range(m):
+                newton_dense[stage*dof:(stage+1)*dof,stage*dof:(stage+1)*dof] +=jacob_list[stage]
+            lu,piv = lu_factor(newton_dense.T)
+            newt_system = (lu,piv)
+       # if precompsys is not None:
+       #     print("Make image")
+       #     newton_dense2 = precompsys
+       #     import matplotlib 
+       #     matplotlib.use('Agg')
+       #     import matplotlib.pyplot as plt
+       #     print("||newton_dense|| = ",np.linalg.norm(newton_dense))
+       #     print("||newton_dense2|| = ",np.linalg.norm(newton_dense2))
+       #     plt.spy(newton_dense-newton_dense2)
+       #     plt.savefig('Test.png')
+        #counterObj = gmres_counter()
         #print("Residual: ",np.linalg.norm(rhs_long))
         #newton_dense = newton_operator.to_dense()
         #CondN = np.linalg.cond(newton_dense) 
-        dx_long = np.linalg.solve(newton_dense.T,rhs_long)
+        dx_long = lu_solve(newt_system,rhs_long)
+        #dx_long = np.linalg.solve(newton_dense.T,rhs_long)
+        #dx_long = np.linalg.solve(newton_dense.T,rhs_long)
         #print("Solver finished, condN = ",CondN," Residual: ",np.linalg.norm(rhs_long-newton_func(dx_long)))
-        #dx_long,info = gmres(newton_operator,rhs_long,maxiter = 500,callback = counterObj,tol=10**(-14),restart=100)
+       # newton_lambda = lambda x: newton_func(x)
+       # from scipy.sparse.linalg import LinearOperator
+       # newton_operator = LinearOperator((m*dof,m*dof),newton_lambda)
+       # dx_long2,info = gmres(newton_operator,rhs_long,maxiter = 10000,callback = counterObj,tol=10**(-14),restart=100)
+       # print("DEFECTS = ",np.linalg.norm(dx_long-dx_long2))
         #if info>0 and (np.linalg.norm(rhs_long-newton_func(dx_long)) >10**(-13)):
         #    print("GMRES counter erreicht, info = "+str(info)+" Residual after GMRES: ",np.linalg.norm(rhs_long-newton_func(dx_long))," COUNT GMRES: ",counterObj.niter)
         #if info != 0:
@@ -178,16 +226,16 @@ class NewtonIntegrator(AbstractIntegrator):
         #if coeff*np.linalg.norm(dx)/np.sqrt(dof)<tolsolver:
         #    return x0,0,nonlinear_residual
         #### Terminating if change in residual was small:
-        if (last_residual is not None) and (np.linalg.norm(nonlinear_residual-last_residual))<10**(-8):
-            #print("Early finish, residual: "+str(np.linalg.norm(nonlinear_residual)))
-            return np.real(x1), 0,nonlinear_residual,jacob_list
-        if last_residual is not None and np.linalg.norm(last_residual) < np.linalg.norm(nonlinear_residual):
-            return np.real(x0),0,last_residual,jacob_list
-        if debug_mode:
-            print("Newton step completed, residual : "+str(np.linalg.norm(nonlinear_residual)))
-        #print("||dx|| = ",np.linalg.norm(dx))
+       # if (last_residual is not None) and (np.linalg.norm(nonlinear_residual-last_residual))<10**(-8):
+       #     #print("Early finish, residual: "+str(np.linalg.norm(nonlinear_residual)))
+       #     return np.real(x1), 0,nonlinear_residual,jacob_list
+       # if last_residual is not None and np.linalg.norm(last_residual) < np.linalg.norm(nonlinear_residual):
+       #     return np.real(x0),0,last_residual,jacob_list
+       # if debug_mode:
+       #     print("Newton step completed, residual : "+str(np.linalg.norm(nonlinear_residual)))
+       # #print("||dx|| = ",np.linalg.norm(dx))
         info = coeff*np.linalg.norm(dx)/dof
-        return np.real(x1),info,nonlinear_residual,jacob_list
+        return np.real(x1),info,nonlinear_residual,newt_system
 
     def extrapol_coefficients(self,p):
         coeffs = np.ones(p+1)

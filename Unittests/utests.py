@@ -66,6 +66,18 @@ class NonlinearScatModel(NewtonIntegrator):
     def ex_sol(self,ts):
         return ts**3
 
+class NonlinearScatModel(NewtonIntegrator):
+    def precomputing(self,s):
+        return s**1
+    def harmonic_forward(self,s,b,precomp = None):
+        return precomp*b
+    def righthandside(self,t,time_index,history = None):
+        return 3*t**2+t**9
+    def nonlinearity(self,x,t,time_index):
+        return x**3
+    def ex_sol(self,ts):
+        return ts**3
+
 class ScissorModel(NewtonIntegrator):
     def precomputing(self,s):
         return np.array([s**1,s**(-1)])
@@ -101,6 +113,25 @@ class NonlinearScatModelCustomGradient(NewtonIntegrator):
     def nonlinearity(self,x,t,time_index):
         return np.array([x[0]**3+x[1],x[1]])
     def calc_jacobian(self,x,t,time_index):
+        return np.array([[3*x[0]**2,1],[0,1]])
+    def apply_jacobian(self,jacobian,x):
+        return jacobian.dot(x)
+    def ex_sol(self,ts):
+        return np.array([ts**3,ts**4])
+sigma = 3
+class ShiftCustomGradient(NewtonIntegrator):
+    def precomputing(self,s):
+        s = s + sigma
+        return np.array([s**1,s**2])
+    def harmonic_forward(self,s,b,precomp = None):
+        return np.array([precomp[0]*b[0],precomp[1]*b[1]])
+    def righthandside(self,t,time_index,history=None):
+        return np.exp(-sigma*t)*np.array([3*t**2+t**9 +t**4,4*3*t**2+t**4])
+    def nonlinearity(self,x,t,time_index):
+        x = np.exp(sigma*t)*x
+        return np.exp(-sigma*t)*np.array([x[0]**3+x[1],x[1]])
+    def calc_jacobian(self,x,t,time_index):
+        x = np.exp(sigma*t)*x
         return np.array([[3*x[0]**2,1],[0,1]])
     def apply_jacobian(self,jacobian,x):
         return jacobian.dot(x)
@@ -303,6 +334,23 @@ class TestCQMethods(unittest.TestCase):
     def test_extrapolation_p2(self):
         modelN       = NonlinearScatModel()
         self.assertTrue((modelN.extrapol_coefficients(2)==[1,-3,3]).all())
+
+
+    def test_nonlinear_RadauIIA_3_shift(self):
+        modelN       = ShiftCustomGradient()
+        m = 3
+        N = 100
+        T = 2
+        tau = T*1.0/N
+        from rkmethods import RKMethod
+        rk = RKMethod("RadauIIA-3",tau)
+        sol,counters = modelN.integrate(T,N,tolsolver=10**(-15),method = "RadauIIA-"+str(m))
+        exSol        = modelN.ex_sol(rk.get_time_points(T))
+        sol =  np.exp(rk.get_time_points(T)*sigma)*sol
+        err          = np.max(np.max(np.abs(sol-exSol)))
+        self.assertLess(np.abs(err),10**(-5))
+
+
 if __name__ == '__main__':
     unittest.main()
 
