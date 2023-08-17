@@ -9,24 +9,19 @@ from rkmethods import RKMethod
 from linearcq import Conv_Operator
 
 T = 1
-N = 2
-method = "RadauIIA-3"
-
-## Task: Integrate the function t^8
-
-
+N = 100
+method = "RadauIIA-2"
 rk = RKMethod(method,T*1.0/N)
-print(rk.get_time_points(1))
 rhs = rk.get_time_points(T)**8
 
 
 
 
-def th_integral(s,b):
+def th_deriv(s,b):
     return s**(0.5)*b
-integral = Conv_Operator(th_integral)
+deriv = Conv_Operator(th_deriv)
 
-sol = integral.apply_RKconvol(rhs,T,method = method,first_value_is_t0=True)
+sol = deriv.apply_RKconvol(rhs,T,method = method,initial_value_is_t0=True)
 ex  = 1.0/9*rk.get_time_points(T)**9
-print(np.max(np.abs(sol-ex)))
-#print(rhs)
+print(np.max(np.abs(sol-ex[1:])))
+print(rhs)

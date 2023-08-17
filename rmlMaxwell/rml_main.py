@@ -1,4 +1,4 @@
-import bempp.api
+
 import numpy as np
 import math
 #from RKconv_op import *
@@ -10,6 +10,8 @@ sys.path.append('../data')
 sys.path.append('..')
 from linearcq import Conv_Operator
 import math
+import bempp.api
+from helpers import load_grid,save_densities,extract_densities
 def create_timepoints(c,N,T):
     m=len(c)
     time_points=np.zeros((1,m*N))
@@ -26,9 +28,12 @@ def eps_p(s):
 
 def mu_m(s):
     return 2.0
+    #return 2.0
 def eps_m(s):
     #return 2.0
-    return 2.0+(1.0/(1.0+s))
+    return 2.0+1.0/(1.0 + np.sqrt(s))
+    #return 1.0+s**(-1)*(1.0/(1.0+np.exp(-s)))
+
 def create_rhs(grid,dx,N,T,m):
 #   grid=bempp.api.shapes.cube(h=1)
 #
@@ -58,59 +63,59 @@ def create_rhs(grid,dx,N,T,m):
     multitrace = maxwell.multitrace_operator(grid, 1)
     NC_space = bempp.api.function_space(grid,"NC",0)
     RT_space = bempp.api.function_space(grid,"RT",0)
-   
+      
     dof=multitrace.range_spaces[0].global_dof_count
+    print("Total degree of freedom is: ",dof)
     rhs=np.zeros((dof+dof,N*m))
     curls=np.zeros((dof,N*m))
     time_points=create_timepoints(c_RK,N,T)
+    #rot = np.array([[1.0/np.sqrt(2),1.0/np.sqrt(2),0],[1.0/np.sqrt(2),-1.0/np.sqrt(2),0],[0,0,1]]) 
     for j in range(m*N):
         t=time_points[0,j]
-        def incident_field(x):
-            return np.array([np.exp(-50*(x[2]-t+3)**2), 0. * x[2], 0. * x[2]])
-            #return np.array([np.exp(-200*(x[2]-t+2)**2), 0. * x[2], 0. * x[2]])
+        rot = np.array([[-1.0/np.sqrt(2),0 , - 1.0/np.sqrt(2)]
+                       ,[0, 1,0]
+                       ,[ -1.0/np.sqrt(2) ,0,1.0/np.sqrt(2)]])
+        def func_Einc(x,n,domain_index,result):
+            x    = rot.dot(x)
+            Einc =rot.dot(np.array([  np.exp(-100*(x[2]+t-4)**2),   0. * x[2], 0. * x[2]]))
+            #Einc = np.array([  np.sin(20*(x[2]+t-4))*np.exp(-2*(x[2]+t-4)**2),   0. * x[2], 0. * x[2]])    
+            result[:] = np.cross(n,np.cross(Einc,n))
 
-        def tangential_trace(x, n, domain_index, result):
-            #result[:] = np.cross(incident_field(x), n)
-            result[:] = np.cross(n,np.cross(incident_field(x), n))
-
-        def curl_trace(x,n,domain_index,result):
-            curlU=np.array([ 0. * x[2],-100*(x[2]-t+3)*np.exp(-50*(x[2]-t+3)**2), 0. * x[2]])
-            #result[:] = np.cross(n,np.cross(curlU , n))
-            result[:] = np.cross(curlU , n)
-
-        #curl_fun = -bempp.api.GridFunction(RT_space, fun=curl_trace,dual_space=NC_space)
-        curl_fun = bempp.api.GridFunction(RT_space, fun=curl_trace,dual_space=RT_space)
+        def func_Hinc(x,n,domain_index,result):
+            x    = rot.dot(x)
+            Hinc =  -rot.dot(np.array([0. * x[2], np.exp(-100*(x[2]+t-4)**2), 0. * x[2]])    )
+            #Hinc =  -np.array([0. * x[2], np.sin(20*(x[2]+t-4))*np.exp(-2*(x[2]+t-4)**2), 0. * x[2]])    
+            result[:] = np.cross(n,np.cross(Hinc,n))
         #trace_fun= -bempp.api.GridFunction(RT_space, fun=tangential_trace,dual_space=NC_space)
-        trace_fun= bempp.api.GridFunction(RT_space, fun=tangential_trace,dual_space=RT_space)
-        rhs[0:dof,j]=trace_fun.coefficients 
-        curlCoeffs=curl_fun.coefficients
-#        if np.linalg.norm(curlCoeffs)>10**-9:
-        curls[0:dof,j]=curlCoeffs
-
-        #print("RHS NORM :", np.linalg.norm(trace_fun.coefficients))
-
-    def sinv(s,b):
-        return mu_p(s)**(-1)*s**(-1)*b
-    IntegralOperator=Conv_Operator(sinv)
-    Hinc=IntegralOperator.apply_RKconvol(curls,T,method="RadauIIA-"+str(m),show_progress=False,first_value_is_t0=False)
-    rhs[dof:,:]= np.real(Hinc)
-   
+        #E_fun= bempp.api.GridFunction(RT_space, fun=func_Einc,dual_space=NC_space)
+        E_fun= bempp.api.GridFunction(RT_space, fun=func_Einc,dual_space=RT_space)
+        H_fun= bempp.api.GridFunction(RT_space, fun=func_Hinc,dual_space=RT_space)
+        rhs[0:dof,j]=E_fun.coefficients 
+        rhs[dof:,j]=H_fun.coefficients 
+#        curlCoeffs=curl_fun.coefficients
+##        if np.linalg.norm(curlCoeffs)>10**-9:
+#        curls[0:dof,j]=curlCoeffs
+#
+#        #print("RHS NORM :", np.linalg.norm(trace_fun.coefficients))
+#
+#    def sinv(s,b):
+#        return mu_p(s)**(-1)*s**(-1)*b
+#    IntegralOperator=Conv_Operator(sinv)
+#    Hinc=IntegralOperator.apply_RKconvol(curls,T,method="RadauIIA-"+str(m),show_progress=False,first_value_is_t0=False)
+#    rhs[dof:,:]= np.real(Hinc)
+#   
     return rhs
 
-def harmonic_calderon(s,b,grid,points):
+def harmonic_calderon(s,b,grid):
     #points=np.array([[0],[0],[2]])
     #normb=np.linalg.norm(b[0])+np.linalg.norm(b[1])+np.linalg.norm(b[2])
     normb=np.max(np.abs(b))
+    #bound=np.abs(s)**3*1.0/(s.real)*normb
     bound=np.abs(s)**3*np.exp(-s.real)*1.0/(s.real)*normb
-    print("s: ",s, " maxb: ", normb, " bound : ", bound)
-    if bound <10**(-8):
-        print("JUMPED")
-        return np.zeros(3*len(points[0,:]))
-    if normb <10**(-6):
-        print("JUMPED")
-        return np.zeros(3*len(points[0,:]))
+    #print("s: ",s, " maxb: ", normb, " bound : ", bound)
+
     b = np.exp(-s)*b
-    OrderQF = 11
+    OrderQF = 9
     
     #tol= np.finfo(float).eps
     bempp.api.global_parameters.quadrature.near.max_rel_dist = 2
@@ -138,9 +143,9 @@ def harmonic_calderon(s,b,grid,points):
 
 
 
-    identity= -bempp.api.operators.boundary.sparse.identity(RT_space, RT_space, NC_space)
     dof=NC_space.global_dof_count
-    
+    if (bound <10**(-8)) or (normb < 10**(-6)):
+        return np.zeros(dof*4)
     #trace_E= bempp.api.GridFunction(RT_space, coefficients=b[0:dof],dual_space=RT_space)
     #trace_H= bempp.api.GridFunction(RT_space, coefficients=b[dof:],dual_space=RT_space)
 ######## End condition, by theoretical bound:
@@ -194,6 +199,14 @@ def harmonic_calderon(s,b,grid,points):
     from scipy.sparse.linalg import gmres
 
     lambda_data,info = gmres(blocks, rhs,tol=10**-9)
+    return lambda_data
+
+def repr_formula(s,lambda_data,points,grid):
+    RT_space=bempp.api.function_space(grid, "RT",0)
+    dof=RT_space.global_dof_count
+    #print("GLOBAL REFERENCE DOF: ", RT_space.global_dof_count) 
+    alpha_s_p = np.emath.sqrt(mu_p(s)*eps_p(s))*s                           
+    alpha_s_m = np.emath.sqrt(mu_m(s)*eps_m(s))*s
 ##### Outer evals:
     phigrid=bempp.api.GridFunction(RT_space,coefficients=lambda_data[0:dof],dual_space=RT_space)
     psigrid=bempp.api.GridFunction(RT_space,coefficients=lambda_data[dof:2*dof],dual_space=RT_space)
@@ -208,39 +221,74 @@ def harmonic_calderon(s,b,grid,points):
     slp_pot = bempp.api.operators.potential.maxwell.electric_field(RT_space, points, alpha_s_m*1j)
     dlp_pot = bempp.api.operators.potential.maxwell.magnetic_field(RT_space, points, alpha_s_m*1j)
     scattered_field_data_m = -np.emath.sqrt( mu_m(s)/eps_m(s))*(slp_pot*phigrid)+dlp_pot*psigrid
-    #scattered_field_data = scattered_field_data_m 
     scattered_field_data =  scattered_field_data_p+scattered_field_data_m
-    #scattered_field_data =  scattered_field_data_p+scattered_field_data_m
-    #print("Evaluated field, || E+|| = ",np.linalg.norm(scattered_field_data))  
     if np.isnan(scattered_field_data).any():
         print("NAN Warning, s = ", s)
-       # print("INFO = ",info)
-       # print("lambda_data = ",lambda_data)
-       # print("scattered_field_data= ",scattered_field_data)
         scattered_field_data=np.nan_to_num(scattered_field_data)
-        #scattered_field_data=np.zeros(np.shape(scattered_field_data))
     return scattered_field_data.reshape(3*len(points[0,:]),1)[:,0]
 
 def scattering_solution(dx,N,T,m,points):
     #grid=bempp.api.shapes.cube(h=dx)
-    grid=bempp.api.shapes.sphere(h=dx)
+    #grid=bempp.api.shapes.sphere(h=dx)
+    gridfilename = "data/grids/two_cubes_h_"+str(np.round(dx,3))+".npy"
+    grid = load_grid(gridfilename)
+    #grid.plot()
     rhs=create_rhs(grid,dx,N,T,m)
     print("RHS completed.")
-    def ellipticSystem(s,b):
-        return harmonic_calderon(s,b,grid,points)
-    ScatOperator=Conv_Operator(ellipticSystem)
+    def CaldSystem(s,b):
+        return harmonic_calderon(s,b,grid)
+    def repr_form(s,b):
+        return repr_formula(s,b,points,grid)
+    AOperator=Conv_Operator(CaldSystem)
+    WOperator=Conv_Operator(repr_form) 
+    filename= 'data/rml_densities_h_'+str(np.round(dx,3)) +'_N_'+str(N)+'_m_'+str(m)+ '.npy'
     if (m==1):
-        num_solStages=ScatOperator.apply_RKconvol(rhs,T,show_progress=False,cutoff=10**(-7),method="RadauIIA-1",first_value_is_t0=False)
+        dens_sol_stages=AOperator.apply_RKconvol(rhs,T,show_progress=False,cutoff=10**(-7),method="RadauIIA-1",first_value_is_t0=False)
+        num_solStages=WOperator.apply_RKconvol(dens_sol_stages,T,show_progress=False,cutoff=10**(-7),method="RadauIIA-1",first_value_is_t0=False)
     #num_sol=ScatOperator.apply_convol(rhs,T)
     if (m==2):
-        num_solStages=ScatOperator.apply_RKconvol(rhs,T,show_progress=False,cutoff=10**(-7),method="RadauIIA-2",first_value_is_t0=False)
-    print(rhs.shape)
+        dens_sol_stages=AOperator.apply_RKconvol(rhs,T,show_progress=False,cutoff=10**(-7),method="RadauIIA-2",first_value_is_t0=False)
+        num_solStages=WOperator.apply_RKconvol(dens_sol_stages,T,show_progress=False,cutoff=10**(-7),method="RadauIIA-2",first_value_is_t0=False)
     if (m==3):
-        num_solStages=ScatOperator.apply_RKconvol(rhs,T,show_progress=True,cutoff=10**(-7),method="RadauIIA-3",first_value_is_t0=False)
+        dens_sol_stages=AOperator.apply_RKconvol(rhs,T,show_progress=True,cutoff=10**(-7),method="RadauIIA-3",first_value_is_t0=False)
+        num_solStages=WOperator.apply_RKconvol(dens_sol_stages,T,show_progress=True,cutoff=10**(-7),method="RadauIIA-3",first_value_is_t0=False)
+    save_densities(filename,dens_sol_stages,T,m,N)
     num_sol=np.zeros((len(num_solStages[:,0]),N+1)) 
     num_sol[:,1:N+1]=np.real(num_solStages[:,m-1:N*m:m])
     return num_sol
-import time
+
+def compute_densities(dx,N,T,m,use_sphere=False):
+    gridfilename = "data/grids/two_cubes_h_"+str(np.round(dx,3))+".npy"
+    if use_sphere:
+        gridfilename = "data/grids/sphere_python3_h"+str(np.round(dx,3))+".npy"
+    grid = load_grid(gridfilename)
+    rhs=create_rhs(grid,dx,N,T,m)
+    def CaldSystem(s,b):
+        return harmonic_calderon(s,b,grid)
+    AOperator=Conv_Operator(CaldSystem)
+    filename= 'data/rml_densities_h_'+str(np.round(dx,3)) +'_N_'+str(N)+'_m_'+str(m)+ '.npy'
+    if use_sphere:
+        filename= 'data/rml_densities_sphere_h_'+str(np.round(dx,3)) +'_N_'+str(N)+'_m_'+str(m)+ '.npy'
+    dens_sol_stages=AOperator.apply_RKconvol(rhs,T,show_progress=False,cutoff=10**(-7),method="RadauIIA-"+str(m),first_value_is_t0=False)
+    save_densities(filename,dens_sol_stages,T,m,N)
+    print("Computed "+filename)
+    #num_sol=np.zeros((len(num_solStages[:,0]),N+1)) 
+    #num_sol[:,1:N+1]=np.real(num_solStages[:,m-1:N*m:m])
+    return 0
+
+def density2evals(dx,N,T,m,points,filename,use_sphere=False):
+    gridfilename = "data/grids/two_cubes_h_"+str(np.round(dx,3))+".npy"
+    if use_sphere:
+        gridfilename = "data/grids/sphere_python3_h"+str(np.round(dx,3))+".npy"
+    grid = load_grid(gridfilename)
+    dens_sol_stages,T,m = extract_densities(filename)
+    def repr_form(s,b):
+        return repr_formula(s,b,points,grid)
+    WOperator=Conv_Operator(repr_form) 
+    num_solStages=WOperator.apply_RKconvol(dens_sol_stages,T,show_progress=False,cutoff=10**(-7),method="RadauIIA-"+str(m),first_value_is_t0=False)
+    num_sol=np.zeros((len(num_solStages[:,0]),N+1)) 
+    num_sol[:,1:N+1]=np.real(num_solStages[:,m-1:N*m:m])
+    return num_sol
 ####
 ####
 ####T=6
