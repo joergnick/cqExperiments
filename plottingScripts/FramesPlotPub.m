@@ -3,6 +3,8 @@ clear all
 set(groot, 'defaultAxesTickLabelInterpreter','latex'); 
 set(groot, 'defaultLegendInterpreter','latex');
 
+
+
 load('../data/DonutFieldDataDOF896N200')
 alphas = [0.25,0.5,0.75];
 
